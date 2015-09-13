@@ -1,6 +1,20 @@
+<style>
+  .ng-invalid.ng-dirty, .has-error{border: 2px solid red;}
+</style>  
 <div class="container">
     <h3>About</h3>
     <p>
         {{id}}! Enjoy the demo!
     </p>
 </div>
+<form (submit)="doLogin($event)" [ng-form-model]="loginForm">
+  <div [hidden]="loginForm.valid"  
+        class="bg-warning">Form is invalid</div>
+  <div>
+    <input [class.has-error]="!loginForm.controls['password'].valid && loginForm.controls['password'].touched" control="email" [ng-form-control]="loginForm.controls['email']" type="email" placeholder="Your email">
+  </div>
+  <div>
+    <input [class.has-error]="!loginForm.controls['password'].valid && loginForm.controls['password'].touched" [ng-form-control]="loginForm.controls['password']" type="password" placeholder="Your password">
+  </div>
+  <button type="submit" [disabled]="!loginForm.valid">Log in</button>
+</form>
