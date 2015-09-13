@@ -10,24 +10,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var angular2_1 = require('angular2/angular2');
+var router_1 = require('angular2/router');
+var router_2 = require('angular2/router');
 var http_1 = require('angular2/http');
+var devices_1 = require('./devices');
+var about_1 = require('./about');
 var App = (function () {
-    function App(http) {
-        var _this = this;
-        this.devices = [];
-        http.get('./devices.json').toRx().subscribe(function (res) { return _this.devices = res.json(); });
+    function App(router, location) {
+        this.router = router;
+        this.location = location;
+        this.router = router;
+        this.location = location;
     }
     App = __decorate([
         angular2_1.Component({
             selector: 'app'
         }),
         angular2_1.View({
-            templateUrl: 'devices.html',
-            directives: [angular2_1.NgFor]
-        }), 
-        __metadata('design:paramtypes', [http_1.Http])
+            templateUrl: 'app.html',
+            directives: [router_2.RouterLink, router_2.RouterOutlet, about_1.About]
+        }),
+        router_2.RouteConfig([
+            { path: '/devices', component: devices_1.Devices, as: 'devices' },
+            { path: '/about/:id', component: about_1.About, as: 'about' }
+        ]), 
+        __metadata('design:paramtypes', [router_2.Router, router_2.Location])
     ], App);
     return App;
 })();
 exports.App = App;
-angular2_1.bootstrap(App, [http_1.HTTP_BINDINGS]);
+angular2_1.bootstrap(App, [router_1.ROUTER_BINDINGS, angular2_1.bind(router_1.LocationStrategy).toClass(router_1.HashLocationStrategy), http_1.HTTP_BINDINGS]);

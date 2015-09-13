@@ -1,21 +1,29 @@
-import {Component, View, bootstrap, bind, NgFor} from 'angular2/angular2';
-import {Http, HTTP_BINDINGS} from 'angular2/http'
+import {Component, View, bootstrap, bind} from 'angular2/angular2';
+import {ROUTER_BINDINGS, LocationStrategy, HashLocationStrategy} from 'angular2/router';
+import {RouterLink, RouteConfig, Router, RouterOutlet, Location, RouteParams} from 'angular2/router';
+import {HTTP_BINDINGS} from 'angular2/http'
+import {Devices} from './devices';
+import {About} from './about';
 
 @Component({
    selector: 'app'
 })
 
 @View({
-    templateUrl: 'devices.html',
-    directives: [NgFor]
+    templateUrl: 'app.html',
+    directives: [RouterLink, RouterOutlet, About]
 })
+
+@RouteConfig([
+    {path: '/devices', component: Devices, as: 'devices'},
+    {path: '/about/:id', component: About, as: 'about'}
+])
  
 export class App {
-    devices: any;
-    constructor(http: Http) {
-        this.devices = []; 
-        http.get('./devices.json').toRx().subscribe(res => this.devices = res.json());
+    constructor(private router: Router, private location: Location) {
+        this.router = router;
+        this.location = location;
     }
 }
 
-bootstrap(App,[HTTP_BINDINGS]);
+bootstrap(App,[ROUTER_BINDINGS, bind(LocationStrategy).toClass(HashLocationStrategy), HTTP_BINDINGS]);
