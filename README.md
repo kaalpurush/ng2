@@ -1,4 +1,4 @@
-# Angular 2 $http demo Application
+# Angular 2 demo Application (http, router, form)
 
 ### Installation
 1. Install TypeScript Definition Tool: npm install -g tsd
