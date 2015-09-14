@@ -35,7 +35,7 @@ var About = (function () {
             viewBindings: [angular2_2.FormBuilder]
         }),
         angular2_1.View({
-            templateUrl: 'about.html',
+            templateUrl: './app/about.html',
             directives: [
                 angular2_2.FORM_DIRECTIVES,
             ]

@@ -22,7 +22,7 @@ var Devices = (function () {
             selector: 'devices'
         }),
         angular2_1.View({
-            templateUrl: 'devices.html',
+            templateUrl: './app/devices.html',
             directives: [angular2_1.NgFor]
         }), 
         __metadata('design:paramtypes', [http_1.Http])

@@ -6,7 +6,7 @@ import {Http} from 'angular2/http'
 })
 
 @View({
-    templateUrl: 'devices.html',
+    templateUrl: './app/devices.html',
     directives: [NgFor]
 })
  

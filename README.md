@@ -1,6 +1,6 @@
 # Angular 2 demo Application (http, router, form)
 
-Live Demo: http://kaalpurush.github.io/
+Live Demo: http://kaalpurush.github.io/ng2
 
 ### Installation
 1. Install TypeScript Definition Tool: npm install -g tsd

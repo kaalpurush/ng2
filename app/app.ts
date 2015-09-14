@@ -10,7 +10,7 @@ import {About} from './about';
 })
 
 @View({
-    templateUrl: 'app.html',
+    templateUrl: './app/app.html',
     directives: [RouterLink, RouterOutlet, About]
 })
 

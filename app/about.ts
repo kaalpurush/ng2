@@ -8,7 +8,7 @@ import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/a
 })
 
 @View({
-    templateUrl: 'about.html',
+    templateUrl: './app/about.html',
     directives: [
         FORM_DIRECTIVES, 
     ]

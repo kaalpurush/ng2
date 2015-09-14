@@ -6,9 +6,9 @@
         "target": "es5"
     },
     "files": [
-        "app.ts",
-        "devices.ts",
-        "about.ts",
+        "./app/app.ts",
+        "./app/devices.ts",
+        "./app/about.ts",
         "typings/tsd.d.ts"
     ]
 }

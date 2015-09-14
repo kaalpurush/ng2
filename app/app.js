@@ -27,7 +27,7 @@ var App = (function () {
             selector: 'app'
         }),
         angular2_1.View({
-            templateUrl: 'app.html',
+            templateUrl: './app/app.html',
             directives: [router_2.RouterLink, router_2.RouterOutlet, about_1.About]
         }),
         router_2.RouteConfig([
