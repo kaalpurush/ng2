@@ -19,7 +19,8 @@ var Menu = (function () {
             selector: 'menu'
         }),
         angular2_1.View({
-            template: "\n\t<ul>\n\t\t<li *ng-for=\"#m of menu\">\n\t\t\t{{m}}\n\t\t</li\n\t</ul>\t\n\t",
+            template: "\n\t<ul>\n\t\t<li *ng-for=\"#m of menu\">\n\t\t\t<a href=\"#\">{{m}}</a>\n\t\t</li\n\t</ul>\t\n\t",
+            styles: ["\n    li {\n      padding: 5px;\n\t  float:left;\n\t  list-style:none;\n\t  border:1px dashed;\n    }\n  "],
             directives: [angular2_1.NgFor]
         }), 
         __metadata('design:paramtypes', [])

@@ -8,10 +8,19 @@ import {Component, View, bootstrap, bind, NgFor} from 'angular2/angular2';
     template: `
 	<ul>
 		<li *ng-for="#m of menu">
-			{{m}}
+			<a href="#">{{m}}</a>
 		</li
 	</ul>	
 	`,
+	
+	styles: [`
+    li {
+      padding: 5px;
+	  float:left;
+	  list-style:none;
+	  border:1px dashed;
+    }
+  `],
     directives: [NgFor]
 })
 
