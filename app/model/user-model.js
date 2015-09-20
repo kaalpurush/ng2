@@ -14,11 +14,14 @@ var UserModel = (function () {
     function UserModel() {
         this.name = "Visitor";
     }
-    UserModel.prototype.setAdmin = function () {
+    UserModel.prototype.login = function () {
         this.name = "Admin";
     };
-    UserModel.prototype.getName = function () {
-        return this.name;
+    UserModel.prototype.logout = function () {
+        this.name = "Visitor";
+    };
+    UserModel.prototype.isLogged = function () {
+        return this.name == "Admin";
     };
     UserModel = __decorate([
         angular2_1.Injectable(), 

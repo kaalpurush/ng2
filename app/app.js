@@ -1,4 +1,3 @@
-/// <reference path="../typings/tsd.d.ts" />
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") return Reflect.decorate(decorators, target, key, desc);
     switch (arguments.length) {
@@ -17,7 +16,8 @@ var http_1 = require('angular2/http');
 var devices_1 = require('./devices');
 var about_1 = require('./about');
 var menu_1 = require('./menu');
-var user_1 = require('./user');
+var user_logout_1 = require('./user-logout');
+var user_model_1 = require('./model/user-model');
 var App = (function () {
     function App(router, location) {
         this.router = router;
@@ -31,11 +31,11 @@ var App = (function () {
     App = __decorate([
         angular2_1.Component({
             selector: 'app',
-            bindings: []
+            bindings: [user_model_1.UserModel]
         }),
         angular2_1.View({
             templateUrl: './app/app.html',
-            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.User]
+            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_logout_1.UserLogout]
         }),
         router_2.RouteConfig([
             { path: '/devices', component: devices_1.Devices, as: 'devices' },

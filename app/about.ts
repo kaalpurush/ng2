@@ -2,17 +2,18 @@ import {Component, View, EventEmitter} from 'angular2/angular2';
 import {RouteParams} from 'angular2/router';
 import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/angular2";
 import {UserModel} from "./model/user-model"
-import {User} from "./user";
+import { UserLogin} from "./user-login";
+import {UserLogout} from "./user-logout";
 
 @Component({
     selector: 'about',
-    viewBindings: [FormBuilder, UserModel]
+    viewBindings: [FormBuilder]
 })
 
 @View({
-    templateUrl: './app/about.html',	
+    templateUrl: './app/about.html',
     directives: [
-        FORM_DIRECTIVES, User
+        FORM_DIRECTIVES, UserLogin, UserLogout
     ]
 })
 
@@ -20,14 +21,14 @@ export class About {
     id: string;
     loginForm: ControlGroup;
 	user: UserModel;
-    constructor(params: RouteParams, fb: FormBuilder, user:UserModel) {
-		this.user=user;
+    constructor(params: RouteParams, fb: FormBuilder, user: UserModel) {
+		this.user = user;
         this.id = params.get('id');
         this.loginForm = fb.group({
             email: ['', Validators.compose([Validators.required, this.invalidEmail])],
             password: ['', Validators.required]
         });
-		
+
     }
 
     invalidEmail(control) {
@@ -35,9 +36,10 @@ export class About {
             return { invalidEmail: true };
         }
     }
-	
+
     doLogin(event) {
         console.log(this.loginForm.value);
         event.preventDefault();
+		this.user.login();
     }
 }

@@ -13,7 +13,8 @@ var angular2_1 = require('angular2/angular2');
 var router_1 = require('angular2/router');
 var angular2_2 = require("angular2/angular2");
 var user_model_1 = require("./model/user-model");
-var user_1 = require("./user");
+var user_login_1 = require("./user-login");
+var user_logout_1 = require("./user-logout");
 var About = (function () {
     function About(params, fb, user) {
         this.user = user;
@@ -31,16 +32,17 @@ var About = (function () {
     About.prototype.doLogin = function (event) {
         console.log(this.loginForm.value);
         event.preventDefault();
+        this.user.login();
     };
     About = __decorate([
         angular2_1.Component({
             selector: 'about',
-            viewBindings: [angular2_2.FormBuilder, user_model_1.UserModel]
+            viewBindings: [angular2_2.FormBuilder]
         }),
         angular2_1.View({
             templateUrl: './app/about.html',
             directives: [
-                angular2_2.FORM_DIRECTIVES, user_1.User
+                angular2_2.FORM_DIRECTIVES, user_login_1.UserLogin, user_logout_1.UserLogout
             ]
         }), 
         __metadata('design:paramtypes', [router_1.RouteParams, angular2_2.FormBuilder, user_model_1.UserModel])

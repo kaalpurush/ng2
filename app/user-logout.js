@@ -10,25 +10,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var angular2_1 = require('angular2/angular2');
-var User = (function () {
-    function User() {
-        this.name = "Visitor";
-        this.userChange = new angular2_1.EventEmitter();
+var user_model_1 = require('./model/user-model');
+var UserLogout = (function () {
+    function UserLogout(user) {
+        this.user = user;
     }
-    User.prototype.setAdmin = function () {
-        this.name = "Admin";
-        this.userChange.next({ name: this.name });
-    };
-    User.prototype.getName = function () {
-        return this.name;
-    };
-    User = __decorate([
+    UserLogout = __decorate([
         angular2_1.Component({
-            events: ['userChange']
+            selector: 'user-logout'
         }),
-        angular2_1.Injectable(), 
-        __metadata('design:paramtypes', [])
-    ], User);
-    return User;
+        angular2_1.View({
+            template: "\n\t{{user.name}}\n\t<button [hidden]=\"!user.isLogged()\" (click)=\"user.logout()\">Logout</button>\n\t",
+            directives: [angular2_1.NgFor]
+        }), 
+        __metadata('design:paramtypes', [user_model_1.UserModel])
+    ], UserLogout);
+    return UserLogout;
 })();
-exports.User = User;
+exports.UserLogout = UserLogout;

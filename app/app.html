@@ -5,7 +5,7 @@
                 <ul class="nav navbar-nav">
                     <li><a [router-link]="['/devices']" class="link">Devices</a></li>
                     <li><a [router-link]="['/about',{'id':'Welcome'}]" class="link">About</a></li>
-					<li><a href="#"><user></user></a></li>
+					<li><a href="#"><user-logout></user-logout></a></li>
                 </ul>
             </div>
         </div>
@@ -14,4 +14,4 @@
 
 <router-outlet></router-outlet>
 
-<menu (change)="changeUser($event.name)"></menu>
+<menu></menu>
