@@ -5,10 +5,8 @@
         "module": "commonjs",
         "target": "es5"
     },
-    "files": [
-        "./app/app.ts",
-        "./app/devices.ts",
-        "./app/about.ts",
+    "filesGlob": [
+        "./app/*.ts",
         "typings/tsd.d.ts"
     ]
 }

@@ -1,3 +1,4 @@
+/// <reference path="../typings/tsd.d.ts" />
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") return Reflect.decorate(decorators, target, key, desc);
     switch (arguments.length) {
@@ -15,6 +16,8 @@ var router_2 = require('angular2/router');
 var http_1 = require('angular2/http');
 var devices_1 = require('./devices');
 var about_1 = require('./about');
+var menu_1 = require('./menu');
+var user_1 = require('./user');
 var App = (function () {
     function App(router, location) {
         this.router = router;
@@ -22,13 +25,17 @@ var App = (function () {
         this.router = router;
         this.location = location;
     }
+    App.prototype.onUserChange = function (event) {
+        this.userName = event.name;
+    };
     App = __decorate([
         angular2_1.Component({
-            selector: 'app'
+            selector: 'app',
+            bindings: []
         }),
         angular2_1.View({
             templateUrl: './app/app.html',
-            directives: [router_2.RouterLink, router_2.RouterOutlet, about_1.About]
+            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.User]
         }),
         router_2.RouteConfig([
             { path: '/devices', component: devices_1.Devices, as: 'devices' },

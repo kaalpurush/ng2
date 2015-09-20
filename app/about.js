@@ -12,8 +12,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var angular2_1 = require('angular2/angular2');
 var router_1 = require('angular2/router');
 var angular2_2 = require("angular2/angular2");
+var user_model_1 = require("./model/user-model");
+var user_1 = require("./user");
 var About = (function () {
-    function About(params, fb) {
+    function About(params, fb, user) {
+        this.user = user;
         this.id = params.get('id');
         this.loginForm = fb.group({
             email: ['', angular2_2.Validators.compose([angular2_2.Validators.required, this.invalidEmail])],
@@ -32,15 +35,15 @@ var About = (function () {
     About = __decorate([
         angular2_1.Component({
             selector: 'about',
-            viewBindings: [angular2_2.FormBuilder]
+            viewBindings: [angular2_2.FormBuilder, user_model_1.UserModel]
         }),
         angular2_1.View({
             templateUrl: './app/about.html',
             directives: [
-                angular2_2.FORM_DIRECTIVES,
+                angular2_2.FORM_DIRECTIVES, user_1.User
             ]
         }), 
-        __metadata('design:paramtypes', [router_1.RouteParams, angular2_2.FormBuilder])
+        __metadata('design:paramtypes', [router_1.RouteParams, angular2_2.FormBuilder, user_model_1.UserModel])
     ], About);
     return About;
 })();
