@@ -2,23 +2,13 @@
 	<div class="container">
 		<h3>About</h3>
 		<p>
-			{{id}} <user-login></user-login>! You can login from here!
+			{{id}}
+			<user-login></user-login>! You can login from here!
 		</p>
 
 		<div class="row">
 			<div class="col-sm-5">
-				<form class="form" (submit)="doLogin($event)" [ng-form-model]="loginForm">
-					<div [hidden]="loginForm.valid" class="bg-warning">Form is invalid</div>
-
-					<div class="form-group" [class.has-error]="!loginForm.controls['email'].valid && loginForm.controls['email'].touched">
-						<input class="form-control" [ng-form-control]="loginForm.controls['email']" type="email" placeholder="Your email">
-					</div>
-
-					<div class="form-group" [class.has-error]="!loginForm.controls['password'].valid && loginForm.controls['password'].touched">
-						<input class="form-control" [ng-form-control]="loginForm.controls['password']" type="password" placeholder="Your password">
-					</div>
-					<button class="btn btn-primary" type="submit" [disabled]="!loginForm.valid">Log in</button>
-				</form>
+				<login-form>
 			</div>
 		</div>
 	</div>

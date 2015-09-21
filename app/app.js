@@ -16,7 +16,7 @@ var http_1 = require('angular2/http');
 var devices_1 = require('./devices');
 var about_1 = require('./about');
 var menu_1 = require('./menu');
-var user_logout_1 = require('./user-logout');
+var user_1 = require('./user');
 var user_model_1 = require('./model/user-model');
 var App = (function () {
     function App(router, location) {
@@ -35,7 +35,7 @@ var App = (function () {
         }),
         angular2_1.View({
             templateUrl: './app/app.html',
-            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_logout_1.UserLogout]
+            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout]
         }),
         router_2.RouteConfig([
             { path: '/devices', component: devices_1.Devices, as: 'devices' },
@@ -47,3 +47,4 @@ var App = (function () {
 })();
 exports.App = App;
 angular2_1.bootstrap(App, [router_1.ROUTER_BINDINGS, angular2_1.bind(router_1.LocationStrategy).toClass(router_1.HashLocationStrategy), http_1.HTTP_BINDINGS]);
+//# sourceMappingURL=app.js.map

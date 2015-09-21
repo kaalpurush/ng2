@@ -3,7 +3,8 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "module": "commonjs",
-        "target": "es5"
+        "target": "es5",
+		"sourceMap": true
     },
     "filesGlob": [
         "./app/*.ts",

@@ -5,7 +5,7 @@ import {HTTP_BINDINGS, Http} from 'angular2/http'
 import {Devices} from './devices';
 import {About} from './about';
 import {Menu} from './menu';
-import {UserLogout} from './user-logout';
+import {UserLogout} from './user';
 import {UserModel} from './model/user-model'
 
 @Component({
