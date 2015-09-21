@@ -2,10 +2,10 @@ import {Component, View, bootstrap, bind} from 'angular2/angular2';
 import {ROUTER_BINDINGS, LocationStrategy, HashLocationStrategy} from 'angular2/router';
 import {RouterLink, RouteConfig, Router, RouterOutlet, Location, RouteParams} from 'angular2/router';
 import {HTTP_BINDINGS, Http} from 'angular2/http'
-import {Devices} from './devices';
-import {About} from './about';
-import {Menu} from './menu';
-import {UserLogout} from './user';
+import {Device} from './component/device/device';
+import {About} from './component/about/about';
+import {Menu} from './component/menu/menu';
+import {LoginForm, UserLogout} from './component/user/user';
 import {UserModel} from './model/user-model'
 
 @Component({
@@ -19,7 +19,8 @@ import {UserModel} from './model/user-model'
 })
 
 @RouteConfig([
-    { path: '/devices', component: Devices, as: 'devices' },
+    { path: '/', component: LoginForm, as: 'home' },
+    { path: '/devices', component: Device, as: 'devices' },
     { path: '/about/:id', component: About, as: 'about' }
 ])
 

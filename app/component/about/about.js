@@ -11,8 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var angular2_1 = require('angular2/angular2');
 var router_1 = require('angular2/router');
-var user_model_1 = require("./model/user-model");
-var user_1 = require("./user");
+var user_model_1 = require("../../model/user-model");
+var user_1 = require("../user/user");
 var About = (function () {
     function About(params, user) {
         this.user = user;
@@ -24,7 +24,7 @@ var About = (function () {
             viewBindings: []
         }),
         angular2_1.View({
-            templateUrl: './app/about.html',
+            templateUrl: './app/component/about/about.html',
             directives: [
                 user_1.UserLogin, user_1.UserLogout, user_1.LoginForm
             ]

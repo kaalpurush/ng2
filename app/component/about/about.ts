@@ -1,7 +1,7 @@
 import {Component, View, EventEmitter} from 'angular2/angular2';
 import {RouteParams} from 'angular2/router';
-import {UserModel} from "./model/user-model"
-import {UserLogin, UserLogout, LoginForm} from "./user";
+import {UserModel} from "../../model/user-model"
+import {UserLogin, UserLogout, LoginForm} from "../user/user";
 
 @Component({
     selector: 'about',
@@ -9,7 +9,7 @@ import {UserLogin, UserLogout, LoginForm} from "./user";
 })
 
 @View({
-    templateUrl: './app/about.html',
+    templateUrl: './app/component/about/about.html',
     directives: [
         UserLogin, UserLogout, LoginForm
     ]

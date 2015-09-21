@@ -1,7 +1,7 @@
 import {Component, View, bootstrap, bind, NgFor, EventEmitter} from 'angular2/angular2';
-import {UserModel} from './model/user-model'
+import {UserModel} from '../../model/user-model'
 import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/angular2";
-import {TypeValidators} from './helper/custom_validators';
+import {TypeValidators} from '../../helper/custom_validators';
 
 @Component({
 	selector: 'user-login'
@@ -10,7 +10,7 @@ import {TypeValidators} from './helper/custom_validators';
 @View({
     template: `
 	{{user.name}}
-	<button [hidden]="user.isLogged()" (click)="user.login()">Login</button>
+	<button class="btn-sm btn-primary" [hidden]="user.isLogged()" (click)="user.login()">Login</button>
 	`,
     directives: [NgFor]
 })
@@ -29,7 +29,7 @@ export class UserLogin {
 @View({
     template: `
 	{{user.name}}
-	<button [hidden]="!user.isLogged()" (click)="user.logout()">Logout</button>
+	<button class="btn-sm btn-primary" [hidden]="!user.isLogged()" (click)="user.logout()">Logout</button>
 	`,
     directives: [NgFor]
 })
@@ -47,7 +47,7 @@ export class UserLogout {
 })
 
 @View({
-    templateUrl: './app/login.html',
+    templateUrl: './app/component/user/login.html',
     directives: [NgFor, FORM_DIRECTIVES]
 })
 

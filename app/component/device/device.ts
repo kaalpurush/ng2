@@ -6,14 +6,14 @@ import {Http} from 'angular2/http'
 })
 
 @View({
-    templateUrl: './app/devices.html',
+    templateUrl: './app/component/device/device.html',
     directives: [NgFor]
 })
 
-export class Devices {
+export class Device {
     devices: Array<any>;
     constructor(http: Http) {
         this.devices = [];
-        http.get('./devices.json').toRx().subscribe(res => this.devices = res.json());
+        http.get('./devices.json').toRx().map(res=> res.json()).subscribe(res => this.devices = res);
     }
 }

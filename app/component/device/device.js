@@ -11,23 +11,23 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var angular2_1 = require('angular2/angular2');
 var http_1 = require('angular2/http');
-var Devices = (function () {
-    function Devices(http) {
+var Device = (function () {
+    function Device(http) {
         var _this = this;
         this.devices = [];
-        http.get('./devices.json').toRx().subscribe(function (res) { return _this.devices = res.json(); });
+        http.get('./devices.json').toRx().map(function (res) { return res.json(); }).subscribe(function (res) { return _this.devices = res; });
     }
-    Devices = __decorate([
+    Device = __decorate([
         angular2_1.Component({
             selector: 'devices'
         }),
         angular2_1.View({
-            templateUrl: './app/devices.html',
+            templateUrl: './app/component/device/device.html',
             directives: [angular2_1.NgFor]
         }), 
         __metadata('design:paramtypes', [http_1.Http])
-    ], Devices);
-    return Devices;
+    ], Device);
+    return Device;
 })();
-exports.Devices = Devices;
-//# sourceMappingURL=devices.js.map
+exports.Device = Device;
+//# sourceMappingURL=device.js.map
