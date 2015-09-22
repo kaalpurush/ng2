@@ -1,6 +1,8 @@
+<h3>Demonstrating Form Validation and Model/Service</h3>
+<h4>(login state & username is shared between components)</h4>
 <div class="row">
 	<div class="col-sm-6">
-		<form class="form" (submit)="doLogin($event)" [ng-form-model]="loginForm">
+		<form [hidden]="user.isLogged()" class="form" (submit)="doLogin($event)" [ng-form-model]="loginForm">
 			<div [hidden]="loginForm.valid" class="bg-warning">Form is invalid</div>
 			<div class="form-group" [class.has-error]="!loginForm.controls.email.valid && loginForm.controls.email.touched">
 				<input class="form-control" ng-control="email" type="email" placeholder="Your email">
@@ -10,5 +12,6 @@
 			</div>
 			<button class="btn btn-primary" type="submit" [disabled]="!loginForm.valid">Log in</button>
 		</form>
+		<div [hidden]="!user.isLogged()">You are logged in!</div>
 	</div>
 </div>

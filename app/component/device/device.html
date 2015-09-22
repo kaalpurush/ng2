@@ -1,6 +1,7 @@
 <section class="wrapper">
 	<div class="container">
-		<h3>My Devices:</h3>
+		<h3>Demonstrating http and ViewQuery</h3>
+		<h4>My Devices:</h4>
 
 		<div class="row">
 			<div class="col-sm-5">
@@ -8,6 +9,10 @@
 				<div *ng-for="#device of devices">
 					{{device.name}}
 				</div>
+				
+				<search></search>
+				
+				Query term from the "Search" component (using ViewQuery): {{searchbox1.q}}
 			</div>
 		</div>
 	</div>

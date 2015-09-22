@@ -11,8 +11,7 @@ import {Component, View, bootstrap, bind, NgFor} from 'angular2/angular2';
 			<a href="#">{{m}}</a>
 		</li
 	</ul>	
-	`,
-	
+	`,	
 	styles: [`
     li {
       padding: 5px;
