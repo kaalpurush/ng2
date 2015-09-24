@@ -3,13 +3,21 @@
 Live Demo: http://kaalpurush.github.io/ng2
 
 ### Installation
-1. Install TypeScript Definition Tool: npm install -g tsd
+1. Install TypeScript Definition Tool: 
+	npm install -g tsd
 
-2. Install Angular2 TypeScript Definitions (optional): tsd install
+2. Install Angular2 TypeScript Definitions: 
+	tsd install
 
-3. Install TypeScript Compiler: npm install -g typescript@^1.6.0-beta
+3. Install TypeScript Compiler: 
+	npm install -g ntsc
 
-4. Compile & Watch for changes: tsc -w
+4. Compile & Watch for changes: 
+	ntsc -w
 
-5. Browse index.html (you may want to install and use node http-server)
+5. Install a server & run on the root directory: 
+	npm install -g http-server
+	http-server
+
+6. Browse your server
 

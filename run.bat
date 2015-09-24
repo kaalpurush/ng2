@@ -1,2 +1,2 @@
-start /B tsc -w
+start /B ntsc -w
 http-server
