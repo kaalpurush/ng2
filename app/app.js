@@ -17,7 +17,7 @@ var device_1 = require('./component/device/device');
 var about_1 = require('./component/about/about');
 var menu_1 = require('./component/menu/menu');
 var user_1 = require('./component/user/user');
-var canvas_1 = require('./component/canvas/canvas');
+var game_1 = require('./component/game/game');
 var user_model_1 = require('./model/user-model');
 var App = (function () {
     function App(router, location) {
@@ -36,7 +36,7 @@ var App = (function () {
         }),
         angular2_1.View({
             templateUrl: './app/app.html',
-            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout, canvas_1.Canvas]
+            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout, game_1.Game]
         }),
         router_2.RouteConfig([
             { path: '/', component: user_1.LoginForm, as: 'home' },
