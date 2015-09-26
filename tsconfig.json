@@ -7,7 +7,7 @@
 		"sourceMap": true
     },
     "filesGlob": [
-        "./app/*.ts",
-        "typings/tsd.d.ts"
-    ]
+        "./app/*.ts"  ,
+		"typings/tsd.d.ts"
+	]
 }

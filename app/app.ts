@@ -6,6 +6,7 @@ import {Device} from './component/device/device';
 import {About} from './component/about/about';
 import {Menu} from './component/menu/menu';
 import {LoginForm, UserLogout} from './component/user/user';
+import {Canvas} from './component/canvas/canvas';
 import {UserModel} from './model/user-model'
 
 @Component({
@@ -15,7 +16,7 @@ import {UserModel} from './model/user-model'
 
 @View({
     templateUrl: './app/app.html',
-    directives: [RouterLink, RouterOutlet, Menu, UserLogout]
+    directives: [RouterLink, RouterOutlet, Menu, UserLogout, Canvas]
 })
 
 @RouteConfig([
