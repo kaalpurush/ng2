@@ -4,4 +4,4 @@
 /// <reference path="angular2/angular2.d.ts" />
 /// <reference path="angular2/http.d.ts" />
 /// <reference path="angular2/router.d.ts" />
-/// <reference path="fabricjs/fabricjs.d.ts" />
+/// <reference path="konva/konva.d.ts" />

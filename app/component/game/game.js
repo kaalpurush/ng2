@@ -22,14 +22,14 @@ var Question = (function () {
     Question.prototype.isAnswered = function () {
         return this.answer != null;
     };
-    Question.prototype.getCorrectAnswerViewElement = function () {
+    Question.prototype.getCorrectAnswerView = function () {
         var _this = this;
-        var el;
-        this.viewElements.forEach(function (element) {
-            if (_this.check(element.answer))
-                el = element;
+        var view;
+        this.viewLayer.getChildren().each(function (e) {
+            if (_this.check(e.value))
+                view = e;
         });
-        return el;
+        return view;
     };
     return Question;
 })();
@@ -49,65 +49,75 @@ var Game = (function () {
             'ل', 'م', 'ن‎', 'و‎',
             'ﻫ', 'آ', 'ي'
         ];
+        this.q_array = [
+            { alphabets: ['أ'], options: ['أ', 'آ', 'ل', 'و‎'] },
+            { alphabets: ['ب', 'ت', 'ث'], options: ['ب', 'ت', 'ث'] },
+            { alphabets: ['ج', 'ح', 'خ'], options: ['ج', 'ح', 'خ'] },
+            { alphabets: ['د', 'ذ'], options: ['د', 'ذ', 'ر', 'ز'] },
+            { alphabets: ['ر', 'ز'], options: ['ر', 'ز', 'د', 'ذ'] },
+            { alphabets: ['س', 'ش'], options: ['س', 'ش', 'ع', 'غ‎'] },
+            { alphabets: ['ص', 'ض'], options: ['ص', 'ض', 'ط', 'ظ'] },
+            { alphabets: ['ط', 'ظ'], options: ['ط', 'ظ', 'ص', 'ض'] },
+            { alphabets: ['ع', 'غ‎'], options: ['ع', 'غ‎', 'ص', 'ض'] },
+            { alphabets: ['ف'], options: ['ف', 'ق‎', 'ن‎', 'ب'] },
+            { alphabets: ['ق‎'], options: ['ق‎', 'ف', 'ن‎', 'ب'] },
+            { alphabets: ['ك'], options: ['ك', 'ق‎', 'ل', 'ح'] },
+            { alphabets: ['ل'], options: ['ل', 'ك', 'ق‎', 'م'] },
+            { alphabets: ['م'], options: ['م', 'ل', 'ك', 'ق‎'] },
+            { alphabets: ['ن‎'], options: ['ن‎', 'ب', 'ت', 'ث'] },
+            { alphabets: ['و‎'], options: ['و‎', 'ر', 'ز', 'ﻫ'] },
+            { alphabets: ['ﻫ'], options: ['ﻫ', 'ي', 'و‎', 'ص'] },
+            { alphabets: ['آ'], options: ['آ', 'و‎', 'أ', 'ل'] },
+            { alphabets: ['ي'], options: ['ي', 'و‎', 'ﻫ', 'آ'] }
+        ];
     }
-    Game.prototype.onInit = function () {
-        var _this = this;
-        fabric.Object.prototype.set({
-            hasBorders: false,
-            hasControls: false,
-            hasRotatingPoint: false,
-            hoverCursor: 'pointer',
-            lockMovementX: true,
-            lockMovementY: true
-        });
-        this.canvas = new fabric.Canvas(this.el.nativeElement.childNodes[1], {
-            width: 400, height: 400
-        });
-        this.canvas.on({
-            'object:selected': function (e) {
-                if (!_this.currentQuestion.isAnswered() && e.target.answer) {
-                    var answer = e.target.answer;
-                    var childs = _this.canvas.getActiveObject().getObjects();
-                    if (_this.currentQuestion.check(answer)) {
-                        childs.forEach(function (element) {
-                            element.isType('circle') && element.set({ stroke: "green" });
-                        });
-                    }
-                    else {
-                        childs.forEach(function (element) {
-                            element.isType('circle') && element.set({ stroke: "red" });
-                        });
-                        var correctView = _this.currentQuestion.getCorrectAnswerViewElement();
-                        correctView.getObjects().forEach(function (element) {
-                            element.isType('circle') && element.set({ stroke: "green" });
-                        });
-                    }
-                    _this.canvas.renderAll();
-                    console.log(_this.questions);
-                }
-            }
-        });
-        this.draw();
+    Game.prototype.nextLevel = function () {
+        this.selectLevel(++this.level);
+    };
+    Game.prototype.selectLevel = function (level) {
+        this.level = level;
+        this.q = this.q_array[this.level - 1];
         this.nextQuestion();
     };
+    Game.prototype.onInit = function () {
+        ion.sound({
+            sounds: [
+                {
+                    name: "pass"
+                },
+                {
+                    name: "fail",
+                }
+            ],
+            volume: 1,
+            path: "sounds/",
+            preload: true
+        });
+        this.stage = new Konva.Stage({
+            container: this.el.nativeElement.childNodes[3],
+            width: 400,
+            height: 400
+        });
+        //this.draw();
+        this.selectLevel(this.level);
+    };
     Game.prototype.generateQuestion = function () {
+        var q_s = this.shuffle(this.q.alphabets)[0];
         var question = new Question;
-        question.choices = ['1', '2', '3', '4', '5', '6'];
-        question.correctAnswer = '3';
+        question.choices = this.q.options;
+        question.correctAnswer = q_s;
         return question;
     };
     Game.prototype.clearQuestion = function () {
-        var _this = this;
-        this.currentQuestion.viewElements.forEach(function (element) {
-            element.animate({
-                opacity: 0
-            }, {
-                duration: 500,
-                onChange: _this.canvas.renderAll.bind(_this.canvas),
-                onComplete: function () { return _this.canvas.remove(element); }
-            });
-        });
-        this.canvas.renderAll();
+        var layer = this.currentQuestion.viewLayer;
+        new Konva.Tween({
+            node: layer,
+            duration: .8,
+            opacity: 0,
+            onFinish: function () {
+                layer.remove();
+            }
+        }).play();
     };
     Game.prototype.nextQuestion = function () {
         if (this.currentQuestion)
@@ -135,24 +145,48 @@ var Game = (function () {
         var _this = this;
         var viewElements = [];
         var choices = this.shuffle(question.choices);
-        choices.forEach(function (choice, index) {
-            var circle = new fabric.Circle({ radius: 30, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
-            var text = new fabric.Text(choice, {
-                fontFamily: 'Helvetica',
-                fontSize: 20,
-                fill: 'black',
-                left: 25,
-                top: 25
-            });
-            var choiceView = new fabric.Group([circle, text], {
-                top: Math.floor(index / (choices.length / 2)) * 100 + Math.random() * 50,
-                left: index % (choices.length / 2) * 100 + Math.random() * 50,
-            });
-            choiceView.answer = choice;
-            _this.canvas.add(choiceView);
-            viewElements.push(choiceView);
+        var layer = new Konva.Layer({
+            offsetX: -100,
+            offsetY: -100
         });
-        question.viewElements = viewElements;
+        choices.forEach(function (choice, index) {
+            var circle = new Konva.Circle({ radius: 40, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
+            var text = new Konva.Text({ text: choice, fill: 'black', fontSize: 28, align: 'center' });
+            var group = new Konva.Group({
+                x: index % (choices.length / 2) * 150 + Math.random() * 50,
+                y: Math.floor(index / (choices.length / 2)) * 150 + Math.random() * 50,
+            });
+            group.add(circle);
+            group.add(text);
+            group.value = choice;
+            group.on('mouseover', function () {
+                document.body.style.cursor = 'pointer';
+            });
+            group.on('mouseout', function () {
+                document.body.style.cursor = 'default';
+            });
+            layer.on('click', function (e) {
+                if (_this.currentQuestion.isAnswered())
+                    return;
+                var elem = e.target.getParent();
+                var answer = elem.value;
+                var result = _this.currentQuestion.check(answer);
+                if (result) {
+                    elem.find('Circle')[0].stroke('green');
+                    ion.sound.play("pass");
+                }
+                else {
+                    elem.find('Circle')[0].stroke('red');
+                    _this.currentQuestion.getCorrectAnswerView().find('Circle')[0].stroke('green');
+                    ion.sound.play("fail");
+                }
+                layer.draw();
+                console.log(_this.questions);
+            });
+            layer.add(group);
+            _this.stage.add(layer);
+        });
+        question.viewLayer = layer;
     };
     Game.prototype.draw = function () {
     };
@@ -162,7 +196,7 @@ var Game = (function () {
             properties: ['level'],
         }),
         angular2_1.View({
-            template: "<button class=\"btn\" (click)=\"nextQuestion()\">Next</button><canvas></canvas>",
+            template: "<span>Level: {{level}} Find: {{currentQuestion.correctAnswer}} </span><button class=\"btn\" (click)=\"nextQuestion()\">Next Question</button><button class=\"btn\" (click)=\"nextLevel()\">Next Level</button><div></div>",
             directives: []
         }), 
         __metadata('design:paramtypes', [angular2_1.ElementRef])
