@@ -5,6 +5,7 @@
 				<li><a [router-link]="['/home']" class="link">Home</a></li>
 				<li><a [router-link]="['/devices']" class="link">Devices</a></li>
 				<li><a [router-link]="['/about',{'id':'Welcome'}]" class="link">About</a></li>
+				<li><a [router-link]="['/game']" class="link">Game</a></li>
 			</ul>
 			<div class="navbar-right">
 				<user-logout></user-logout>
@@ -18,14 +19,6 @@
 		<div class="row">
 			<div class="col-sm-12">
 				<router-outlet></router-outlet>
-			</div>
-		</div>
-	</div>
-	<div class="container">
-		<div class="row">
-			<div class="col-sm-12">
-				<h4>Game</h4>
-				<game level="1"></game>
 			</div>
 		</div>
 	</div>

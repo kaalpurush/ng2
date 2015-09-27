@@ -23,13 +23,7 @@ var Question = (function () {
         return this.answer != null;
     };
     Question.prototype.getCorrectAnswerView = function () {
-        var _this = this;
-        var view;
-        this.viewLayer.getChildren().each(function (e) {
-            if (_this.check(e.value))
-                view = e;
-        });
-        return view;
+        return this.correctView;
     };
     return Question;
 })();
@@ -99,7 +93,7 @@ var Game = (function () {
             height: 400
         });
         //this.draw();
-        this.selectLevel(this.level);
+        this.selectLevel(1);
     };
     Game.prototype.generateQuestion = function () {
         var q_s = this.shuffle(this.q.alphabets)[0];
@@ -109,7 +103,7 @@ var Game = (function () {
         return question;
     };
     Game.prototype.clearQuestion = function () {
-        var layer = this.currentQuestion.viewLayer;
+        var layer = this.currentQuestion.getCorrectAnswerView().getParent();
         new Konva.Tween({
             node: layer,
             duration: .8,
@@ -159,13 +153,15 @@ var Game = (function () {
             group.add(circle);
             group.add(text);
             group.value = choice;
+            if (question.correctAnswer == choice)
+                question.correctView = group;
             group.on('mouseover', function () {
                 document.body.style.cursor = 'pointer';
             });
             group.on('mouseout', function () {
                 document.body.style.cursor = 'default';
             });
-            layer.on('click', function (e) {
+            layer.on('click tap', function (e) {
                 if (_this.currentQuestion.isAnswered())
                     return;
                 var elem = e.target.getParent();
@@ -186,7 +182,6 @@ var Game = (function () {
             layer.add(group);
             _this.stage.add(layer);
         });
-        question.viewLayer = layer;
     };
     Game.prototype.draw = function () {
     };
@@ -196,7 +191,7 @@ var Game = (function () {
             properties: ['level'],
         }),
         angular2_1.View({
-            template: "<span>Level: {{level}} Find: {{currentQuestion.correctAnswer}} </span><button class=\"btn\" (click)=\"nextQuestion()\">Next Question</button><button class=\"btn\" (click)=\"nextLevel()\">Next Level</button><div></div>",
+            template: "<div>Level: {{level}}<br /> Find this character: <h3>{{currentQuestion.correctAnswer}}</h3></div><button class=\"btn\" (click)=\"nextQuestion()\">Next Question</button><button class=\"btn\" (click)=\"nextLevel()\">Next Level</button><div></div>",
             directives: []
         }), 
         __metadata('design:paramtypes', [angular2_1.ElementRef])

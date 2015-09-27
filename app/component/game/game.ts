@@ -6,7 +6,7 @@ class Question {
 	answer: string = null;
 	correct: boolean;
 	pointAllocated: number = 1;
-	viewLayer: Konva.Layer;
+	correctView: Konva.Group;
 
 	check(answer) {
 		this.answer = answer;
@@ -18,12 +18,7 @@ class Question {
 	}
 
 	getCorrectAnswerView(): Konva.Group {
-		let view;
-		this.viewLayer.getChildren().each(e=> {
-			if (this.check(e.value))
-				view = e;
-		});
-		return view;
+		return this.correctView;
 	}
 }
 
@@ -33,7 +28,7 @@ class Question {
 })
 
 @View({
-	template: `<span>Level: {{level}} Find: {{currentQuestion.correctAnswer}} </span><button class="btn" (click)="nextQuestion()">Next Question</button><button class="btn" (click)="nextLevel()">Next Level</button><div></div>`,
+	template: `<div>Level: {{level}}<br /> Find this character: <h3>{{currentQuestion.correctAnswer}}</h3></div><button class="btn" (click)="nextQuestion()">Next Question</button><button class="btn" (click)="nextLevel()">Next Level</button><div></div>`,
     directives: []
 })
 
@@ -110,8 +105,10 @@ export class Game {
 			width: 400,
 			height: 400
 		});
+		
+		
 		//this.draw();
-		this.selectLevel(this.level);
+		this.selectLevel(1);
 		
 	}
 
@@ -122,11 +119,9 @@ export class Game {
 		question.correctAnswer = q_s;
 		return question;
 	}
-	
-	sle
 
 	clearQuestion() {
-		let layer = this.currentQuestion.viewLayer;
+		let layer = this.currentQuestion.getCorrectAnswerView().getParent();
 		new Konva.Tween({
 			node: layer,
 			duration: .8,
@@ -186,6 +181,9 @@ export class Game {
 			group.add(circle)
 			group.add(text);
 			group.value = choice;
+			
+			if(question.correctAnswer==choice)
+				question.correctView = group;
 
 			group.on('mouseover', function() {
 				document.body.style.cursor = 'pointer';
@@ -195,7 +193,7 @@ export class Game {
 				document.body.style.cursor = 'default';
 			});
 
-			layer.on('click', (e) => {
+			layer.on('click tap', (e) => {
 				if (this.currentQuestion.isAnswered()) return;
 				let elem: Konva.Group = e.target.getParent();
 				let answer = elem.value;
@@ -216,9 +214,7 @@ export class Game {
 			layer.add(group);
 			this.stage.add(layer);
 		});
-
-		question.viewLayer = layer;
-
+		
 	}
 
 	draw() {

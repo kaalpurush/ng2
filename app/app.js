@@ -36,12 +36,13 @@ var App = (function () {
         }),
         angular2_1.View({
             templateUrl: './app/app.html',
-            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout, game_1.Game]
+            directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout]
         }),
         router_2.RouteConfig([
             { path: '/', component: user_1.LoginForm, as: 'home' },
             { path: '/devices', component: device_1.Device, as: 'devices' },
-            { path: '/about/:id', component: about_1.About, as: 'about' }
+            { path: '/about/:id', component: about_1.About, as: 'about' },
+            { path: '/game', component: game_1.Game, as: 'game' }
         ]), 
         __metadata('design:paramtypes', [router_2.Router, router_2.Location])
     ], App);

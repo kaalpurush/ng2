@@ -16,13 +16,14 @@ import {UserModel} from './model/user-model'
 
 @View({
     templateUrl: './app/app.html',
-    directives: [RouterLink, RouterOutlet, Menu, UserLogout, Game]
+    directives: [RouterLink, RouterOutlet, Menu, UserLogout]
 })
 
 @RouteConfig([
     { path: '/', component: LoginForm, as: 'home' },
     { path: '/devices', component: Device, as: 'devices' },
-    { path: '/about/:id', component: About, as: 'about' }
+    { path: '/about/:id', component: About, as: 'about' },
+    { path: '/game', component: Game, as: 'game' }
 ])
 
 export class App {
