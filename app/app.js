@@ -18,6 +18,7 @@ var about_1 = require('./component/about/about');
 var menu_1 = require('./component/menu/menu');
 var user_1 = require('./component/user/user');
 var game_1 = require('./component/game/game');
+var game2_1 = require('./component/game/game2');
 var user_model_1 = require('./model/user-model');
 var App = (function () {
     function App(router, location) {
@@ -42,7 +43,8 @@ var App = (function () {
             { path: '/', component: user_1.LoginForm, as: 'home' },
             { path: '/devices', component: device_1.Device, as: 'devices' },
             { path: '/about/:id', component: about_1.About, as: 'about' },
-            { path: '/game', component: game_1.Game, as: 'game' }
+            { path: '/game', component: game_1.Game, as: 'game' },
+            { path: '/game2', component: game2_1.Game, as: 'game2' }
         ]), 
         __metadata('design:paramtypes', [router_2.Router, router_2.Location])
     ], App);

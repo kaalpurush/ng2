@@ -6,7 +6,8 @@ import {Device} from './component/device/device';
 import {About} from './component/about/about';
 import {Menu} from './component/menu/menu';
 import {LoginForm, UserLogout} from './component/user/user';
-import {Game} from './component/game/game';
+import {Game as Game} from './component/game/game';
+import {Game as Game2} from './component/game/game2';
 import {UserModel} from './model/user-model'
 
 @Component({
@@ -24,6 +25,7 @@ import {UserModel} from './model/user-model'
     { path: '/devices', component: Device, as: 'devices' },
     { path: '/about/:id', component: About, as: 'about' },
     { path: '/game', component: Game, as: 'game' }
+    { path: '/game2', component: Game2, as: 'game2' }
 ])
 
 export class App {

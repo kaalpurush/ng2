@@ -27,6 +27,7 @@ var Question = (function () {
     };
     return Question;
 })();
+exports.Question = Question;
 var Game = (function () {
     function Game(el) {
         this.el = el;
@@ -66,9 +67,11 @@ var Game = (function () {
         ];
     }
     Game.prototype.nextLevel = function () {
-        this.selectLevel(++this.level);
+        this.selectLevel(this.level + 1);
     };
     Game.prototype.selectLevel = function (level) {
+        if (level > this.q_array.length)
+            return alert("No more levels!");
         this.level = level;
         this.q = this.q_array[this.level - 1];
         this.nextQuestion();
@@ -96,7 +99,7 @@ var Game = (function () {
         this.selectLevel(1);
     };
     Game.prototype.generateQuestion = function () {
-        var q_s = this.shuffle(this.q.alphabets)[0];
+        var q_s = this.random(this.q.alphabets);
         var question = new Question;
         question.choices = this.q.options;
         question.correctAnswer = q_s;
@@ -134,6 +137,9 @@ var Game = (function () {
             array[index] = temp;
         }
         return array;
+    };
+    Game.prototype.random = function (array) {
+        return array[Math.floor(Math.random() * array.length)];
     };
     Game.prototype.renderQuestion = function (question) {
         var _this = this;

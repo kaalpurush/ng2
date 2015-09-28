@@ -1,6 +1,6 @@
 import {Component, View, ElementRef, FORM_DIRECTIVES} from 'angular2/angular2';
 
-class Question {
+export class Question {
 	choices: Array<string>;
 	correctAnswer: string;
 	answer: string = null;
@@ -72,15 +72,17 @@ export class Game {
 	
 	q:any;	
 
-    constructor(private el: ElementRef) {
+    constructor(public el: ElementRef) {
 		
     }
 	
 	nextLevel(){
-		this.selectLevel(++this.level);
+		this.selectLevel(this.level+1);
 	}
 	
 	selectLevel(level){
+		if(level>this.q_array.length)
+			return alert("No more levels!")
 		this.level=level;
 		this.q =this.q_array[this.level-1];		
 		this.nextQuestion();
@@ -113,7 +115,7 @@ export class Game {
 	}
 
 	generateQuestion(): Question {
-		let q_s=this.shuffle(this.q.alphabets)[0];
+		let q_s=this.random(this.q.alphabets);
 		let question = new Question;
 		question.choices = this.q.options;
 		question.correctAnswer = q_s;
@@ -158,6 +160,10 @@ export class Game {
 		}
 
 		return array;
+	}
+
+	random(array) {
+		return array[Math.floor(Math.random() * array.length)]
 	}
 
 	renderQuestion(question: Question) {
