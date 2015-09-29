@@ -101,7 +101,7 @@ var GameCanvas = (function () {
         }).play();
     };
     GameCanvas.prototype.nextQuestion = function () {
-        if (this.gameInfo.current >= this.gameInfo.totalQuestion)
+        if (this.gameInfo.isGameOver())
             return alert("No more questions on this level!");
         if (this.gameInfo.currentQuestion)
             this.clearQuestion();
@@ -170,10 +170,15 @@ var GameCanvas = (function () {
                 }
                 layer.draw();
                 console.log(_this.gameInfo.questions);
+                if (_this.gameInfo.isGameOver())
+                    _this.showResult();
             });
             layer.add(group);
             _this.stage.add(layer);
         });
+    };
+    GameCanvas.prototype.showResult = function () {
+        //alert('Game Over!');
     };
     GameCanvas.prototype.draw = function () {
     };

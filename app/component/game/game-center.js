@@ -14,7 +14,6 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 var angular2_1 = require('angular2/angular2');
 var game_canvas_1 = require('./game-canvas');
-var game_canvas2_1 = require('./game-canvas2');
 var game_info_1 = require('./game-info');
 var game_score_1 = require('./game-score');
 var GameCenter = (function () {
@@ -41,7 +40,7 @@ var GameCenter = (function () {
         }),
         angular2_1.View({
             templateUrl: './app/component/game/game-center.html',
-            directives: [angular2_1.bind(game_canvas_1.GameCanvas).toClass(game_canvas2_1.GameCanvas2), game_info_1.GameInfo, game_score_1.GameScore]
+            directives: [angular2_1.bind(game_canvas_1.GameCanvas).toClass(game_canvas_1.GameCanvas), game_info_1.GameInfo, game_score_1.GameScore]
         }),
         __param(1, angular2_1.ViewQuery(game_canvas_1.GameCanvas)), 
         __metadata('design:paramtypes', [game_info_1.GameInfo, angular2_1.QueryList])

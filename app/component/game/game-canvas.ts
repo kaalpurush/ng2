@@ -113,7 +113,7 @@ export class GameCanvas {
 	}
 
 	nextQuestion() {
-		if (this.gameInfo.current >= this.gameInfo.totalQuestion)
+		if (this.gameInfo.isGameOver())
 			return alert("No more questions on this level!");
 		if (this.gameInfo.currentQuestion)
 			this.clearQuestion();
@@ -193,14 +193,21 @@ export class GameCanvas {
 					this.gameInfo.currentQuestion.getCorrectAnswerView().find('Circle')[0].stroke('green');
 					ion.sound.play("fail");
 				}
-				layer.draw()
+				layer.draw();
 				console.log(this.gameInfo.questions);
+				
+				if(this.gameInfo.isGameOver())
+					this.showResult();
 			});
 
 			layer.add(group);
 			this.stage.add(layer);
 		});
 
+	}
+	
+	showResult(){
+		//alert('Game Over!');
 	}
 
 	draw() {

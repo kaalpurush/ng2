@@ -11,7 +11,7 @@ import {GameScore} from './game-score';
 
 @View({
 	templateUrl: './app/component/game/game-center.html',
-    directives: [bind(GameCanvas).toClass(GameCanvas2), GameInfo, GameScore]
+    directives: [bind(GameCanvas).toClass(GameCanvas), GameInfo, GameScore]
 })
 
 export class GameCenter {

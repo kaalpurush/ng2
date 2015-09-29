@@ -12,18 +12,37 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var angular2_1 = require('angular2/angular2');
 var GameInfo = (function () {
     function GameInfo() {
+        this.totalQuestion = null;
+        this.correctInARow = null;
         this.current = 0;
         this.questions = [];
         this.currentQuestion = null;
+        this.gameOver = false;
     }
     GameInfo.prototype.setTotalQuestion = function (totalQuestion) {
         this.totalQuestion = totalQuestion;
         this.totalQuestionArray = new Array(totalQuestion);
     };
+    GameInfo.prototype.setCorrectInARow = function (correctInARow) {
+        this.correctInARow = correctInARow;
+    };
     GameInfo.prototype.addQuestion = function (question) {
         this.currentQuestion = question;
         this.questions.push(question);
         this.current++;
+    };
+    GameInfo.prototype.isGameOver = function () {
+        if (this.totalQuestion != null) {
+            return this.current >= this.totalQuestion;
+        }
+        else if (this.correctInARow != null) {
+            if (this.correctInARow > this.questions.length)
+                return false;
+            for (var i = 1; i <= this.correctInARow; i++)
+                if (this.questions[this.questions.length - i].correct == false)
+                    return false;
+        }
+        return true;
     };
     GameInfo = __decorate([
         angular2_1.Component({
