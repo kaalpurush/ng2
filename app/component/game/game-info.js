@@ -16,6 +16,10 @@ var GameInfo = (function () {
         this.questions = [];
         this.currentQuestion = null;
     }
+    GameInfo.prototype.setTotalQuestion = function (totalQuestion) {
+        this.totalQuestion = totalQuestion;
+        this.totalQuestionArray = new Array(totalQuestion);
+    };
     GameInfo.prototype.addQuestion = function (question) {
         this.currentQuestion = question;
         this.questions.push(question);

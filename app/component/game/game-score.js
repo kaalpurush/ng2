@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var angular2_1 = require('angular2/angular2');
 var game_info_1 = require('./game-info');
+var progressbar_1 = require('../vendor/progressbar/progressbar');
 var GameScore = (function () {
     function GameScore(gameInfo) {
         this.gameInfo = gameInfo;
@@ -21,7 +22,7 @@ var GameScore = (function () {
         }),
         angular2_1.View({
             templateUrl: './app/component/game/game-score.html',
-            directives: [],
+            directives: [progressbar_1.Progressbar, angular2_1.NgFor],
         }),
         angular2_1.Injectable(), 
         __metadata('design:paramtypes', [game_info_1.GameInfo])

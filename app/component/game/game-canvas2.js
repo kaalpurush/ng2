@@ -23,7 +23,7 @@ var GameCanvas2 = (function (_super) {
             offsetY: -20
         });
         choices.forEach(function (choice, index) {
-            var circle = new Konva.Rect({ width: _this.stage.width() - 40, height: _this.stage.height() / 8, cornerRadius: 40, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
+            var circle = new Konva.Rect({ width: _this.stage.width() - 40, height: _this.stage.height() / 8, cornerRadius: 20, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
             var text = new Konva.Text({ width: circle.width(), height: circle.height(), y: circle.y() + circle.height() / 2.8, text: choice, fill: 'black', fontSize: 28, align: 'center' });
             var group = new Konva.Group({
                 x: 0,

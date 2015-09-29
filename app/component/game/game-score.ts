@@ -1,5 +1,6 @@
-import {Component, View, Injectable} from 'angular2/angular2';
+import {Component, View, Injectable, NgFor} from 'angular2/angular2';
 import {GameInfo} from './game-info';
+import {Progressbar} from '../vendor/progressbar/progressbar';
 
 @Component({
 	selector: 'game-score'
@@ -7,7 +8,7 @@ import {GameInfo} from './game-info';
 
 @View({
 	templateUrl: './app/component/game/game-score.html',
-    directives: [],
+    directives: [Progressbar, NgFor],
 })
 
 @Injectable()

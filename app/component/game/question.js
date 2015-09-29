@@ -1,6 +1,7 @@
 var Question = (function () {
     function Question() {
         this.answer = null;
+        this.correct = null;
         this.pointAllocated = 1;
     }
     Question.prototype.check = function (answer) {

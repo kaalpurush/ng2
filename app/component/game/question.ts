@@ -2,7 +2,7 @@ export class Question {
 	choices: Array<string>;
 	correctAnswer: string;
 	answer: string = null;
-	correct: boolean;
+	correct: boolean = null;
 	pointAllocated: number = 1;
 	correctView: any;
 

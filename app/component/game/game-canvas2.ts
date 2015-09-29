@@ -22,7 +22,7 @@ export class GameCanvas2 extends GameCanvas {
 		});
 
 		choices.forEach((choice, index) => {
-			let circle = new Konva.Rect({ width: this.stage.width() - 40, height: this.stage.height() / 8, cornerRadius: 40, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
+			let circle = new Konva.Rect({ width: this.stage.width() - 40, height: this.stage.height() / 8, cornerRadius: 20, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
 
 			let text = new Konva.Text({ width: circle.width(), height: circle.height(), y: circle.y() + circle.height()/2.8, text: choice, fill: 'black', fontSize: 28, align: 'center' });
 

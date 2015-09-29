@@ -1,3 +1,6 @@
 <p>Start: {{gameInfo.startedAt}}</p>
 <p>Total: {{gameInfo.totalQuestion}}</p>
 <p>Current: {{gameInfo.current}}</p>
+<p><button disabled *ng-for="#i of gameInfo.totalQuestionArray" class="btn-info btn-xs"><i class="fa fa-plus">▲</i> </button></p>
+<p><button [class.btn-success]="q.correct" [class.btn-danger]="!q.correct" disabled *ng-for="#q of gameInfo.questions" [hidden]="q.correct==null" class="btn-xs"><i class="fa fa-plus">{{q.correct?'▲':'▼'}}</i> </button></p>
+<progressbar [value]="gameInfo.current/gameInfo.totalQuestion*100"></progressbar>

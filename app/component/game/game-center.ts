@@ -11,7 +11,7 @@ import {GameScore} from './game-score';
 
 @View({
 	templateUrl: './app/component/game/game-center.html',
-    directives: [bind(GameCanvas).toClass(GameCanvas), GameInfo, GameScore]
+    directives: [bind(GameCanvas).toClass(GameCanvas2), GameInfo, GameScore]
 })
 
 export class GameCenter {
@@ -26,7 +26,7 @@ export class GameCenter {
 	onInit() {
 		this.gameCanvas = this.searchComponents.first;
 		this.gameInfo.startedAt = new Date();
-		this.gameInfo.totalQuestion=5;
+		this.gameInfo.setTotalQuestion(5);		
 	}
 
 	nextQuestion() {

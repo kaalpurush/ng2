@@ -14,13 +14,19 @@ import {Question} from  './question'
 export class GameInfo {
 	level: number;
 	totalQuestion: number;
+	totalQuestionArray: Array<any>;
 	current: number = 0;
 	questions: Array<Question> = [];
 	currentQuestion: Question = null;
 	startedAt: Date;
 
 	constructor() {
-
+		
+	}
+	
+	setTotalQuestion(totalQuestion:number){
+		this.totalQuestion=totalQuestion;
+		this.totalQuestionArray=new Array(totalQuestion);
 	}
 	
 	addQuestion(question: Question){
