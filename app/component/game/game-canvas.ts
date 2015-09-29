@@ -1,42 +1,18 @@
-import {Component, View, ElementRef, FORM_DIRECTIVES} from 'angular2/angular2';
-
-export class Question {
-	choices: Array<string>;
-	correctAnswer: string;
-	answer: string = null;
-	correct: boolean;
-	pointAllocated: number = 1;
-	correctView: Konva.Group;
-
-	check(answer) {
-		this.answer = answer;
-		return this.correct = (this.correctAnswer == this.answer);
-	}
-
-	isAnswered() {
-		return this.answer != null;
-	}
-
-	getCorrectAnswerView(): Konva.Group {
-		return this.correctView;
-	}
-}
+import {Component, View, ElementRef, FORM_DIRECTIVES, NgIf} from 'angular2/angular2';
+import {Question} from  './question'
+import {GameInfo} from './game-info';
 
 @Component({
-	selector: 'game',
-	properties: ['level'],
+	selector: 'game-canvas',
+	properties: ['nextlevel', 'nextquestion']
 })
 
 @View({
-	template: `<div>Level: {{level}}<br /> Find this character: <h3>{{currentQuestion.correctAnswer}}</h3></div><button class="btn" (click)="nextQuestion()">Next Question</button><button class="btn" (click)="nextLevel()">Next Level</button><div></div>`,
-    directives: []
+	template: `<div (nextlevel)="nextLevel($event)" (nextquestion)="nextQuestion($event)">Find this character: <h3 *ng-if="gameInfo.currentQuestion">{{gameInfo.currentQuestion.correctAnswer}}</h3></div><div></div>`,
+    directives: [NgIf],
 })
 
-export class Game {
-	level: number;
-	totalQuestion: number = 5;
-	questions: Array<Question> = [];
-	currentQuestion: Question = null;
+export class GameCanvas {
 	stage: Konva.Stage;
 	alphabets = [
 		'أ', 'ب',
@@ -69,22 +45,24 @@ export class Game {
 		{ alphabets: ['آ'], options: ['آ', 'و‎', 'أ', 'ل'] },
 		{ alphabets: ['ي'], options: ['ي', 'و‎', 'ﻫ', 'آ'] }
 	]
-	
-	q:any;	
 
-    constructor(public el: ElementRef) {
-		
+	q: any;
+
+    constructor(public el: ElementRef, public gameInfo: GameInfo) {
+
     }
-	
-	nextLevel(){
-		this.selectLevel(this.level+1);
+
+	nextLevel() {
+		this.selectLevel(this.gameInfo.level + 1);
 	}
-	
-	selectLevel(level){
-		if(level>this.q_array.length)
-			return alert("No more levels!")
-		this.level=level;
-		this.q =this.q_array[this.level-1];		
+
+	selectLevel(level) {
+		if (level > this.q_array.length)
+			return alert("No more levels!");
+		this.gameInfo.level = level;
+		this.gameInfo.questions = [];
+		this.gameInfo.current = 0;
+		this.q = this.q_array[this.gameInfo.level - 1];
 		this.nextQuestion();
 	}
 
@@ -103,7 +81,7 @@ export class Game {
 			preload: true
 		});
 		this.stage = new Konva.Stage({
-			container: this.el.nativeElement.childNodes[3],
+			container: this.el.nativeElement.childNodes[1],
 			width: 400,
 			height: 400
 		});
@@ -111,11 +89,11 @@ export class Game {
 		
 		//this.draw();
 		this.selectLevel(1);
-		
+
 	}
 
 	generateQuestion(): Question {
-		let q_s=this.random(this.q.alphabets);
+		let q_s = this.random(this.q.alphabets);
 		let question = new Question;
 		question.choices = this.q.options;
 		question.correctAnswer = q_s;
@@ -123,7 +101,7 @@ export class Game {
 	}
 
 	clearQuestion() {
-		let layer = this.currentQuestion.getCorrectAnswerView().getParent();
+		let layer = this.gameInfo.currentQuestion.getCorrectAnswerView().getParent();
 		new Konva.Tween({
 			node: layer,
 			duration: .8,
@@ -135,11 +113,12 @@ export class Game {
 	}
 
 	nextQuestion() {
-		if (this.currentQuestion)
+		if (this.gameInfo.current >= this.gameInfo.totalQuestion)
+			return alert("No more questions on this level!");
+		if (this.gameInfo.currentQuestion)
 			this.clearQuestion();
-		this.currentQuestion = this.generateQuestion();
-		this.questions.push(this.currentQuestion);
-		this.renderQuestion(this.currentQuestion);
+		this.gameInfo.addQuestion(this.generateQuestion());
+		this.renderQuestion();
 	}
 
 	shuffle(array) {
@@ -166,7 +145,8 @@ export class Game {
 		return array[Math.floor(Math.random() * array.length)]
 	}
 
-	renderQuestion(question: Question) {
+	renderQuestion() {
+		let question = this.gameInfo.currentQuestion
 		let viewElements = [];
 		let choices = this.shuffle(question.choices);
 
@@ -187,8 +167,8 @@ export class Game {
 			group.add(circle)
 			group.add(text);
 			group.value = choice;
-			
-			if(question.correctAnswer==choice)
+
+			if (question.correctAnswer == choice)
 				question.correctView = group;
 
 			group.on('mouseover', function() {
@@ -200,27 +180,27 @@ export class Game {
 			});
 
 			layer.on('click tap', (e) => {
-				if (this.currentQuestion.isAnswered()) return;
+				if (this.gameInfo.currentQuestion.isAnswered()) return;
 				let elem: Konva.Group = e.target.getParent();
 				let answer = elem.value;
-				let result = this.currentQuestion.check(answer);
+				let result = this.gameInfo.currentQuestion.check(answer);
 				if (result) {
 					elem.find('Circle')[0].stroke('green');
 					ion.sound.play("pass");
 				}
 				else {
 					elem.find('Circle')[0].stroke('red');
-					this.currentQuestion.getCorrectAnswerView().find('Circle')[0].stroke('green');
+					this.gameInfo.currentQuestion.getCorrectAnswerView().find('Circle')[0].stroke('green');
 					ion.sound.play("fail");
 				}
 				layer.draw()
-				console.log(this.questions);
+				console.log(this.gameInfo.questions);
 			});
 
 			layer.add(group);
 			this.stage.add(layer);
 		});
-		
+
 	}
 
 	draw() {

@@ -10,30 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var angular2_1 = require('angular2/angular2');
-var Question = (function () {
-    function Question() {
-        this.answer = null;
-        this.pointAllocated = 1;
-    }
-    Question.prototype.check = function (answer) {
-        this.answer = answer;
-        return this.correct = (this.correctAnswer == this.answer);
-    };
-    Question.prototype.isAnswered = function () {
-        return this.answer != null;
-    };
-    Question.prototype.getCorrectAnswerView = function () {
-        return this.correctView;
-    };
-    return Question;
-})();
-exports.Question = Question;
-var Game = (function () {
-    function Game(el) {
+var question_1 = require('./question');
+var game_info_1 = require('./game-info');
+var GameCanvas = (function () {
+    function GameCanvas(el, gameInfo) {
         this.el = el;
-        this.totalQuestion = 5;
-        this.questions = [];
-        this.currentQuestion = null;
+        this.gameInfo = gameInfo;
         this.alphabets = [
             'أ', 'ب',
             'ت', 'ث', 'ج', 'ح',
@@ -66,17 +48,19 @@ var Game = (function () {
             { alphabets: ['ي'], options: ['ي', 'و‎', 'ﻫ', 'آ'] }
         ];
     }
-    Game.prototype.nextLevel = function () {
-        this.selectLevel(this.level + 1);
+    GameCanvas.prototype.nextLevel = function () {
+        this.selectLevel(this.gameInfo.level + 1);
     };
-    Game.prototype.selectLevel = function (level) {
+    GameCanvas.prototype.selectLevel = function (level) {
         if (level > this.q_array.length)
             return alert("No more levels!");
-        this.level = level;
-        this.q = this.q_array[this.level - 1];
+        this.gameInfo.level = level;
+        this.gameInfo.questions = [];
+        this.gameInfo.current = 0;
+        this.q = this.q_array[this.gameInfo.level - 1];
         this.nextQuestion();
     };
-    Game.prototype.onInit = function () {
+    GameCanvas.prototype.onInit = function () {
         ion.sound({
             sounds: [
                 {
@@ -91,22 +75,22 @@ var Game = (function () {
             preload: true
         });
         this.stage = new Konva.Stage({
-            container: this.el.nativeElement.childNodes[3],
+            container: this.el.nativeElement.childNodes[1],
             width: 400,
             height: 400
         });
         //this.draw();
         this.selectLevel(1);
     };
-    Game.prototype.generateQuestion = function () {
+    GameCanvas.prototype.generateQuestion = function () {
         var q_s = this.random(this.q.alphabets);
-        var question = new Question;
+        var question = new question_1.Question;
         question.choices = this.q.options;
         question.correctAnswer = q_s;
         return question;
     };
-    Game.prototype.clearQuestion = function () {
-        var layer = this.currentQuestion.getCorrectAnswerView().getParent();
+    GameCanvas.prototype.clearQuestion = function () {
+        var layer = this.gameInfo.currentQuestion.getCorrectAnswerView().getParent();
         new Konva.Tween({
             node: layer,
             duration: .8,
@@ -116,14 +100,15 @@ var Game = (function () {
             }
         }).play();
     };
-    Game.prototype.nextQuestion = function () {
-        if (this.currentQuestion)
+    GameCanvas.prototype.nextQuestion = function () {
+        if (this.gameInfo.current >= this.gameInfo.totalQuestion)
+            return alert("No more questions on this level!");
+        if (this.gameInfo.currentQuestion)
             this.clearQuestion();
-        this.currentQuestion = this.generateQuestion();
-        this.questions.push(this.currentQuestion);
-        this.renderQuestion(this.currentQuestion);
+        this.gameInfo.addQuestion(this.generateQuestion());
+        this.renderQuestion();
     };
-    Game.prototype.shuffle = function (array) {
+    GameCanvas.prototype.shuffle = function (array) {
         var counter = array.length, temp, index;
         // While there are elements in the array
         while (counter > 0) {
@@ -138,11 +123,12 @@ var Game = (function () {
         }
         return array;
     };
-    Game.prototype.random = function (array) {
+    GameCanvas.prototype.random = function (array) {
         return array[Math.floor(Math.random() * array.length)];
     };
-    Game.prototype.renderQuestion = function (question) {
+    GameCanvas.prototype.renderQuestion = function () {
         var _this = this;
+        var question = this.gameInfo.currentQuestion;
         var viewElements = [];
         var choices = this.shuffle(question.choices);
         var layer = new Konva.Layer({
@@ -168,41 +154,41 @@ var Game = (function () {
                 document.body.style.cursor = 'default';
             });
             layer.on('click tap', function (e) {
-                if (_this.currentQuestion.isAnswered())
+                if (_this.gameInfo.currentQuestion.isAnswered())
                     return;
                 var elem = e.target.getParent();
                 var answer = elem.value;
-                var result = _this.currentQuestion.check(answer);
+                var result = _this.gameInfo.currentQuestion.check(answer);
                 if (result) {
                     elem.find('Circle')[0].stroke('green');
                     ion.sound.play("pass");
                 }
                 else {
                     elem.find('Circle')[0].stroke('red');
-                    _this.currentQuestion.getCorrectAnswerView().find('Circle')[0].stroke('green');
+                    _this.gameInfo.currentQuestion.getCorrectAnswerView().find('Circle')[0].stroke('green');
                     ion.sound.play("fail");
                 }
                 layer.draw();
-                console.log(_this.questions);
+                console.log(_this.gameInfo.questions);
             });
             layer.add(group);
             _this.stage.add(layer);
         });
     };
-    Game.prototype.draw = function () {
+    GameCanvas.prototype.draw = function () {
     };
-    Game = __decorate([
+    GameCanvas = __decorate([
         angular2_1.Component({
-            selector: 'game',
-            properties: ['level'],
+            selector: 'game-canvas',
+            properties: ['nextlevel', 'nextquestion']
         }),
         angular2_1.View({
-            template: "<div>Level: {{level}}<br /> Find this character: <h3>{{currentQuestion.correctAnswer}}</h3></div><button class=\"btn\" (click)=\"nextQuestion()\">Next Question</button><button class=\"btn\" (click)=\"nextLevel()\">Next Level</button><div></div>",
-            directives: []
+            template: "<div (nextlevel)=\"nextLevel($event)\" (nextquestion)=\"nextQuestion($event)\">Find this character: <h3 *ng-if=\"gameInfo.currentQuestion\">{{gameInfo.currentQuestion.correctAnswer}}</h3></div><div></div>",
+            directives: [angular2_1.NgIf],
         }), 
-        __metadata('design:paramtypes', [angular2_1.ElementRef])
-    ], Game);
-    return Game;
+        __metadata('design:paramtypes', [angular2_1.ElementRef, game_info_1.GameInfo])
+    ], GameCanvas);
+    return GameCanvas;
 })();
-exports.Game = Game;
-//# sourceMappingURL=game.js.map
+exports.GameCanvas = GameCanvas;
+//# sourceMappingURL=game-canvas.js.map

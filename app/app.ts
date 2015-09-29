@@ -6,13 +6,13 @@ import {Device} from './component/device/device';
 import {About} from './component/about/about';
 import {Menu} from './component/menu/menu';
 import {LoginForm, UserLogout} from './component/user/user';
-import {Game as Game} from './component/game/game';
-import {Game as Game2} from './component/game/game2';
+import {GameCenter} from './component/game/game-center';
+import {GameInfo} from './component/game/game-info';
 import {UserModel} from './model/user-model'
 
 @Component({
 	selector: 'app',
-	bindings: [UserModel]
+	bindings: [UserModel, GameInfo]
 })
 
 @View({
@@ -24,8 +24,7 @@ import {UserModel} from './model/user-model'
     { path: '/', component: LoginForm, as: 'home' },
     { path: '/devices', component: Device, as: 'devices' },
     { path: '/about/:id', component: About, as: 'about' },
-    { path: '/game', component: Game, as: 'game' }
-    { path: '/game2', component: Game2, as: 'game2' }
+    { path: '/game', component: GameCenter, as: 'game' }
 ])
 
 export class App {

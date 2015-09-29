@@ -1,13 +1,16 @@
 import {Component, View, ElementRef, FORM_DIRECTIVES} from 'angular2/angular2';
-import {Game as Game1, Question} from './game';
+import {Question} from './question';
+import {GameCanvas} from './game-canvas';
+import {GameInfo} from './game-info';
 
-export class Game extends Game1 {
+export class GameCanvas2 extends GameCanvas {
 
-	constructor(public el: ElementRef) {
-		super(el);
+	constructor(public el: ElementRef, public gameInfo: GameInfo) {
+		super(el, gameInfo);
     }
 
-	renderQuestion(question: Question) {
+	renderQuestion() {
+		let question= this.gameInfo.currentQuestion
 		let viewElements = [];
 		let choices = this.shuffle(question.choices);
 
@@ -19,9 +22,9 @@ export class Game extends Game1 {
 		});
 
 		choices.forEach((choice, index) => {
-			let circle = new Konva.Rect({ width: this.stage.width()-40, height: this.stage.height() / 8, cornerRadius: 40, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
+			let circle = new Konva.Rect({ width: this.stage.width() - 40, height: this.stage.height() / 8, cornerRadius: 40, fill: 'transparent', stroke: "rgb(11,183,237)", strokeWidth: 5 });
 
-			let text = new Konva.Text({ x: circle.width() / 3, y: circle.x() + circle.height() / 3, text: choice, fill: 'black', fontSize: 28, align: 'center' });
+			let text = new Konva.Text({ width: circle.width(), height: circle.height(), y: circle.y() + circle.height()/2.8, text: choice, fill: 'black', fontSize: 28, align: 'center' });
 
 			let group = new Konva.Group({
 				x: 0,
@@ -43,21 +46,21 @@ export class Game extends Game1 {
 			});
 
 			layer.on('click tap', (e) => {
-				if (this.currentQuestion.isAnswered()) return;
+				if (this.gameInfo.currentQuestion.isAnswered()) return;
 				let elem: Konva.Group = e.target.getParent();
 				let answer = elem.value;
-				let result = this.currentQuestion.check(answer);
+				let result = this.gameInfo.currentQuestion.check(answer);
 				if (result) {
 					elem.find('Rect')[0].stroke('green');
 					ion.sound.play("pass");
 				}
 				else {
 					elem.find('Rect')[0].stroke('red');
-					this.currentQuestion.getCorrectAnswerView().find('Rect')[0].stroke('green');
+					this.gameInfo.currentQuestion.getCorrectAnswerView().find('Rect')[0].stroke('green');
 					ion.sound.play("fail");
 				}
 				layer.draw()
-				console.log(this.questions);
+				console.log(this.gameInfo.questions);
 			});
 
 			layer.add(group);
