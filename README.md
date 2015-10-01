@@ -7,7 +7,7 @@ Live Demo: http://kaalpurush.github.io/ng2
 
 2. Install Angular2 TypeScript Definitions:	tsd install
 
-3. Install TypeScript Compiler:	npm install -g typescript ntsc
+3. Install TypeScript Compiler:	npm install -g ntypescript
 
 4. Compile & Watch for changes:	ntsc -w
 
