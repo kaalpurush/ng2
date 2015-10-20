@@ -49,6 +49,7 @@ var UserLogout = (function () {
 exports.UserLogout = UserLogout;
 var LoginForm = (function () {
     function LoginForm(fb, user) {
+        this.type = 1;
         this.user = user;
         this.loginForm = fb.group({
             email: ['', angular2_2.Validators.compose([angular2_2.Validators.required, custom_validators_1.TypeValidators.email])],

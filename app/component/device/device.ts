@@ -1,4 +1,4 @@
-import {Component, View, bootstrap, bind, NgFor, ViewQuery, QueryList} from 'angular2/angular2';
+import {Component, View, bootstrap, bind, NgIf, NgFor, ViewQuery, QueryList, AfterViewInit} from 'angular2/angular2';
 import {Http} from 'angular2/http'
 import {Search} from '../search/search'
 
@@ -8,18 +8,18 @@ import {Search} from '../search/search'
 
 @View({
     templateUrl: './app/component/device/device.html',
-    directives: [NgFor, Search]
+    directives: [NgIf, NgFor, Search]
 })
 
-export class Device {
+export class Device implements AfterViewInit {
     devices: Array<any>;
 	searchbox1: Search;
     constructor(http: Http, @ViewQuery(Search) private searchComponents: QueryList<Search>) {
         this.devices = [];
-        http.get('./devices.json').toRx().map(res=> res.json()).subscribe(res => this.devices = res);
+        http.get('./devices.json').map(res=> res.json()).subscribe(res => this.devices = res);
     }
-	
-	onInit(){
-		this.searchbox1=this.searchComponents.first;		
+
+	afterViewInit() {
+		this.searchbox1 = this.searchComponents.first;
 	}
 }

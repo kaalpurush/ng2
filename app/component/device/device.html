@@ -9,10 +9,11 @@
 				<div *ng-for="#device of devices">
 					{{device.name}}
 				</div>
-				
+
 				<search></search>
-				
-				Query term from the "Search" component (using ViewQuery): {{searchbox1.q}}
+				<p *ng-if="searchbox1">
+					Query term from the "Search" component (using ViewQuery): {{searchbox1.q}}
+				</p>
 			</div>
 		</div>
 	</div>

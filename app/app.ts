@@ -6,13 +6,11 @@ import {Device} from './component/device/device';
 import {About} from './component/about/about';
 import {Menu} from './component/menu/menu';
 import {LoginForm, UserLogout} from './component/user/user';
-import {GameCenter} from './component/game/game-center';
-import {GameInfo} from './component/game/game-info';
 import {UserModel} from './model/user-model'
 
 @Component({
 	selector: 'app',
-	bindings: [UserModel, GameInfo]
+	bindings: [UserModel]
 })
 
 @View({
@@ -21,10 +19,9 @@ import {UserModel} from './model/user-model'
 })
 
 @RouteConfig([
-    { path: '/', component: LoginForm, as: 'home' },
-    { path: '/devices', component: Device, as: 'devices' },
-    { path: '/about/:id', component: About, as: 'about' },
-    { path: '/game', component: GameCenter, as: 'game' }
+    { path: '/', component: LoginForm, as: 'Home' },
+    { path: '/devices', component: Device, as: 'Devices' },
+    { path: '/about/:id', component: About, as: 'About' },
 ])
 
 export class App {

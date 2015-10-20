@@ -1,8393 +1,10759 @@
 "format register";
-System.register("rx", [], true, function(require, exports, module) {
+System.register("angular2/src/http/interfaces", [], true, function(require, exports, module) {
   var global = System.global,
       __define = global.define;
   global.define = undefined;
-  ;
-  (function(undefined) {
-    var objectTypes = {
-      'boolean': false,
-      'function': true,
-      'object': true,
-      'number': false,
-      'string': false,
-      'undefined': false
-    };
-    var root = (objectTypes[typeof window] && window) || this,
-        freeExports = objectTypes[typeof exports] && exports && !exports.nodeType && exports,
-        freeModule = objectTypes[typeof module] && module && !module.nodeType && module,
-        moduleExports = freeModule && freeModule.exports === freeExports && freeExports,
-        freeGlobal = objectTypes[typeof global] && global;
-    if (freeGlobal && (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal)) {
-      root = freeGlobal;
-    }
-    var Rx = {
-      internals: {},
-      config: {Promise: root.Promise},
-      helpers: {}
-    };
-    var noop = Rx.helpers.noop = function() {},
-        notDefined = Rx.helpers.notDefined = function(x) {
-          return typeof x === 'undefined';
-        },
-        isScheduler = Rx.helpers.isScheduler = function(x) {
-          return x instanceof Rx.Scheduler;
-        },
-        identity = Rx.helpers.identity = function(x) {
-          return x;
-        },
-        pluck = Rx.helpers.pluck = function(property) {
-          return function(x) {
-            return x[property];
-          };
-        },
-        just = Rx.helpers.just = function(value) {
-          return function() {
-            return value;
-          };
-        },
-        defaultNow = Rx.helpers.defaultNow = Date.now,
-        defaultComparer = Rx.helpers.defaultComparer = function(x, y) {
-          return isEqual(x, y);
-        },
-        defaultSubComparer = Rx.helpers.defaultSubComparer = function(x, y) {
-          return x > y ? 1 : (x < y ? -1 : 0);
-        },
-        defaultKeySerializer = Rx.helpers.defaultKeySerializer = function(x) {
-          return x.toString();
-        },
-        defaultError = Rx.helpers.defaultError = function(err) {
-          throw err;
-        },
-        isPromise = Rx.helpers.isPromise = function(p) {
-          return !!p && typeof p.then === 'function';
-        },
-        asArray = Rx.helpers.asArray = function() {
-          return Array.prototype.slice.call(arguments);
-        },
-        not = Rx.helpers.not = function(a) {
-          return !a;
-        },
-        isFunction = Rx.helpers.isFunction = (function() {
-          var isFn = function(value) {
-            return typeof value == 'function' || false;
-          };
-          if (isFn(/x/)) {
-            isFn = function(value) {
-              return typeof value == 'function' && toString.call(value) == '[object Function]';
-            };
-          }
-          return isFn;
-        }());
-    function cloneArray(arr) {
-      for (var a = [],
-          i = 0,
-          len = arr.length; i < len; i++) {
-        a.push(arr[i]);
-      }
-      return a;
-    }
-    Rx.config.longStackSupport = false;
-    var hasStacks = false;
-    try {
-      throw new Error();
-    } catch (e) {
-      hasStacks = !!e.stack;
-    }
-    var rStartingLine = captureLine(),
-        rFileName;
-    var STACK_JUMP_SEPARATOR = "From previous event:";
-    function makeStackTraceLong(error, observable) {
-      if (hasStacks && observable.stack && typeof error === "object" && error !== null && error.stack && error.stack.indexOf(STACK_JUMP_SEPARATOR) === -1) {
-        var stacks = [];
-        for (var o = observable; !!o; o = o.source) {
-          if (o.stack) {
-            stacks.unshift(o.stack);
-          }
-        }
-        stacks.unshift(error.stack);
-        var concatedStacks = stacks.join("\n" + STACK_JUMP_SEPARATOR + "\n");
-        error.stack = filterStackString(concatedStacks);
-      }
-    }
-    function filterStackString(stackString) {
-      var lines = stackString.split("\n"),
-          desiredLines = [];
-      for (var i = 0,
-          len = lines.length; i < len; i++) {
-        var line = lines[i];
-        if (!isInternalFrame(line) && !isNodeFrame(line) && line) {
-          desiredLines.push(line);
-        }
-      }
-      return desiredLines.join("\n");
-    }
-    function isInternalFrame(stackLine) {
-      var fileNameAndLineNumber = getFileNameAndLineNumber(stackLine);
-      if (!fileNameAndLineNumber) {
-        return false;
-      }
-      var fileName = fileNameAndLineNumber[0],
-          lineNumber = fileNameAndLineNumber[1];
-      return fileName === rFileName && lineNumber >= rStartingLine && lineNumber <= rEndingLine;
-    }
-    function isNodeFrame(stackLine) {
-      return stackLine.indexOf("(module.js:") !== -1 || stackLine.indexOf("(node.js:") !== -1;
-    }
-    function captureLine() {
-      if (!hasStacks) {
-        return ;
-      }
-      try {
-        throw new Error();
-      } catch (e) {
-        var lines = e.stack.split("\n");
-        var firstLine = lines[0].indexOf("@") > 0 ? lines[1] : lines[2];
-        var fileNameAndLineNumber = getFileNameAndLineNumber(firstLine);
-        if (!fileNameAndLineNumber) {
-          return ;
-        }
-        rFileName = fileNameAndLineNumber[0];
-        return fileNameAndLineNumber[1];
-      }
-    }
-    function getFileNameAndLineNumber(stackLine) {
-      var attempt1 = /at .+ \((.+):(\d+):(?:\d+)\)$/.exec(stackLine);
-      if (attempt1) {
-        return [attempt1[1], Number(attempt1[2])];
-      }
-      var attempt2 = /at ([^ ]+):(\d+):(?:\d+)$/.exec(stackLine);
-      if (attempt2) {
-        return [attempt2[1], Number(attempt2[2])];
-      }
-      var attempt3 = /.*@(.+):(\d+)$/.exec(stackLine);
-      if (attempt3) {
-        return [attempt3[1], Number(attempt3[2])];
-      }
-    }
-    var EmptyError = Rx.EmptyError = function() {
-      this.message = 'Sequence contains no elements.';
-      Error.call(this);
-    };
-    EmptyError.prototype = Error.prototype;
-    var ObjectDisposedError = Rx.ObjectDisposedError = function() {
-      this.message = 'Object has been disposed';
-      Error.call(this);
-    };
-    ObjectDisposedError.prototype = Error.prototype;
-    var ArgumentOutOfRangeError = Rx.ArgumentOutOfRangeError = function() {
-      this.message = 'Argument out of range';
-      Error.call(this);
-    };
-    ArgumentOutOfRangeError.prototype = Error.prototype;
-    var NotSupportedError = Rx.NotSupportedError = function(message) {
-      this.message = message || 'This operation is not supported';
-      Error.call(this);
-    };
-    NotSupportedError.prototype = Error.prototype;
-    var NotImplementedError = Rx.NotImplementedError = function(message) {
-      this.message = message || 'This operation is not implemented';
-      Error.call(this);
-    };
-    NotImplementedError.prototype = Error.prototype;
-    var notImplemented = Rx.helpers.notImplemented = function() {
-      throw new NotImplementedError();
-    };
-    var notSupported = Rx.helpers.notSupported = function() {
-      throw new NotSupportedError();
-    };
-    var $iterator$ = (typeof Symbol === 'function' && Symbol.iterator) || '_es6shim_iterator_';
-    if (root.Set && typeof new root.Set()['@@iterator'] === 'function') {
-      $iterator$ = '@@iterator';
-    }
-    var doneEnumerator = Rx.doneEnumerator = {
-      done: true,
-      value: undefined
-    };
-    var isIterable = Rx.helpers.isIterable = function(o) {
-      return o[$iterator$] !== undefined;
-    };
-    var isArrayLike = Rx.helpers.isArrayLike = function(o) {
-      return o && o.length !== undefined;
-    };
-    Rx.helpers.iterator = $iterator$;
-    var bindCallback = Rx.internals.bindCallback = function(func, thisArg, argCount) {
-      if (typeof thisArg === 'undefined') {
-        return func;
-      }
-      switch (argCount) {
-        case 0:
-          return function() {
-            return func.call(thisArg);
-          };
-        case 1:
-          return function(arg) {
-            return func.call(thisArg, arg);
-          };
-        case 2:
-          return function(value, index) {
-            return func.call(thisArg, value, index);
-          };
-        case 3:
-          return function(value, index, collection) {
-            return func.call(thisArg, value, index, collection);
-          };
-      }
-      return function() {
-        return func.apply(thisArg, arguments);
-      };
-    };
-    var dontEnums = ['toString', 'toLocaleString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable', 'constructor'],
-        dontEnumsLength = dontEnums.length;
-    var argsClass = '[object Arguments]',
-        arrayClass = '[object Array]',
-        boolClass = '[object Boolean]',
-        dateClass = '[object Date]',
-        errorClass = '[object Error]',
-        funcClass = '[object Function]',
-        numberClass = '[object Number]',
-        objectClass = '[object Object]',
-        regexpClass = '[object RegExp]',
-        stringClass = '[object String]';
-    var toString = Object.prototype.toString,
-        hasOwnProperty = Object.prototype.hasOwnProperty,
-        supportsArgsClass = toString.call(arguments) == argsClass,
-        supportNodeClass,
-        errorProto = Error.prototype,
-        objectProto = Object.prototype,
-        stringProto = String.prototype,
-        propertyIsEnumerable = objectProto.propertyIsEnumerable;
-    try {
-      supportNodeClass = !(toString.call(document) == objectClass && !({'toString': 0} + ''));
-    } catch (e) {
-      supportNodeClass = true;
-    }
-    var nonEnumProps = {};
-    nonEnumProps[arrayClass] = nonEnumProps[dateClass] = nonEnumProps[numberClass] = {
-      'constructor': true,
-      'toLocaleString': true,
-      'toString': true,
-      'valueOf': true
-    };
-    nonEnumProps[boolClass] = nonEnumProps[stringClass] = {
-      'constructor': true,
-      'toString': true,
-      'valueOf': true
-    };
-    nonEnumProps[errorClass] = nonEnumProps[funcClass] = nonEnumProps[regexpClass] = {
-      'constructor': true,
-      'toString': true
-    };
-    nonEnumProps[objectClass] = {'constructor': true};
-    var support = {};
-    (function() {
-      var ctor = function() {
-        this.x = 1;
-      },
-          props = [];
-      ctor.prototype = {
-        'valueOf': 1,
-        'y': 1
-      };
-      for (var key in new ctor) {
-        props.push(key);
-      }
-      for (key in arguments) {}
-      support.enumErrorProps = propertyIsEnumerable.call(errorProto, 'message') || propertyIsEnumerable.call(errorProto, 'name');
-      support.enumPrototypes = propertyIsEnumerable.call(ctor, 'prototype');
-      support.nonEnumArgs = key != 0;
-      support.nonEnumShadows = !/valueOf/.test(props);
-    }(1));
-    var isObject = Rx.internals.isObject = function(value) {
-      var type = typeof value;
-      return value && (type == 'function' || type == 'object') || false;
-    };
-    function keysIn(object) {
-      var result = [];
-      if (!isObject(object)) {
-        return result;
-      }
-      if (support.nonEnumArgs && object.length && isArguments(object)) {
-        object = slice.call(object);
-      }
-      var skipProto = support.enumPrototypes && typeof object == 'function',
-          skipErrorProps = support.enumErrorProps && (object === errorProto || object instanceof Error);
-      for (var key in object) {
-        if (!(skipProto && key == 'prototype') && !(skipErrorProps && (key == 'message' || key == 'name'))) {
-          result.push(key);
-        }
-      }
-      if (support.nonEnumShadows && object !== objectProto) {
-        var ctor = object.constructor,
-            index = -1,
-            length = dontEnumsLength;
-        if (object === (ctor && ctor.prototype)) {
-          var className = object === stringProto ? stringClass : object === errorProto ? errorClass : toString.call(object),
-              nonEnum = nonEnumProps[className];
-        }
-        while (++index < length) {
-          key = dontEnums[index];
-          if (!(nonEnum && nonEnum[key]) && hasOwnProperty.call(object, key)) {
-            result.push(key);
-          }
-        }
-      }
-      return result;
-    }
-    function internalFor(object, callback, keysFunc) {
-      var index = -1,
-          props = keysFunc(object),
-          length = props.length;
-      while (++index < length) {
-        var key = props[index];
-        if (callback(object[key], key, object) === false) {
-          break;
-        }
-      }
-      return object;
-    }
-    function internalForIn(object, callback) {
-      return internalFor(object, callback, keysIn);
-    }
-    function isNode(value) {
-      return typeof value.toString != 'function' && typeof(value + '') == 'string';
-    }
-    var isArguments = function(value) {
-      return (value && typeof value == 'object') ? toString.call(value) == argsClass : false;
-    };
-    if (!supportsArgsClass) {
-      isArguments = function(value) {
-        return (value && typeof value == 'object') ? hasOwnProperty.call(value, 'callee') : false;
-      };
-    }
-    var isEqual = Rx.internals.isEqual = function(x, y) {
-      return deepEquals(x, y, [], []);
-    };
-    function deepEquals(a, b, stackA, stackB) {
-      if (a === b) {
-        return a !== 0 || (1 / a == 1 / b);
-      }
-      var type = typeof a,
-          otherType = typeof b;
-      if (a === a && (a == null || b == null || (type != 'function' && type != 'object' && otherType != 'function' && otherType != 'object'))) {
-        return false;
-      }
-      var className = toString.call(a),
-          otherClass = toString.call(b);
-      if (className == argsClass) {
-        className = objectClass;
-      }
-      if (otherClass == argsClass) {
-        otherClass = objectClass;
-      }
-      if (className != otherClass) {
-        return false;
-      }
-      switch (className) {
-        case boolClass:
-        case dateClass:
-          return +a == +b;
-        case numberClass:
-          return (a != +a) ? b != +b : (a == 0 ? (1 / a == 1 / b) : a == +b);
-        case regexpClass:
-        case stringClass:
-          return a == String(b);
-      }
-      var isArr = className == arrayClass;
-      if (!isArr) {
-        if (className != objectClass || (!support.nodeClass && (isNode(a) || isNode(b)))) {
-          return false;
-        }
-        var ctorA = !support.argsObject && isArguments(a) ? Object : a.constructor,
-            ctorB = !support.argsObject && isArguments(b) ? Object : b.constructor;
-        if (ctorA != ctorB && !(hasOwnProperty.call(a, 'constructor') && hasOwnProperty.call(b, 'constructor')) && !(isFunction(ctorA) && ctorA instanceof ctorA && isFunction(ctorB) && ctorB instanceof ctorB) && ('constructor' in a && 'constructor' in b)) {
-          return false;
-        }
-      }
-      var initedStack = !stackA;
-      stackA || (stackA = []);
-      stackB || (stackB = []);
-      var length = stackA.length;
-      while (length--) {
-        if (stackA[length] == a) {
-          return stackB[length] == b;
-        }
-      }
-      var size = 0;
-      var result = true;
-      stackA.push(a);
-      stackB.push(b);
-      if (isArr) {
-        length = a.length;
-        size = b.length;
-        result = size == length;
-        if (result) {
-          while (size--) {
-            var index = length,
-                value = b[size];
-            if (!(result = deepEquals(a[size], value, stackA, stackB))) {
-              break;
-            }
-          }
-        }
-      } else {
-        internalForIn(b, function(value, key, b) {
-          if (hasOwnProperty.call(b, key)) {
-            size++;
-            return (result = hasOwnProperty.call(a, key) && deepEquals(a[key], value, stackA, stackB));
-          }
-        });
-        if (result) {
-          internalForIn(a, function(value, key, a) {
-            if (hasOwnProperty.call(a, key)) {
-              return (result = --size > -1);
-            }
-          });
-        }
-      }
-      stackA.pop();
-      stackB.pop();
-      return result;
-    }
-    var hasProp = {}.hasOwnProperty,
-        slice = Array.prototype.slice;
-    var inherits = this.inherits = Rx.internals.inherits = function(child, parent) {
-      function __() {
-        this.constructor = child;
-      }
-      __.prototype = parent.prototype;
-      child.prototype = new __();
-    };
-    var addProperties = Rx.internals.addProperties = function(obj) {
-      for (var sources = [],
-          i = 1,
-          len = arguments.length; i < len; i++) {
-        sources.push(arguments[i]);
-      }
-      for (var idx = 0,
-          ln = sources.length; idx < ln; idx++) {
-        var source = sources[idx];
-        for (var prop in source) {
-          obj[prop] = source[prop];
-        }
-      }
-    };
-    var addRef = Rx.internals.addRef = function(xs, r) {
-      return new AnonymousObservable(function(observer) {
-        return new CompositeDisposable(r.getDisposable(), xs.subscribe(observer));
-      });
-    };
-    function arrayInitialize(count, factory) {
-      var a = new Array(count);
-      for (var i = 0; i < count; i++) {
-        a[i] = factory();
-      }
-      return a;
-    }
-    var errorObj = {e: {}};
-    var tryCatchTarget;
-    function tryCatcher() {
-      try {
-        return tryCatchTarget.apply(this, arguments);
-      } catch (e) {
-        errorObj.e = e;
-        return errorObj;
-      }
-    }
-    function tryCatch(fn) {
-      if (!isFunction(fn)) {
-        throw new TypeError('fn must be a function');
-      }
-      tryCatchTarget = fn;
-      return tryCatcher;
-    }
-    function thrower(e) {
-      throw e;
-    }
-    function IndexedItem(id, value) {
-      this.id = id;
-      this.value = value;
-    }
-    IndexedItem.prototype.compareTo = function(other) {
-      var c = this.value.compareTo(other.value);
-      c === 0 && (c = this.id - other.id);
-      return c;
-    };
-    var PriorityQueue = Rx.internals.PriorityQueue = function(capacity) {
-      this.items = new Array(capacity);
-      this.length = 0;
-    };
-    var priorityProto = PriorityQueue.prototype;
-    priorityProto.isHigherPriority = function(left, right) {
-      return this.items[left].compareTo(this.items[right]) < 0;
-    };
-    priorityProto.percolate = function(index) {
-      if (index >= this.length || index < 0) {
-        return ;
-      }
-      var parent = index - 1 >> 1;
-      if (parent < 0 || parent === index) {
-        return ;
-      }
-      if (this.isHigherPriority(index, parent)) {
-        var temp = this.items[index];
-        this.items[index] = this.items[parent];
-        this.items[parent] = temp;
-        this.percolate(parent);
-      }
-    };
-    priorityProto.heapify = function(index) {
-      +index || (index = 0);
-      if (index >= this.length || index < 0) {
-        return ;
-      }
-      var left = 2 * index + 1,
-          right = 2 * index + 2,
-          first = index;
-      if (left < this.length && this.isHigherPriority(left, first)) {
-        first = left;
-      }
-      if (right < this.length && this.isHigherPriority(right, first)) {
-        first = right;
-      }
-      if (first !== index) {
-        var temp = this.items[index];
-        this.items[index] = this.items[first];
-        this.items[first] = temp;
-        this.heapify(first);
-      }
-    };
-    priorityProto.peek = function() {
-      return this.items[0].value;
-    };
-    priorityProto.removeAt = function(index) {
-      this.items[index] = this.items[--this.length];
-      this.items[this.length] = undefined;
-      this.heapify();
-    };
-    priorityProto.dequeue = function() {
-      var result = this.peek();
-      this.removeAt(0);
-      return result;
-    };
-    priorityProto.enqueue = function(item) {
-      var index = this.length++;
-      this.items[index] = new IndexedItem(PriorityQueue.count++, item);
-      this.percolate(index);
-    };
-    priorityProto.remove = function(item) {
-      for (var i = 0; i < this.length; i++) {
-        if (this.items[i].value === item) {
-          this.removeAt(i);
-          return true;
-        }
-      }
-      return false;
-    };
-    PriorityQueue.count = 0;
-    var CompositeDisposable = Rx.CompositeDisposable = function() {
-      var args = [],
-          i,
-          len;
-      if (Array.isArray(arguments[0])) {
-        args = arguments[0];
-        len = args.length;
-      } else {
-        len = arguments.length;
-        args = new Array(len);
-        for (i = 0; i < len; i++) {
-          args[i] = arguments[i];
-        }
-      }
-      for (i = 0; i < len; i++) {
-        if (!isDisposable(args[i])) {
-          throw new TypeError('Not a disposable');
-        }
-      }
-      this.disposables = args;
-      this.isDisposed = false;
-      this.length = args.length;
-    };
-    var CompositeDisposablePrototype = CompositeDisposable.prototype;
-    CompositeDisposablePrototype.add = function(item) {
-      if (this.isDisposed) {
-        item.dispose();
-      } else {
-        this.disposables.push(item);
-        this.length++;
-      }
-    };
-    CompositeDisposablePrototype.remove = function(item) {
-      var shouldDispose = false;
-      if (!this.isDisposed) {
-        var idx = this.disposables.indexOf(item);
-        if (idx !== -1) {
-          shouldDispose = true;
-          this.disposables.splice(idx, 1);
-          this.length--;
-          item.dispose();
-        }
-      }
-      return shouldDispose;
-    };
-    CompositeDisposablePrototype.dispose = function() {
-      if (!this.isDisposed) {
-        this.isDisposed = true;
-        var len = this.disposables.length,
-            currentDisposables = new Array(len);
-        for (var i = 0; i < len; i++) {
-          currentDisposables[i] = this.disposables[i];
-        }
-        this.disposables = [];
-        this.length = 0;
-        for (i = 0; i < len; i++) {
-          currentDisposables[i].dispose();
-        }
-      }
-    };
-    var Disposable = Rx.Disposable = function(action) {
-      this.isDisposed = false;
-      this.action = action || noop;
-    };
-    Disposable.prototype.dispose = function() {
-      if (!this.isDisposed) {
-        this.action();
-        this.isDisposed = true;
-      }
-    };
-    var disposableCreate = Disposable.create = function(action) {
-      return new Disposable(action);
-    };
-    var disposableEmpty = Disposable.empty = {dispose: noop};
-    var isDisposable = Disposable.isDisposable = function(d) {
-      return d && isFunction(d.dispose);
-    };
-    var checkDisposed = Disposable.checkDisposed = function(disposable) {
-      if (disposable.isDisposed) {
-        throw new ObjectDisposedError();
-      }
-    };
-    var SingleAssignmentDisposable = Rx.SingleAssignmentDisposable = (function() {
-      function BooleanDisposable() {
-        this.isDisposed = false;
-        this.current = null;
-      }
-      var booleanDisposablePrototype = BooleanDisposable.prototype;
-      booleanDisposablePrototype.getDisposable = function() {
-        return this.current;
-      };
-      booleanDisposablePrototype.setDisposable = function(value) {
-        var shouldDispose = this.isDisposed;
-        if (!shouldDispose) {
-          var old = this.current;
-          this.current = value;
-        }
-        old && old.dispose();
-        shouldDispose && value && value.dispose();
-      };
-      booleanDisposablePrototype.dispose = function() {
-        if (!this.isDisposed) {
-          this.isDisposed = true;
-          var old = this.current;
-          this.current = null;
-        }
-        old && old.dispose();
-      };
-      return BooleanDisposable;
-    }());
-    var SerialDisposable = Rx.SerialDisposable = SingleAssignmentDisposable;
-    var RefCountDisposable = Rx.RefCountDisposable = (function() {
-      function InnerDisposable(disposable) {
-        this.disposable = disposable;
-        this.disposable.count++;
-        this.isInnerDisposed = false;
-      }
-      InnerDisposable.prototype.dispose = function() {
-        if (!this.disposable.isDisposed && !this.isInnerDisposed) {
-          this.isInnerDisposed = true;
-          this.disposable.count--;
-          if (this.disposable.count === 0 && this.disposable.isPrimaryDisposed) {
-            this.disposable.isDisposed = true;
-            this.disposable.underlyingDisposable.dispose();
-          }
-        }
-      };
-      function RefCountDisposable(disposable) {
-        this.underlyingDisposable = disposable;
-        this.isDisposed = false;
-        this.isPrimaryDisposed = false;
-        this.count = 0;
-      }
-      RefCountDisposable.prototype.dispose = function() {
-        if (!this.isDisposed && !this.isPrimaryDisposed) {
-          this.isPrimaryDisposed = true;
-          if (this.count === 0) {
-            this.isDisposed = true;
-            this.underlyingDisposable.dispose();
-          }
-        }
-      };
-      RefCountDisposable.prototype.getDisposable = function() {
-        return this.isDisposed ? disposableEmpty : new InnerDisposable(this);
-      };
-      return RefCountDisposable;
-    })();
-    function ScheduledDisposable(scheduler, disposable) {
-      this.scheduler = scheduler;
-      this.disposable = disposable;
-      this.isDisposed = false;
-    }
-    function scheduleItem(s, self) {
-      if (!self.isDisposed) {
-        self.isDisposed = true;
-        self.disposable.dispose();
-      }
-    }
-    ScheduledDisposable.prototype.dispose = function() {
-      this.scheduler.scheduleWithState(this, scheduleItem);
-    };
-    var ScheduledItem = Rx.internals.ScheduledItem = function(scheduler, state, action, dueTime, comparer) {
-      this.scheduler = scheduler;
-      this.state = state;
-      this.action = action;
-      this.dueTime = dueTime;
-      this.comparer = comparer || defaultSubComparer;
-      this.disposable = new SingleAssignmentDisposable();
-    };
-    ScheduledItem.prototype.invoke = function() {
-      this.disposable.setDisposable(this.invokeCore());
-    };
-    ScheduledItem.prototype.compareTo = function(other) {
-      return this.comparer(this.dueTime, other.dueTime);
-    };
-    ScheduledItem.prototype.isCancelled = function() {
-      return this.disposable.isDisposed;
-    };
-    ScheduledItem.prototype.invokeCore = function() {
-      return this.action(this.scheduler, this.state);
-    };
-    var Scheduler = Rx.Scheduler = (function() {
-      function Scheduler(now, schedule, scheduleRelative, scheduleAbsolute) {
-        this.now = now;
-        this._schedule = schedule;
-        this._scheduleRelative = scheduleRelative;
-        this._scheduleAbsolute = scheduleAbsolute;
-      }
-      function invokeAction(scheduler, action) {
-        action();
-        return disposableEmpty;
-      }
-      var schedulerProto = Scheduler.prototype;
-      schedulerProto.schedule = function(action) {
-        return this._schedule(action, invokeAction);
-      };
-      schedulerProto.scheduleWithState = function(state, action) {
-        return this._schedule(state, action);
-      };
-      schedulerProto.scheduleWithRelative = function(dueTime, action) {
-        return this._scheduleRelative(action, dueTime, invokeAction);
-      };
-      schedulerProto.scheduleWithRelativeAndState = function(state, dueTime, action) {
-        return this._scheduleRelative(state, dueTime, action);
-      };
-      schedulerProto.scheduleWithAbsolute = function(dueTime, action) {
-        return this._scheduleAbsolute(action, dueTime, invokeAction);
-      };
-      schedulerProto.scheduleWithAbsoluteAndState = function(state, dueTime, action) {
-        return this._scheduleAbsolute(state, dueTime, action);
-      };
-      Scheduler.now = defaultNow;
-      Scheduler.normalize = function(timeSpan) {
-        timeSpan < 0 && (timeSpan = 0);
-        return timeSpan;
-      };
-      return Scheduler;
-    }());
-    var normalizeTime = Scheduler.normalize;
-    (function(schedulerProto) {
-      function invokeRecImmediate(scheduler, pair) {
-        var state = pair[0],
-            action = pair[1],
-            group = new CompositeDisposable();
-        function recursiveAction(state1) {
-          action(state1, function(state2) {
-            var isAdded = false,
-                isDone = false,
-                d = scheduler.scheduleWithState(state2, function(scheduler1, state3) {
-                  if (isAdded) {
-                    group.remove(d);
-                  } else {
-                    isDone = true;
-                  }
-                  recursiveAction(state3);
-                  return disposableEmpty;
-                });
-            if (!isDone) {
-              group.add(d);
-              isAdded = true;
-            }
-          });
-        }
-        recursiveAction(state);
-        return group;
-      }
-      function invokeRecDate(scheduler, pair, method) {
-        var state = pair[0],
-            action = pair[1],
-            group = new CompositeDisposable();
-        function recursiveAction(state1) {
-          action(state1, function(state2, dueTime1) {
-            var isAdded = false,
-                isDone = false,
-                d = scheduler[method](state2, dueTime1, function(scheduler1, state3) {
-                  if (isAdded) {
-                    group.remove(d);
-                  } else {
-                    isDone = true;
-                  }
-                  recursiveAction(state3);
-                  return disposableEmpty;
-                });
-            if (!isDone) {
-              group.add(d);
-              isAdded = true;
-            }
-          });
-        }
-        ;
-        recursiveAction(state);
-        return group;
-      }
-      function scheduleInnerRecursive(action, self) {
-        action(function(dt) {
-          self(action, dt);
-        });
-      }
-      schedulerProto.scheduleRecursive = function(action) {
-        return this.scheduleRecursiveWithState(action, function(_action, self) {
-          _action(function() {
-            self(_action);
-          });
-        });
-      };
-      schedulerProto.scheduleRecursiveWithState = function(state, action) {
-        return this.scheduleWithState([state, action], invokeRecImmediate);
-      };
-      schedulerProto.scheduleRecursiveWithRelative = function(dueTime, action) {
-        return this.scheduleRecursiveWithRelativeAndState(action, dueTime, scheduleInnerRecursive);
-      };
-      schedulerProto.scheduleRecursiveWithRelativeAndState = function(state, dueTime, action) {
-        return this._scheduleRelative([state, action], dueTime, function(s, p) {
-          return invokeRecDate(s, p, 'scheduleWithRelativeAndState');
-        });
-      };
-      schedulerProto.scheduleRecursiveWithAbsolute = function(dueTime, action) {
-        return this.scheduleRecursiveWithAbsoluteAndState(action, dueTime, scheduleInnerRecursive);
-      };
-      schedulerProto.scheduleRecursiveWithAbsoluteAndState = function(state, dueTime, action) {
-        return this._scheduleAbsolute([state, action], dueTime, function(s, p) {
-          return invokeRecDate(s, p, 'scheduleWithAbsoluteAndState');
-        });
-      };
-    }(Scheduler.prototype));
-    (function(schedulerProto) {
-      Scheduler.prototype.schedulePeriodic = function(period, action) {
-        return this.schedulePeriodicWithState(null, period, action);
-      };
-      Scheduler.prototype.schedulePeriodicWithState = function(state, period, action) {
-        if (typeof root.setInterval === 'undefined') {
-          throw new NotSupportedError();
-        }
-        period = normalizeTime(period);
-        var s = state,
-            id = root.setInterval(function() {
-              s = action(s);
-            }, period);
-        return disposableCreate(function() {
-          root.clearInterval(id);
-        });
-      };
-    }(Scheduler.prototype));
-    (function(schedulerProto) {
-      schedulerProto.catchError = schedulerProto['catch'] = function(handler) {
-        return new CatchScheduler(this, handler);
-      };
-    }(Scheduler.prototype));
-    var SchedulePeriodicRecursive = Rx.internals.SchedulePeriodicRecursive = (function() {
-      function tick(command, recurse) {
-        recurse(0, this._period);
-        try {
-          this._state = this._action(this._state);
-        } catch (e) {
-          this._cancel.dispose();
-          throw e;
-        }
-      }
-      function SchedulePeriodicRecursive(scheduler, state, period, action) {
-        this._scheduler = scheduler;
-        this._state = state;
-        this._period = period;
-        this._action = action;
-      }
-      SchedulePeriodicRecursive.prototype.start = function() {
-        var d = new SingleAssignmentDisposable();
-        this._cancel = d;
-        d.setDisposable(this._scheduler.scheduleRecursiveWithRelativeAndState(0, this._period, tick.bind(this)));
-        return d;
-      };
-      return SchedulePeriodicRecursive;
-    }());
-    var immediateScheduler = Scheduler.immediate = (function() {
-      function scheduleNow(state, action) {
-        return action(this, state);
-      }
-      return new Scheduler(defaultNow, scheduleNow, notSupported, notSupported);
-    }());
-    var currentThreadScheduler = Scheduler.currentThread = (function() {
-      var queue;
-      function runTrampoline() {
-        while (queue.length > 0) {
-          var item = queue.dequeue();
-          !item.isCancelled() && item.invoke();
-        }
-      }
-      function scheduleNow(state, action) {
-        var si = new ScheduledItem(this, state, action, this.now());
-        if (!queue) {
-          queue = new PriorityQueue(4);
-          queue.enqueue(si);
-          var result = tryCatch(runTrampoline)();
-          queue = null;
-          if (result === errorObj) {
-            return thrower(result.e);
-          }
-        } else {
-          queue.enqueue(si);
-        }
-        return si.disposable;
-      }
-      var currentScheduler = new Scheduler(defaultNow, scheduleNow, notSupported, notSupported);
-      currentScheduler.scheduleRequired = function() {
-        return !queue;
-      };
-      return currentScheduler;
-    }());
-    var scheduleMethod,
-        clearMethod;
-    var localTimer = (function() {
-      var localSetTimeout,
-          localClearTimeout = noop;
-      if (!!root.WScript) {
-        localSetTimeout = function(fn, time) {
-          root.WScript.Sleep(time);
-          fn();
-        };
-      } else if (!!root.setTimeout) {
-        localSetTimeout = root.setTimeout;
-        localClearTimeout = root.clearTimeout;
-      } else {
-        throw new NotSupportedError();
-      }
-      return {
-        setTimeout: localSetTimeout,
-        clearTimeout: localClearTimeout
-      };
-    }());
-    var localSetTimeout = localTimer.setTimeout,
-        localClearTimeout = localTimer.clearTimeout;
-    (function() {
-      var nextHandle = 1,
-          tasksByHandle = {},
-          currentlyRunning = false;
-      clearMethod = function(handle) {
-        delete tasksByHandle[handle];
-      };
-      function runTask(handle) {
-        if (currentlyRunning) {
-          localSetTimeout(function() {
-            runTask(handle);
-          }, 0);
-        } else {
-          var task = tasksByHandle[handle];
-          if (task) {
-            currentlyRunning = true;
-            var result = tryCatch(task)();
-            clearMethod(handle);
-            currentlyRunning = false;
-            if (result === errorObj) {
-              return thrower(result.e);
-            }
-          }
-        }
-      }
-      var reNative = RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/toString| for [^\]]+/g, '.*?') + '$');
-      var setImmediate = typeof(setImmediate = freeGlobal && moduleExports && freeGlobal.setImmediate) == 'function' && !reNative.test(setImmediate) && setImmediate;
-      function postMessageSupported() {
-        if (!root.postMessage || root.importScripts) {
-          return false;
-        }
-        var isAsync = false,
-            oldHandler = root.onmessage;
-        root.onmessage = function() {
-          isAsync = true;
-        };
-        root.postMessage('', '*');
-        root.onmessage = oldHandler;
-        return isAsync;
-      }
-      if (isFunction(setImmediate)) {
-        scheduleMethod = function(action) {
-          var id = nextHandle++;
-          tasksByHandle[id] = action;
-          setImmediate(function() {
-            runTask(id);
-          });
-          return id;
-        };
-      } else if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
-        scheduleMethod = function(action) {
-          var id = nextHandle++;
-          tasksByHandle[id] = action;
-          process.nextTick(function() {
-            runTask(id);
-          });
-          return id;
-        };
-      } else if (postMessageSupported()) {
-        var MSG_PREFIX = 'ms.rx.schedule' + Math.random();
-        function onGlobalPostMessage(event) {
-          if (typeof event.data === 'string' && event.data.substring(0, MSG_PREFIX.length) === MSG_PREFIX) {
-            runTask(event.data.substring(MSG_PREFIX.length));
-          }
-        }
-        if (root.addEventListener) {
-          root.addEventListener('message', onGlobalPostMessage, false);
-        } else {
-          root.attachEvent('onmessage', onGlobalPostMessage, false);
-        }
-        scheduleMethod = function(action) {
-          var id = nextHandle++;
-          tasksByHandle[id] = action;
-          root.postMessage(MSG_PREFIX + currentId, '*');
-          return id;
-        };
-      } else if (!!root.MessageChannel) {
-        var channel = new root.MessageChannel();
-        channel.port1.onmessage = function(e) {
-          runTask(e.data);
-        };
-        scheduleMethod = function(action) {
-          var id = nextHandle++;
-          tasksByHandle[id] = action;
-          channel.port2.postMessage(id);
-          return id;
-        };
-      } else if ('document' in root && 'onreadystatechange' in root.document.createElement('script')) {
-        scheduleMethod = function(action) {
-          var scriptElement = root.document.createElement('script');
-          var id = nextHandle++;
-          tasksByHandle[id] = action;
-          scriptElement.onreadystatechange = function() {
-            runTask(id);
-            scriptElement.onreadystatechange = null;
-            scriptElement.parentNode.removeChild(scriptElement);
-            scriptElement = null;
-          };
-          root.document.documentElement.appendChild(scriptElement);
-          return id;
-        };
-      } else {
-        scheduleMethod = function(action) {
-          var id = nextHandle++;
-          tasksByHandle[id] = action;
-          localSetTimeout(function() {
-            runTask(id);
-          }, 0);
-          return id;
-        };
-      }
-    }());
-    var timeoutScheduler = Scheduler.timeout = Scheduler.default = (function() {
-      function scheduleNow(state, action) {
-        var scheduler = this,
-            disposable = new SingleAssignmentDisposable();
-        var id = scheduleMethod(function() {
-          if (!disposable.isDisposed) {
-            disposable.setDisposable(action(scheduler, state));
-          }
-        });
-        return new CompositeDisposable(disposable, disposableCreate(function() {
-          clearMethod(id);
-        }));
-      }
-      function scheduleRelative(state, dueTime, action) {
-        var scheduler = this,
-            dt = Scheduler.normalize(dueTime);
-        if (dt === 0) {
-          return scheduler.scheduleWithState(state, action);
-        }
-        var disposable = new SingleAssignmentDisposable();
-        var id = localSetTimeout(function() {
-          if (!disposable.isDisposed) {
-            disposable.setDisposable(action(scheduler, state));
-          }
-        }, dt);
-        return new CompositeDisposable(disposable, disposableCreate(function() {
-          localClearTimeout(id);
-        }));
-      }
-      function scheduleAbsolute(state, dueTime, action) {
-        return this.scheduleWithRelativeAndState(state, dueTime - this.now(), action);
-      }
-      return new Scheduler(defaultNow, scheduleNow, scheduleRelative, scheduleAbsolute);
-    })();
-    var CatchScheduler = (function(__super__) {
-      function scheduleNow(state, action) {
-        return this._scheduler.scheduleWithState(state, this._wrap(action));
-      }
-      function scheduleRelative(state, dueTime, action) {
-        return this._scheduler.scheduleWithRelativeAndState(state, dueTime, this._wrap(action));
-      }
-      function scheduleAbsolute(state, dueTime, action) {
-        return this._scheduler.scheduleWithAbsoluteAndState(state, dueTime, this._wrap(action));
-      }
-      inherits(CatchScheduler, __super__);
-      function CatchScheduler(scheduler, handler) {
-        this._scheduler = scheduler;
-        this._handler = handler;
-        this._recursiveOriginal = null;
-        this._recursiveWrapper = null;
-        __super__.call(this, this._scheduler.now.bind(this._scheduler), scheduleNow, scheduleRelative, scheduleAbsolute);
-      }
-      CatchScheduler.prototype._clone = function(scheduler) {
-        return new CatchScheduler(scheduler, this._handler);
-      };
-      CatchScheduler.prototype._wrap = function(action) {
-        var parent = this;
-        return function(self, state) {
-          try {
-            return action(parent._getRecursiveWrapper(self), state);
-          } catch (e) {
-            if (!parent._handler(e)) {
-              throw e;
-            }
-            return disposableEmpty;
-          }
-        };
-      };
-      CatchScheduler.prototype._getRecursiveWrapper = function(scheduler) {
-        if (this._recursiveOriginal !== scheduler) {
-          this._recursiveOriginal = scheduler;
-          var wrapper = this._clone(scheduler);
-          wrapper._recursiveOriginal = scheduler;
-          wrapper._recursiveWrapper = wrapper;
-          this._recursiveWrapper = wrapper;
-        }
-        return this._recursiveWrapper;
-      };
-      CatchScheduler.prototype.schedulePeriodicWithState = function(state, period, action) {
-        var self = this,
-            failed = false,
-            d = new SingleAssignmentDisposable();
-        d.setDisposable(this._scheduler.schedulePeriodicWithState(state, period, function(state1) {
-          if (failed) {
-            return null;
-          }
-          try {
-            return action(state1);
-          } catch (e) {
-            failed = true;
-            if (!self._handler(e)) {
-              throw e;
-            }
-            d.dispose();
-            return null;
-          }
-        }));
-        return d;
-      };
-      return CatchScheduler;
-    }(Scheduler));
-    var Notification = Rx.Notification = (function() {
-      function Notification(kind, value, exception, accept, acceptObservable, toString) {
-        this.kind = kind;
-        this.value = value;
-        this.exception = exception;
-        this._accept = accept;
-        this._acceptObservable = acceptObservable;
-        this.toString = toString;
-      }
-      Notification.prototype.accept = function(observerOrOnNext, onError, onCompleted) {
-        return observerOrOnNext && typeof observerOrOnNext === 'object' ? this._acceptObservable(observerOrOnNext) : this._accept(observerOrOnNext, onError, onCompleted);
-      };
-      Notification.prototype.toObservable = function(scheduler) {
-        var self = this;
-        isScheduler(scheduler) || (scheduler = immediateScheduler);
-        return new AnonymousObservable(function(observer) {
-          return scheduler.scheduleWithState(self, function(_, notification) {
-            notification._acceptObservable(observer);
-            notification.kind === 'N' && observer.onCompleted();
-          });
-        });
-      };
-      return Notification;
-    })();
-    var notificationCreateOnNext = Notification.createOnNext = (function() {
-      function _accept(onNext) {
-        return onNext(this.value);
-      }
-      function _acceptObservable(observer) {
-        return observer.onNext(this.value);
-      }
-      function toString() {
-        return 'OnNext(' + this.value + ')';
-      }
-      return function(value) {
-        return new Notification('N', value, null, _accept, _acceptObservable, toString);
-      };
-    }());
-    var notificationCreateOnError = Notification.createOnError = (function() {
-      function _accept(onNext, onError) {
-        return onError(this.exception);
-      }
-      function _acceptObservable(observer) {
-        return observer.onError(this.exception);
-      }
-      function toString() {
-        return 'OnError(' + this.exception + ')';
-      }
-      return function(e) {
-        return new Notification('E', null, e, _accept, _acceptObservable, toString);
-      };
-    }());
-    var notificationCreateOnCompleted = Notification.createOnCompleted = (function() {
-      function _accept(onNext, onError, onCompleted) {
-        return onCompleted();
-      }
-      function _acceptObservable(observer) {
-        return observer.onCompleted();
-      }
-      function toString() {
-        return 'OnCompleted()';
-      }
-      return function() {
-        return new Notification('C', null, null, _accept, _acceptObservable, toString);
-      };
-    }());
-    var Enumerator = Rx.internals.Enumerator = function(next) {
-      this._next = next;
-    };
-    Enumerator.prototype.next = function() {
-      return this._next();
-    };
-    Enumerator.prototype[$iterator$] = function() {
-      return this;
-    };
-    var Enumerable = Rx.internals.Enumerable = function(iterator) {
-      this._iterator = iterator;
-    };
-    Enumerable.prototype[$iterator$] = function() {
-      return this._iterator();
-    };
-    Enumerable.prototype.concat = function() {
-      var sources = this;
-      return new AnonymousObservable(function(o) {
-        var e = sources[$iterator$]();
-        var isDisposed,
-            subscription = new SerialDisposable();
-        var cancelable = immediateScheduler.scheduleRecursive(function(self) {
-          if (isDisposed) {
-            return ;
-          }
-          try {
-            var currentItem = e.next();
-          } catch (ex) {
-            return o.onError(ex);
-          }
-          if (currentItem.done) {
-            return o.onCompleted();
-          }
-          var currentValue = currentItem.value;
-          isPromise(currentValue) && (currentValue = observableFromPromise(currentValue));
-          var d = new SingleAssignmentDisposable();
-          subscription.setDisposable(d);
-          d.setDisposable(currentValue.subscribe(function(x) {
-            o.onNext(x);
-          }, function(err) {
-            o.onError(err);
-          }, self));
-        });
-        return new CompositeDisposable(subscription, cancelable, disposableCreate(function() {
-          isDisposed = true;
-        }));
-      });
-    };
-    Enumerable.prototype.catchError = function() {
-      var sources = this;
-      return new AnonymousObservable(function(o) {
-        var e = sources[$iterator$]();
-        var isDisposed,
-            subscription = new SerialDisposable();
-        var cancelable = immediateScheduler.scheduleRecursiveWithState(null, function(lastException, self) {
-          if (isDisposed) {
-            return ;
-          }
-          try {
-            var currentItem = e.next();
-          } catch (ex) {
-            return observer.onError(ex);
-          }
-          if (currentItem.done) {
-            if (lastException !== null) {
-              o.onError(lastException);
-            } else {
-              o.onCompleted();
-            }
-            return ;
-          }
-          var currentValue = currentItem.value;
-          isPromise(currentValue) && (currentValue = observableFromPromise(currentValue));
-          var d = new SingleAssignmentDisposable();
-          subscription.setDisposable(d);
-          d.setDisposable(currentValue.subscribe(function(x) {
-            o.onNext(x);
-          }, self, function() {
-            o.onCompleted();
-          }));
-        });
-        return new CompositeDisposable(subscription, cancelable, disposableCreate(function() {
-          isDisposed = true;
-        }));
-      });
-    };
-    Enumerable.prototype.catchErrorWhen = function(notificationHandler) {
-      var sources = this;
-      return new AnonymousObservable(function(o) {
-        var exceptions = new Subject(),
-            notifier = new Subject(),
-            handled = notificationHandler(exceptions),
-            notificationDisposable = handled.subscribe(notifier);
-        var e = sources[$iterator$]();
-        var isDisposed,
-            lastException,
-            subscription = new SerialDisposable();
-        var cancelable = immediateScheduler.scheduleRecursive(function(self) {
-          if (isDisposed) {
-            return ;
-          }
-          try {
-            var currentItem = e.next();
-          } catch (ex) {
-            return o.onError(ex);
-          }
-          if (currentItem.done) {
-            if (lastException) {
-              o.onError(lastException);
-            } else {
-              o.onCompleted();
-            }
-            return ;
-          }
-          var currentValue = currentItem.value;
-          isPromise(currentValue) && (currentValue = observableFromPromise(currentValue));
-          var outer = new SingleAssignmentDisposable();
-          var inner = new SingleAssignmentDisposable();
-          subscription.setDisposable(new CompositeDisposable(inner, outer));
-          outer.setDisposable(currentValue.subscribe(function(x) {
-            o.onNext(x);
-          }, function(exn) {
-            inner.setDisposable(notifier.subscribe(self, function(ex) {
-              o.onError(ex);
-            }, function() {
-              o.onCompleted();
-            }));
-            exceptions.onNext(exn);
-          }, function() {
-            o.onCompleted();
-          }));
-        });
-        return new CompositeDisposable(notificationDisposable, subscription, cancelable, disposableCreate(function() {
-          isDisposed = true;
-        }));
-      });
-    };
-    var enumerableRepeat = Enumerable.repeat = function(value, repeatCount) {
-      if (repeatCount == null) {
-        repeatCount = -1;
-      }
-      return new Enumerable(function() {
-        var left = repeatCount;
-        return new Enumerator(function() {
-          if (left === 0) {
-            return doneEnumerator;
-          }
-          if (left > 0) {
-            left--;
-          }
-          return {
-            done: false,
-            value: value
-          };
-        });
-      });
-    };
-    var enumerableOf = Enumerable.of = function(source, selector, thisArg) {
-      if (selector) {
-        var selectorFn = bindCallback(selector, thisArg, 3);
-      }
-      return new Enumerable(function() {
-        var index = -1;
-        return new Enumerator(function() {
-          return ++index < source.length ? {
-            done: false,
-            value: !selector ? source[index] : selectorFn(source[index], index, source)
-          } : doneEnumerator;
-        });
-      });
-    };
-    var Observer = Rx.Observer = function() {};
-    Observer.prototype.toNotifier = function() {
-      var observer = this;
-      return function(n) {
-        return n.accept(observer);
-      };
-    };
-    Observer.prototype.asObserver = function() {
-      return new AnonymousObserver(this.onNext.bind(this), this.onError.bind(this), this.onCompleted.bind(this));
-    };
-    Observer.prototype.checked = function() {
-      return new CheckedObserver(this);
-    };
-    var observerCreate = Observer.create = function(onNext, onError, onCompleted) {
-      onNext || (onNext = noop);
-      onError || (onError = defaultError);
-      onCompleted || (onCompleted = noop);
-      return new AnonymousObserver(onNext, onError, onCompleted);
-    };
-    Observer.fromNotifier = function(handler, thisArg) {
-      return new AnonymousObserver(function(x) {
-        return handler.call(thisArg, notificationCreateOnNext(x));
-      }, function(e) {
-        return handler.call(thisArg, notificationCreateOnError(e));
-      }, function() {
-        return handler.call(thisArg, notificationCreateOnCompleted());
-      });
-    };
-    Observer.prototype.notifyOn = function(scheduler) {
-      return new ObserveOnObserver(scheduler, this);
-    };
-    Observer.prototype.makeSafe = function(disposable) {
-      return new AnonymousSafeObserver(this._onNext, this._onError, this._onCompleted, disposable);
-    };
-    var AbstractObserver = Rx.internals.AbstractObserver = (function(__super__) {
-      inherits(AbstractObserver, __super__);
-      function AbstractObserver() {
-        this.isStopped = false;
-        __super__.call(this);
-      }
-      AbstractObserver.prototype.next = notImplemented;
-      AbstractObserver.prototype.error = notImplemented;
-      AbstractObserver.prototype.completed = notImplemented;
-      AbstractObserver.prototype.onNext = function(value) {
-        if (!this.isStopped) {
-          this.next(value);
-        }
-      };
-      AbstractObserver.prototype.onError = function(error) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.error(error);
-        }
-      };
-      AbstractObserver.prototype.onCompleted = function() {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.completed();
-        }
-      };
-      AbstractObserver.prototype.dispose = function() {
-        this.isStopped = true;
-      };
-      AbstractObserver.prototype.fail = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.error(e);
-          return true;
-        }
-        return false;
-      };
-      return AbstractObserver;
-    }(Observer));
-    var AnonymousObserver = Rx.AnonymousObserver = (function(__super__) {
-      inherits(AnonymousObserver, __super__);
-      function AnonymousObserver(onNext, onError, onCompleted) {
-        __super__.call(this);
-        this._onNext = onNext;
-        this._onError = onError;
-        this._onCompleted = onCompleted;
-      }
-      AnonymousObserver.prototype.next = function(value) {
-        this._onNext(value);
-      };
-      AnonymousObserver.prototype.error = function(error) {
-        this._onError(error);
-      };
-      AnonymousObserver.prototype.completed = function() {
-        this._onCompleted();
-      };
-      return AnonymousObserver;
-    }(AbstractObserver));
-    var CheckedObserver = (function(__super__) {
-      inherits(CheckedObserver, __super__);
-      function CheckedObserver(observer) {
-        __super__.call(this);
-        this._observer = observer;
-        this._state = 0;
-      }
-      var CheckedObserverPrototype = CheckedObserver.prototype;
-      CheckedObserverPrototype.onNext = function(value) {
-        this.checkAccess();
-        var res = tryCatch(this._observer.onNext).call(this._observer, value);
-        this._state = 0;
-        res === errorObj && thrower(res.e);
-      };
-      CheckedObserverPrototype.onError = function(err) {
-        this.checkAccess();
-        var res = tryCatch(this._observer.onError).call(this._observer, err);
-        this._state = 2;
-        res === errorObj && thrower(res.e);
-      };
-      CheckedObserverPrototype.onCompleted = function() {
-        this.checkAccess();
-        var res = tryCatch(this._observer.onCompleted).call(this._observer);
-        this._state = 2;
-        res === errorObj && thrower(res.e);
-      };
-      CheckedObserverPrototype.checkAccess = function() {
-        if (this._state === 1) {
-          throw new Error('Re-entrancy detected');
-        }
-        if (this._state === 2) {
-          throw new Error('Observer completed');
-        }
-        if (this._state === 0) {
-          this._state = 1;
-        }
-      };
-      return CheckedObserver;
-    }(Observer));
-    var ScheduledObserver = Rx.internals.ScheduledObserver = (function(__super__) {
-      inherits(ScheduledObserver, __super__);
-      function ScheduledObserver(scheduler, observer) {
-        __super__.call(this);
-        this.scheduler = scheduler;
-        this.observer = observer;
-        this.isAcquired = false;
-        this.hasFaulted = false;
-        this.queue = [];
-        this.disposable = new SerialDisposable();
-      }
-      ScheduledObserver.prototype.next = function(value) {
-        var self = this;
-        this.queue.push(function() {
-          self.observer.onNext(value);
-        });
-      };
-      ScheduledObserver.prototype.error = function(e) {
-        var self = this;
-        this.queue.push(function() {
-          self.observer.onError(e);
-        });
-      };
-      ScheduledObserver.prototype.completed = function() {
-        var self = this;
-        this.queue.push(function() {
-          self.observer.onCompleted();
-        });
-      };
-      ScheduledObserver.prototype.ensureActive = function() {
-        var isOwner = false,
-            parent = this;
-        if (!this.hasFaulted && this.queue.length > 0) {
-          isOwner = !this.isAcquired;
-          this.isAcquired = true;
-        }
-        if (isOwner) {
-          this.disposable.setDisposable(this.scheduler.scheduleRecursive(function(self) {
-            var work;
-            if (parent.queue.length > 0) {
-              work = parent.queue.shift();
-            } else {
-              parent.isAcquired = false;
-              return ;
-            }
-            try {
-              work();
-            } catch (ex) {
-              parent.queue = [];
-              parent.hasFaulted = true;
-              throw ex;
-            }
-            self();
-          }));
-        }
-      };
-      ScheduledObserver.prototype.dispose = function() {
-        __super__.prototype.dispose.call(this);
-        this.disposable.dispose();
-      };
-      return ScheduledObserver;
-    }(AbstractObserver));
-    var ObserveOnObserver = (function(__super__) {
-      inherits(ObserveOnObserver, __super__);
-      function ObserveOnObserver(scheduler, observer, cancel) {
-        __super__.call(this, scheduler, observer);
-        this._cancel = cancel;
-      }
-      ObserveOnObserver.prototype.next = function(value) {
-        __super__.prototype.next.call(this, value);
-        this.ensureActive();
-      };
-      ObserveOnObserver.prototype.error = function(e) {
-        __super__.prototype.error.call(this, e);
-        this.ensureActive();
-      };
-      ObserveOnObserver.prototype.completed = function() {
-        __super__.prototype.completed.call(this);
-        this.ensureActive();
-      };
-      ObserveOnObserver.prototype.dispose = function() {
-        __super__.prototype.dispose.call(this);
-        this._cancel && this._cancel.dispose();
-        this._cancel = null;
-      };
-      return ObserveOnObserver;
-    })(ScheduledObserver);
-    var observableProto;
-    var Observable = Rx.Observable = (function() {
-      function Observable(subscribe) {
-        if (Rx.config.longStackSupport && hasStacks) {
-          try {
-            throw new Error();
-          } catch (e) {
-            this.stack = e.stack.substring(e.stack.indexOf("\n") + 1);
-          }
-          var self = this;
-          this._subscribe = function(observer) {
-            var oldOnError = observer.onError.bind(observer);
-            observer.onError = function(err) {
-              makeStackTraceLong(err, self);
-              oldOnError(err);
-            };
-            return subscribe.call(self, observer);
-          };
-        } else {
-          this._subscribe = subscribe;
-        }
-      }
-      observableProto = Observable.prototype;
-      observableProto.subscribe = observableProto.forEach = function(observerOrOnNext, onError, onCompleted) {
-        return this._subscribe(typeof observerOrOnNext === 'object' ? observerOrOnNext : observerCreate(observerOrOnNext, onError, onCompleted));
-      };
-      observableProto.subscribeOnNext = function(onNext, thisArg) {
-        return this._subscribe(observerCreate(typeof thisArg !== 'undefined' ? function(x) {
-          onNext.call(thisArg, x);
-        } : onNext));
-      };
-      observableProto.subscribeOnError = function(onError, thisArg) {
-        return this._subscribe(observerCreate(null, typeof thisArg !== 'undefined' ? function(e) {
-          onError.call(thisArg, e);
-        } : onError));
-      };
-      observableProto.subscribeOnCompleted = function(onCompleted, thisArg) {
-        return this._subscribe(observerCreate(null, null, typeof thisArg !== 'undefined' ? function() {
-          onCompleted.call(thisArg);
-        } : onCompleted));
-      };
-      return Observable;
-    })();
-    var ObservableBase = Rx.ObservableBase = (function(__super__) {
-      inherits(ObservableBase, __super__);
-      function fixSubscriber(subscriber) {
-        return subscriber && isFunction(subscriber.dispose) ? subscriber : isFunction(subscriber) ? disposableCreate(subscriber) : disposableEmpty;
-      }
-      function setDisposable(s, state) {
-        var ado = state[0],
-            self = state[1];
-        var sub = tryCatch(self.subscribeCore).call(self, ado);
-        if (sub === errorObj) {
-          if (!ado.fail(errorObj.e)) {
-            return thrower(errorObj.e);
-          }
-        }
-        ado.setDisposable(fixSubscriber(sub));
-      }
-      function subscribe(observer) {
-        var ado = new AutoDetachObserver(observer),
-            state = [ado, this];
-        if (currentThreadScheduler.scheduleRequired()) {
-          currentThreadScheduler.scheduleWithState(state, setDisposable);
-        } else {
-          setDisposable(null, state);
-        }
-        return ado;
-      }
-      function ObservableBase() {
-        __super__.call(this, subscribe);
-      }
-      ObservableBase.prototype.subscribeCore = notImplemented;
-      return ObservableBase;
-    }(Observable));
-    observableProto.observeOn = function(scheduler) {
-      var source = this;
-      return new AnonymousObservable(function(observer) {
-        return source.subscribe(new ObserveOnObserver(scheduler, observer));
-      }, source);
-    };
-    observableProto.subscribeOn = function(scheduler) {
-      var source = this;
-      return new AnonymousObservable(function(observer) {
-        var m = new SingleAssignmentDisposable(),
-            d = new SerialDisposable();
-        d.setDisposable(m);
-        m.setDisposable(scheduler.schedule(function() {
-          d.setDisposable(new ScheduledDisposable(scheduler, source.subscribe(observer)));
-        }));
-        return d;
-      }, source);
-    };
-    var observableFromPromise = Observable.fromPromise = function(promise) {
-      return observableDefer(function() {
-        var subject = new Rx.AsyncSubject();
-        promise.then(function(value) {
-          subject.onNext(value);
-          subject.onCompleted();
-        }, subject.onError.bind(subject));
-        return subject;
-      });
-    };
-    observableProto.toPromise = function(promiseCtor) {
-      promiseCtor || (promiseCtor = Rx.config.Promise);
-      if (!promiseCtor) {
-        throw new NotSupportedError('Promise type not provided nor in Rx.config.Promise');
-      }
-      var source = this;
-      return new promiseCtor(function(resolve, reject) {
-        var value,
-            hasValue = false;
-        source.subscribe(function(v) {
-          value = v;
-          hasValue = true;
-        }, reject, function() {
-          hasValue && resolve(value);
-        });
-      });
-    };
-    var ToArrayObservable = (function(__super__) {
-      inherits(ToArrayObservable, __super__);
-      function ToArrayObservable(source) {
-        this.source = source;
-        __super__.call(this);
-      }
-      ToArrayObservable.prototype.subscribeCore = function(observer) {
-        return this.source.subscribe(new ToArrayObserver(observer));
-      };
-      return ToArrayObservable;
-    }(ObservableBase));
-    function ToArrayObserver(observer) {
-      this.observer = observer;
-      this.a = [];
-      this.isStopped = false;
-    }
-    ToArrayObserver.prototype.onNext = function(x) {
-      if (!this.isStopped) {
-        this.a.push(x);
-      }
-    };
-    ToArrayObserver.prototype.onError = function(e) {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onError(e);
-      }
-    };
-    ToArrayObserver.prototype.onCompleted = function() {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onNext(this.a);
-        this.observer.onCompleted();
-      }
-    };
-    ToArrayObserver.prototype.dispose = function() {
-      this.isStopped = true;
-    };
-    ToArrayObserver.prototype.fail = function(e) {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onError(e);
-        return true;
-      }
-      return false;
-    };
-    observableProto.toArray = function() {
-      return new ToArrayObservable(this);
-    };
-    Observable.create = Observable.createWithDisposable = function(subscribe, parent) {
-      return new AnonymousObservable(subscribe, parent);
-    };
-    var observableDefer = Observable.defer = function(observableFactory) {
-      return new AnonymousObservable(function(observer) {
-        var result;
-        try {
-          result = observableFactory();
-        } catch (e) {
-          return observableThrow(e).subscribe(observer);
-        }
-        isPromise(result) && (result = observableFromPromise(result));
-        return result.subscribe(observer);
-      });
-    };
-    var observableEmpty = Observable.empty = function(scheduler) {
-      isScheduler(scheduler) || (scheduler = immediateScheduler);
-      return new AnonymousObservable(function(observer) {
-        return scheduler.scheduleWithState(null, function() {
-          observer.onCompleted();
-        });
-      });
-    };
-    var FromObservable = (function(__super__) {
-      inherits(FromObservable, __super__);
-      function FromObservable(iterable, mapper, scheduler) {
-        this.iterable = iterable;
-        this.mapper = mapper;
-        this.scheduler = scheduler;
-        __super__.call(this);
-      }
-      FromObservable.prototype.subscribeCore = function(observer) {
-        var sink = new FromSink(observer, this);
-        return sink.run();
-      };
-      return FromObservable;
-    }(ObservableBase));
-    var FromSink = (function() {
-      function FromSink(observer, parent) {
-        this.observer = observer;
-        this.parent = parent;
-      }
-      FromSink.prototype.run = function() {
-        var list = Object(this.parent.iterable),
-            it = getIterable(list),
-            observer = this.observer,
-            mapper = this.parent.mapper;
-        function loopRecursive(i, recurse) {
-          try {
-            var next = it.next();
-          } catch (e) {
-            return observer.onError(e);
-          }
-          if (next.done) {
-            return observer.onCompleted();
-          }
-          var result = next.value;
-          if (mapper) {
-            try {
-              result = mapper(result, i);
-            } catch (e) {
-              return observer.onError(e);
-            }
-          }
-          observer.onNext(result);
-          recurse(i + 1);
-        }
-        return this.parent.scheduler.scheduleRecursiveWithState(0, loopRecursive);
-      };
-      return FromSink;
-    }());
-    var maxSafeInteger = Math.pow(2, 53) - 1;
-    function StringIterable(str) {
-      this._s = s;
-    }
-    StringIterable.prototype[$iterator$] = function() {
-      return new StringIterator(this._s);
-    };
-    function StringIterator(str) {
-      this._s = s;
-      this._l = s.length;
-      this._i = 0;
-    }
-    StringIterator.prototype[$iterator$] = function() {
-      return this;
-    };
-    StringIterator.prototype.next = function() {
-      return this._i < this._l ? {
-        done: false,
-        value: this._s.charAt(this._i++)
-      } : doneEnumerator;
-    };
-    function ArrayIterable(a) {
-      this._a = a;
-    }
-    ArrayIterable.prototype[$iterator$] = function() {
-      return new ArrayIterator(this._a);
-    };
-    function ArrayIterator(a) {
-      this._a = a;
-      this._l = toLength(a);
-      this._i = 0;
-    }
-    ArrayIterator.prototype[$iterator$] = function() {
-      return this;
-    };
-    ArrayIterator.prototype.next = function() {
-      return this._i < this._l ? {
-        done: false,
-        value: this._a[this._i++]
-      } : doneEnumerator;
-    };
-    function numberIsFinite(value) {
-      return typeof value === 'number' && root.isFinite(value);
-    }
-    function isNan(n) {
-      return n !== n;
-    }
-    function getIterable(o) {
-      var i = o[$iterator$],
-          it;
-      if (!i && typeof o === 'string') {
-        it = new StringIterable(o);
-        return it[$iterator$]();
-      }
-      if (!i && o.length !== undefined) {
-        it = new ArrayIterable(o);
-        return it[$iterator$]();
-      }
-      if (!i) {
-        throw new TypeError('Object is not iterable');
-      }
-      return o[$iterator$]();
-    }
-    function sign(value) {
-      var number = +value;
-      if (number === 0) {
-        return number;
-      }
-      if (isNaN(number)) {
-        return number;
-      }
-      return number < 0 ? -1 : 1;
-    }
-    function toLength(o) {
-      var len = +o.length;
-      if (isNaN(len)) {
-        return 0;
-      }
-      if (len === 0 || !numberIsFinite(len)) {
-        return len;
-      }
-      len = sign(len) * Math.floor(Math.abs(len));
-      if (len <= 0) {
-        return 0;
-      }
-      if (len > maxSafeInteger) {
-        return maxSafeInteger;
-      }
-      return len;
-    }
-    var observableFrom = Observable.from = function(iterable, mapFn, thisArg, scheduler) {
-      if (iterable == null) {
-        throw new Error('iterable cannot be null.');
-      }
-      if (mapFn && !isFunction(mapFn)) {
-        throw new Error('mapFn when provided must be a function');
-      }
-      if (mapFn) {
-        var mapper = bindCallback(mapFn, thisArg, 2);
-      }
-      isScheduler(scheduler) || (scheduler = currentThreadScheduler);
-      return new FromObservable(iterable, mapper, scheduler);
-    };
-    var FromArrayObservable = (function(__super__) {
-      inherits(FromArrayObservable, __super__);
-      function FromArrayObservable(args, scheduler) {
-        this.args = args;
-        this.scheduler = scheduler;
-        __super__.call(this);
-      }
-      FromArrayObservable.prototype.subscribeCore = function(observer) {
-        var sink = new FromArraySink(observer, this);
-        return sink.run();
-      };
-      return FromArrayObservable;
-    }(ObservableBase));
-    function FromArraySink(observer, parent) {
-      this.observer = observer;
-      this.parent = parent;
-    }
-    FromArraySink.prototype.run = function() {
-      var observer = this.observer,
-          args = this.parent.args,
-          len = args.length;
-      function loopRecursive(i, recurse) {
-        if (i < len) {
-          observer.onNext(args[i]);
-          recurse(i + 1);
-        } else {
-          observer.onCompleted();
-        }
-      }
-      return this.parent.scheduler.scheduleRecursiveWithState(0, loopRecursive);
-    };
-    var observableFromArray = Observable.fromArray = function(array, scheduler) {
-      isScheduler(scheduler) || (scheduler = currentThreadScheduler);
-      return new FromArrayObservable(array, scheduler);
-    };
-    Observable.generate = function(initialState, condition, iterate, resultSelector, scheduler) {
-      isScheduler(scheduler) || (scheduler = currentThreadScheduler);
-      return new AnonymousObservable(function(o) {
-        var first = true;
-        return scheduler.scheduleRecursiveWithState(initialState, function(state, self) {
-          var hasResult,
-              result;
-          try {
-            if (first) {
-              first = false;
-            } else {
-              state = iterate(state);
-            }
-            hasResult = condition(state);
-            hasResult && (result = resultSelector(state));
-          } catch (e) {
-            return o.onError(e);
-          }
-          if (hasResult) {
-            o.onNext(result);
-            self(state);
-          } else {
-            o.onCompleted();
-          }
-        });
-      });
-    };
-    var observableNever = Observable.never = function() {
-      return new AnonymousObservable(function() {
-        return disposableEmpty;
-      });
-    };
-    function observableOf(scheduler, array) {
-      isScheduler(scheduler) || (scheduler = currentThreadScheduler);
-      return new FromArrayObservable(array, scheduler);
-    }
-    Observable.of = function() {
-      var len = arguments.length,
-          args = new Array(len);
-      for (var i = 0; i < len; i++) {
-        args[i] = arguments[i];
-      }
-      return new FromArrayObservable(args, currentThreadScheduler);
-    };
-    Observable.ofWithScheduler = function(scheduler) {
-      var len = arguments.length,
-          args = new Array(len - 1);
-      for (var i = 1; i < len; i++) {
-        args[i - 1] = arguments[i];
-      }
-      return new FromArrayObservable(args, scheduler);
-    };
-    Observable.pairs = function(obj, scheduler) {
-      scheduler || (scheduler = Rx.Scheduler.currentThread);
-      return new AnonymousObservable(function(observer) {
-        var keys = Object.keys(obj),
-            len = keys.length;
-        return scheduler.scheduleRecursiveWithState(0, function(idx, self) {
-          if (idx < len) {
-            var key = keys[idx];
-            observer.onNext([key, obj[key]]);
-            self(idx + 1);
-          } else {
-            observer.onCompleted();
-          }
-        });
-      });
-    };
-    var RangeObservable = (function(__super__) {
-      inherits(RangeObservable, __super__);
-      function RangeObservable(start, count, scheduler) {
-        this.start = start;
-        this.count = count;
-        this.scheduler = scheduler;
-        __super__.call(this);
-      }
-      RangeObservable.prototype.subscribeCore = function(observer) {
-        var sink = new RangeSink(observer, this);
-        return sink.run();
-      };
-      return RangeObservable;
-    }(ObservableBase));
-    var RangeSink = (function() {
-      function RangeSink(observer, parent) {
-        this.observer = observer;
-        this.parent = parent;
-      }
-      RangeSink.prototype.run = function() {
-        var start = this.parent.start,
-            count = this.parent.count,
-            observer = this.observer;
-        function loopRecursive(i, recurse) {
-          if (i < count) {
-            observer.onNext(start + i);
-            recurse(i + 1);
-          } else {
-            observer.onCompleted();
-          }
-        }
-        return this.parent.scheduler.scheduleRecursiveWithState(0, loopRecursive);
-      };
-      return RangeSink;
-    }());
-    Observable.range = function(start, count, scheduler) {
-      isScheduler(scheduler) || (scheduler = currentThreadScheduler);
-      return new RangeObservable(start, count, scheduler);
-    };
-    Observable.repeat = function(value, repeatCount, scheduler) {
-      isScheduler(scheduler) || (scheduler = currentThreadScheduler);
-      return observableReturn(value, scheduler).repeat(repeatCount == null ? -1 : repeatCount);
-    };
-    var observableReturn = Observable['return'] = Observable.just = Observable.returnValue = function(value, scheduler) {
-      isScheduler(scheduler) || (scheduler = immediateScheduler);
-      return new AnonymousObservable(function(o) {
-        return scheduler.scheduleWithState(value, function(_, v) {
-          o.onNext(v);
-          o.onCompleted();
-        });
-      });
-    };
-    var observableThrow = Observable['throw'] = Observable.throwError = function(error, scheduler) {
-      isScheduler(scheduler) || (scheduler = immediateScheduler);
-      return new AnonymousObservable(function(observer) {
-        return scheduler.schedule(function() {
-          observer.onError(error);
-        });
-      });
-    };
-    Observable.throwException = function() {
-      return Observable.throwError.apply(null, arguments);
-    };
-    Observable.using = function(resourceFactory, observableFactory) {
-      return new AnonymousObservable(function(observer) {
-        var disposable = disposableEmpty,
-            resource,
-            source;
-        try {
-          resource = resourceFactory();
-          resource && (disposable = resource);
-          source = observableFactory(resource);
-        } catch (exception) {
-          return new CompositeDisposable(observableThrow(exception).subscribe(observer), disposable);
-        }
-        return new CompositeDisposable(source.subscribe(observer), disposable);
-      });
-    };
-    observableProto.amb = function(rightSource) {
-      var leftSource = this;
-      return new AnonymousObservable(function(observer) {
-        var choice,
-            leftChoice = 'L',
-            rightChoice = 'R',
-            leftSubscription = new SingleAssignmentDisposable(),
-            rightSubscription = new SingleAssignmentDisposable();
-        isPromise(rightSource) && (rightSource = observableFromPromise(rightSource));
-        function choiceL() {
-          if (!choice) {
-            choice = leftChoice;
-            rightSubscription.dispose();
-          }
-        }
-        function choiceR() {
-          if (!choice) {
-            choice = rightChoice;
-            leftSubscription.dispose();
-          }
-        }
-        leftSubscription.setDisposable(leftSource.subscribe(function(left) {
-          choiceL();
-          if (choice === leftChoice) {
-            observer.onNext(left);
-          }
-        }, function(err) {
-          choiceL();
-          if (choice === leftChoice) {
-            observer.onError(err);
-          }
-        }, function() {
-          choiceL();
-          if (choice === leftChoice) {
-            observer.onCompleted();
-          }
-        }));
-        rightSubscription.setDisposable(rightSource.subscribe(function(right) {
-          choiceR();
-          if (choice === rightChoice) {
-            observer.onNext(right);
-          }
-        }, function(err) {
-          choiceR();
-          if (choice === rightChoice) {
-            observer.onError(err);
-          }
-        }, function() {
-          choiceR();
-          if (choice === rightChoice) {
-            observer.onCompleted();
-          }
-        }));
-        return new CompositeDisposable(leftSubscription, rightSubscription);
-      });
-    };
-    Observable.amb = function() {
-      var acc = observableNever(),
-          items = [];
-      if (Array.isArray(arguments[0])) {
-        items = arguments[0];
-      } else {
-        for (var i = 0,
-            len = arguments.length; i < len; i++) {
-          items.push(arguments[i]);
-        }
-      }
-      function func(previous, current) {
-        return previous.amb(current);
-      }
-      for (var i = 0,
-          len = items.length; i < len; i++) {
-        acc = func(acc, items[i]);
-      }
-      return acc;
-    };
-    function observableCatchHandler(source, handler) {
-      return new AnonymousObservable(function(o) {
-        var d1 = new SingleAssignmentDisposable(),
-            subscription = new SerialDisposable();
-        subscription.setDisposable(d1);
-        d1.setDisposable(source.subscribe(function(x) {
-          o.onNext(x);
-        }, function(e) {
-          try {
-            var result = handler(e);
-          } catch (ex) {
-            return o.onError(ex);
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          var d = new SingleAssignmentDisposable();
-          subscription.setDisposable(d);
-          d.setDisposable(result.subscribe(o));
-        }, function(x) {
-          o.onCompleted(x);
-        }));
-        return subscription;
-      }, source);
-    }
-    observableProto['catch'] = observableProto.catchError = observableProto.catchException = function(handlerOrSecond) {
-      return typeof handlerOrSecond === 'function' ? observableCatchHandler(this, handlerOrSecond) : observableCatch([this, handlerOrSecond]);
-    };
-    var observableCatch = Observable.catchError = Observable['catch'] = Observable.catchException = function() {
-      var items = [];
-      if (Array.isArray(arguments[0])) {
-        items = arguments[0];
-      } else {
-        for (var i = 0,
-            len = arguments.length; i < len; i++) {
-          items.push(arguments[i]);
-        }
-      }
-      return enumerableOf(items).catchError();
-    };
-    observableProto.combineLatest = function() {
-      var len = arguments.length,
-          args = new Array(len);
-      for (var i = 0; i < len; i++) {
-        args[i] = arguments[i];
-      }
-      if (Array.isArray(args[0])) {
-        args[0].unshift(this);
-      } else {
-        args.unshift(this);
-      }
-      return combineLatest.apply(this, args);
-    };
-    var combineLatest = Observable.combineLatest = function() {
-      var len = arguments.length,
-          args = new Array(len);
-      for (var i = 0; i < len; i++) {
-        args[i] = arguments[i];
-      }
-      var resultSelector = args.pop();
-      Array.isArray(args[0]) && (args = args[0]);
-      return new AnonymousObservable(function(o) {
-        var n = args.length,
-            falseFactory = function() {
-              return false;
-            },
-            hasValue = arrayInitialize(n, falseFactory),
-            hasValueAll = false,
-            isDone = arrayInitialize(n, falseFactory),
-            values = new Array(n);
-        function next(i) {
-          hasValue[i] = true;
-          if (hasValueAll || (hasValueAll = hasValue.every(identity))) {
-            try {
-              var res = resultSelector.apply(null, values);
-            } catch (e) {
-              return o.onError(e);
-            }
-            o.onNext(res);
-          } else if (isDone.filter(function(x, j) {
-            return j !== i;
-          }).every(identity)) {
-            o.onCompleted();
-          }
-        }
-        function done(i) {
-          isDone[i] = true;
-          isDone.every(identity) && o.onCompleted();
-        }
-        var subscriptions = new Array(n);
-        for (var idx = 0; idx < n; idx++) {
-          (function(i) {
-            var source = args[i],
-                sad = new SingleAssignmentDisposable();
-            isPromise(source) && (source = observableFromPromise(source));
-            sad.setDisposable(source.subscribe(function(x) {
-              values[i] = x;
-              next(i);
-            }, function(e) {
-              o.onError(e);
-            }, function() {
-              done(i);
-            }));
-            subscriptions[i] = sad;
-          }(idx));
-        }
-        return new CompositeDisposable(subscriptions);
-      }, this);
-    };
-    observableProto.concat = function() {
-      for (var args = [],
-          i = 0,
-          len = arguments.length; i < len; i++) {
-        args.push(arguments[i]);
-      }
-      args.unshift(this);
-      return observableConcat.apply(null, args);
-    };
-    var observableConcat = Observable.concat = function() {
-      var args;
-      if (Array.isArray(arguments[0])) {
-        args = arguments[0];
-      } else {
-        args = new Array(arguments.length);
-        for (var i = 0,
-            len = arguments.length; i < len; i++) {
-          args[i] = arguments[i];
-        }
-      }
-      return enumerableOf(args).concat();
-    };
-    observableProto.concatAll = observableProto.concatObservable = function() {
-      return this.merge(1);
-    };
-    var MergeObservable = (function(__super__) {
-      inherits(MergeObservable, __super__);
-      function MergeObservable(source, maxConcurrent) {
-        this.source = source;
-        this.maxConcurrent = maxConcurrent;
-        __super__.call(this);
-      }
-      MergeObservable.prototype.subscribeCore = function(observer) {
-        var g = new CompositeDisposable();
-        g.add(this.source.subscribe(new MergeObserver(observer, this.maxConcurrent, g)));
-        return g;
-      };
-      return MergeObservable;
-    }(ObservableBase));
-    var MergeObserver = (function() {
-      function MergeObserver(o, max, g) {
-        this.o = o;
-        this.max = max;
-        this.g = g;
-        this.done = false;
-        this.q = [];
-        this.activeCount = 0;
-        this.isStopped = false;
-      }
-      MergeObserver.prototype.handleSubscribe = function(xs) {
-        var sad = new SingleAssignmentDisposable();
-        this.g.add(sad);
-        isPromise(xs) && (xs = observableFromPromise(xs));
-        sad.setDisposable(xs.subscribe(new InnerObserver(this, sad)));
-      };
-      MergeObserver.prototype.onNext = function(innerSource) {
-        if (this.isStopped) {
-          return ;
-        }
-        if (this.activeCount < this.max) {
-          this.activeCount++;
-          this.handleSubscribe(innerSource);
-        } else {
-          this.q.push(innerSource);
-        }
-      };
-      MergeObserver.prototype.onError = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.o.onError(e);
-        }
-      };
-      MergeObserver.prototype.onCompleted = function() {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.done = true;
-          this.activeCount === 0 && this.o.onCompleted();
-        }
-      };
-      MergeObserver.prototype.dispose = function() {
-        this.isStopped = true;
-      };
-      MergeObserver.prototype.fail = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.o.onError(e);
-          return true;
-        }
-        return false;
-      };
-      function InnerObserver(parent, sad) {
-        this.parent = parent;
-        this.sad = sad;
-        this.isStopped = false;
-      }
-      InnerObserver.prototype.onNext = function(x) {
-        if (!this.isStopped) {
-          this.parent.o.onNext(x);
-        }
-      };
-      InnerObserver.prototype.onError = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.parent.o.onError(e);
-        }
-      };
-      InnerObserver.prototype.onCompleted = function() {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          var parent = this.parent;
-          parent.g.remove(this.sad);
-          if (parent.q.length > 0) {
-            parent.handleSubscribe(parent.q.shift());
-          } else {
-            parent.activeCount--;
-            parent.done && parent.activeCount === 0 && parent.o.onCompleted();
-          }
-        }
-      };
-      InnerObserver.prototype.dispose = function() {
-        this.isStopped = true;
-      };
-      InnerObserver.prototype.fail = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.parent.o.onError(e);
-          return true;
-        }
-        return false;
-      };
-      return MergeObserver;
-    }());
-    observableProto.merge = function(maxConcurrentOrOther) {
-      return typeof maxConcurrentOrOther !== 'number' ? observableMerge(this, maxConcurrentOrOther) : new MergeObservable(this, maxConcurrentOrOther);
-    };
-    var observableMerge = Observable.merge = function() {
-      var scheduler,
-          sources = [],
-          i,
-          len = arguments.length;
-      if (!arguments[0]) {
-        scheduler = immediateScheduler;
-        for (i = 1; i < len; i++) {
-          sources.push(arguments[i]);
-        }
-      } else if (isScheduler(arguments[0])) {
-        scheduler = arguments[0];
-        for (i = 1; i < len; i++) {
-          sources.push(arguments[i]);
-        }
-      } else {
-        scheduler = immediateScheduler;
-        for (i = 0; i < len; i++) {
-          sources.push(arguments[i]);
-        }
-      }
-      if (Array.isArray(sources[0])) {
-        sources = sources[0];
-      }
-      return observableOf(scheduler, sources).mergeAll();
-    };
-    var CompositeError = Rx.CompositeError = function(errors) {
-      this.name = "NotImplementedError";
-      this.innerErrors = errors;
-      this.message = 'This contains multiple errors. Check the innerErrors';
-      Error.call(this);
-    };
-    CompositeError.prototype = Error.prototype;
-    Observable.mergeDelayError = function() {
-      var args;
-      if (Array.isArray(arguments[0])) {
-        args = arguments[0];
-      } else {
-        var len = arguments.length;
-        args = new Array(len);
-        for (var i = 0; i < len; i++) {
-          args[i] = arguments[i];
-        }
-      }
-      var source = observableOf(null, args);
-      return new AnonymousObservable(function(o) {
-        var group = new CompositeDisposable(),
-            m = new SingleAssignmentDisposable(),
-            isStopped = false,
-            errors = [];
-        function setCompletion() {
-          if (errors.length === 0) {
-            o.onCompleted();
-          } else if (errors.length === 1) {
-            o.onError(errors[0]);
-          } else {
-            o.onError(new CompositeError(errors));
-          }
-        }
-        group.add(m);
-        m.setDisposable(source.subscribe(function(innerSource) {
-          var innerSubscription = new SingleAssignmentDisposable();
-          group.add(innerSubscription);
-          isPromise(innerSource) && (innerSource = observableFromPromise(innerSource));
-          innerSubscription.setDisposable(innerSource.subscribe(function(x) {
-            o.onNext(x);
-          }, function(e) {
-            errors.push(e);
-            group.remove(innerSubscription);
-            isStopped && group.length === 1 && setCompletion();
-          }, function() {
-            group.remove(innerSubscription);
-            isStopped && group.length === 1 && setCompletion();
-          }));
-        }, function(e) {
-          errors.push(e);
-          isStopped = true;
-          group.length === 1 && setCompletion();
-        }, function() {
-          isStopped = true;
-          group.length === 1 && setCompletion();
-        }));
-        return group;
-      });
-    };
-    var MergeAllObservable = (function(__super__) {
-      inherits(MergeAllObservable, __super__);
-      function MergeAllObservable(source) {
-        this.source = source;
-        __super__.call(this);
-      }
-      MergeAllObservable.prototype.subscribeCore = function(observer) {
-        var g = new CompositeDisposable(),
-            m = new SingleAssignmentDisposable();
-        g.add(m);
-        m.setDisposable(this.source.subscribe(new MergeAllObserver(observer, g)));
-        return g;
-      };
-      return MergeAllObservable;
-    }(ObservableBase));
-    var MergeAllObserver = (function() {
-      function MergeAllObserver(o, g) {
-        this.o = o;
-        this.g = g;
-        this.isStopped = false;
-        this.done = false;
-      }
-      MergeAllObserver.prototype.onNext = function(innerSource) {
-        if (this.isStopped) {
-          return ;
-        }
-        var sad = new SingleAssignmentDisposable();
-        this.g.add(sad);
-        isPromise(innerSource) && (innerSource = observableFromPromise(innerSource));
-        sad.setDisposable(innerSource.subscribe(new InnerObserver(this, this.g, sad)));
-      };
-      MergeAllObserver.prototype.onError = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.o.onError(e);
-        }
-      };
-      MergeAllObserver.prototype.onCompleted = function() {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.done = true;
-          this.g.length === 1 && this.o.onCompleted();
-        }
-      };
-      MergeAllObserver.prototype.dispose = function() {
-        this.isStopped = true;
-      };
-      MergeAllObserver.prototype.fail = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.o.onError(e);
-          return true;
-        }
-        return false;
-      };
-      function InnerObserver(parent, g, sad) {
-        this.parent = parent;
-        this.g = g;
-        this.sad = sad;
-        this.isStopped = false;
-      }
-      InnerObserver.prototype.onNext = function(x) {
-        if (!this.isStopped) {
-          this.parent.o.onNext(x);
-        }
-      };
-      InnerObserver.prototype.onError = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.parent.o.onError(e);
-        }
-      };
-      InnerObserver.prototype.onCompleted = function() {
-        if (!this.isStopped) {
-          var parent = this.parent;
-          this.isStopped = true;
-          parent.g.remove(this.sad);
-          parent.done && parent.g.length === 1 && parent.o.onCompleted();
-        }
-      };
-      InnerObserver.prototype.dispose = function() {
-        this.isStopped = true;
-      };
-      InnerObserver.prototype.fail = function(e) {
-        if (!this.isStopped) {
-          this.isStopped = true;
-          this.parent.o.onError(e);
-          return true;
-        }
-        return false;
-      };
-      return MergeAllObserver;
-    }());
-    observableProto.mergeAll = observableProto.mergeObservable = function() {
-      return new MergeAllObservable(this);
-    };
-    observableProto.onErrorResumeNext = function(second) {
-      if (!second) {
-        throw new Error('Second observable is required');
-      }
-      return onErrorResumeNext([this, second]);
-    };
-    var onErrorResumeNext = Observable.onErrorResumeNext = function() {
-      var sources = [];
-      if (Array.isArray(arguments[0])) {
-        sources = arguments[0];
-      } else {
-        for (var i = 0,
-            len = arguments.length; i < len; i++) {
-          sources.push(arguments[i]);
-        }
-      }
-      return new AnonymousObservable(function(observer) {
-        var pos = 0,
-            subscription = new SerialDisposable(),
-            cancelable = immediateScheduler.scheduleRecursive(function(self) {
-              var current,
-                  d;
-              if (pos < sources.length) {
-                current = sources[pos++];
-                isPromise(current) && (current = observableFromPromise(current));
-                d = new SingleAssignmentDisposable();
-                subscription.setDisposable(d);
-                d.setDisposable(current.subscribe(observer.onNext.bind(observer), self, self));
-              } else {
-                observer.onCompleted();
-              }
-            });
-        return new CompositeDisposable(subscription, cancelable);
-      });
-    };
-    observableProto.skipUntil = function(other) {
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        var isOpen = false;
-        var disposables = new CompositeDisposable(source.subscribe(function(left) {
-          isOpen && o.onNext(left);
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          isOpen && o.onCompleted();
-        }));
-        isPromise(other) && (other = observableFromPromise(other));
-        var rightSubscription = new SingleAssignmentDisposable();
-        disposables.add(rightSubscription);
-        rightSubscription.setDisposable(other.subscribe(function() {
-          isOpen = true;
-          rightSubscription.dispose();
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          rightSubscription.dispose();
-        }));
-        return disposables;
-      }, source);
-    };
-    observableProto['switch'] = observableProto.switchLatest = function() {
-      var sources = this;
-      return new AnonymousObservable(function(observer) {
-        var hasLatest = false,
-            innerSubscription = new SerialDisposable(),
-            isStopped = false,
-            latest = 0,
-            subscription = sources.subscribe(function(innerSource) {
-              var d = new SingleAssignmentDisposable(),
-                  id = ++latest;
-              hasLatest = true;
-              innerSubscription.setDisposable(d);
-              isPromise(innerSource) && (innerSource = observableFromPromise(innerSource));
-              d.setDisposable(innerSource.subscribe(function(x) {
-                latest === id && observer.onNext(x);
-              }, function(e) {
-                latest === id && observer.onError(e);
-              }, function() {
-                if (latest === id) {
-                  hasLatest = false;
-                  isStopped && observer.onCompleted();
-                }
-              }));
-            }, function(e) {
-              observer.onError(e);
-            }, function() {
-              isStopped = true;
-              !hasLatest && observer.onCompleted();
-            });
-        return new CompositeDisposable(subscription, innerSubscription);
-      }, sources);
-    };
-    observableProto.takeUntil = function(other) {
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        isPromise(other) && (other = observableFromPromise(other));
-        return new CompositeDisposable(source.subscribe(o), other.subscribe(function() {
-          o.onCompleted();
-        }, function(e) {
-          o.onError(e);
-        }, noop));
-      }, source);
-    };
-    observableProto.withLatestFrom = function() {
-      var len = arguments.length,
-          args = new Array(len);
-      for (var i = 0; i < len; i++) {
-        args[i] = arguments[i];
-      }
-      var resultSelector = args.pop(),
-          source = this;
-      if (typeof source === 'undefined') {
-        throw new Error('Source observable not found for withLatestFrom().');
-      }
-      if (typeof resultSelector !== 'function') {
-        throw new Error('withLatestFrom() expects a resultSelector function.');
-      }
-      if (Array.isArray(args[0])) {
-        args = args[0];
-      }
-      return new AnonymousObservable(function(observer) {
-        var falseFactory = function() {
-          return false;
-        },
-            n = args.length,
-            hasValue = arrayInitialize(n, falseFactory),
-            hasValueAll = false,
-            values = new Array(n);
-        var subscriptions = new Array(n + 1);
-        for (var idx = 0; idx < n; idx++) {
-          (function(i) {
-            var other = args[i],
-                sad = new SingleAssignmentDisposable();
-            isPromise(other) && (other = observableFromPromise(other));
-            sad.setDisposable(other.subscribe(function(x) {
-              values[i] = x;
-              hasValue[i] = true;
-              hasValueAll = hasValue.every(identity);
-            }, observer.onError.bind(observer), function() {}));
-            subscriptions[i] = sad;
-          }(idx));
-        }
-        var sad = new SingleAssignmentDisposable();
-        sad.setDisposable(source.subscribe(function(x) {
-          var res;
-          var allValues = [x].concat(values);
-          if (!hasValueAll)
-            return ;
-          try {
-            res = resultSelector.apply(null, allValues);
-          } catch (ex) {
-            observer.onError(ex);
-            return ;
-          }
-          observer.onNext(res);
-        }, observer.onError.bind(observer), function() {
-          observer.onCompleted();
-        }));
-        subscriptions[n] = sad;
-        return new CompositeDisposable(subscriptions);
-      }, this);
-    };
-    function zipArray(second, resultSelector) {
-      var first = this;
-      return new AnonymousObservable(function(observer) {
-        var index = 0,
-            len = second.length;
-        return first.subscribe(function(left) {
-          if (index < len) {
-            var right = second[index++],
-                result;
-            try {
-              result = resultSelector(left, right);
-            } catch (e) {
-              return observer.onError(e);
-            }
-            observer.onNext(result);
-          } else {
-            observer.onCompleted();
-          }
-        }, function(e) {
-          observer.onError(e);
-        }, function() {
-          observer.onCompleted();
-        });
-      }, first);
-    }
-    function falseFactory() {
-      return false;
-    }
-    function emptyArrayFactory() {
-      return [];
-    }
-    observableProto.zip = function() {
-      if (Array.isArray(arguments[0])) {
-        return zipArray.apply(this, arguments);
-      }
-      var len = arguments.length,
-          args = new Array(len);
-      for (var i = 0; i < len; i++) {
-        args[i] = arguments[i];
-      }
-      var parent = this,
-          resultSelector = args.pop();
-      args.unshift(parent);
-      return new AnonymousObservable(function(observer) {
-        var n = args.length,
-            queues = arrayInitialize(n, emptyArrayFactory),
-            isDone = arrayInitialize(n, falseFactory);
-        function next(i) {
-          var res,
-              queuedValues;
-          if (queues.every(function(x) {
-            return x.length > 0;
-          })) {
-            try {
-              queuedValues = queues.map(function(x) {
-                return x.shift();
-              });
-              res = resultSelector.apply(parent, queuedValues);
-            } catch (ex) {
-              observer.onError(ex);
-              return ;
-            }
-            observer.onNext(res);
-          } else if (isDone.filter(function(x, j) {
-            return j !== i;
-          }).every(identity)) {
-            observer.onCompleted();
-          }
-        }
-        ;
-        function done(i) {
-          isDone[i] = true;
-          if (isDone.every(function(x) {
-            return x;
-          })) {
-            observer.onCompleted();
-          }
-        }
-        var subscriptions = new Array(n);
-        for (var idx = 0; idx < n; idx++) {
-          (function(i) {
-            var source = args[i],
-                sad = new SingleAssignmentDisposable();
-            isPromise(source) && (source = observableFromPromise(source));
-            sad.setDisposable(source.subscribe(function(x) {
-              queues[i].push(x);
-              next(i);
-            }, function(e) {
-              observer.onError(e);
-            }, function() {
-              done(i);
-            }));
-            subscriptions[i] = sad;
-          })(idx);
-        }
-        return new CompositeDisposable(subscriptions);
-      }, parent);
-    };
-    Observable.zip = function() {
-      var len = arguments.length,
-          args = new Array(len);
-      for (var i = 0; i < len; i++) {
-        args[i] = arguments[i];
-      }
-      var first = args.shift();
-      return first.zip.apply(first, args);
-    };
-    Observable.zipArray = function() {
-      var sources;
-      if (Array.isArray(arguments[0])) {
-        sources = arguments[0];
-      } else {
-        var len = arguments.length;
-        sources = new Array(len);
-        for (var i = 0; i < len; i++) {
-          sources[i] = arguments[i];
-        }
-      }
-      return new AnonymousObservable(function(observer) {
-        var n = sources.length,
-            queues = arrayInitialize(n, function() {
-              return [];
-            }),
-            isDone = arrayInitialize(n, function() {
-              return false;
-            });
-        function next(i) {
-          if (queues.every(function(x) {
-            return x.length > 0;
-          })) {
-            var res = queues.map(function(x) {
-              return x.shift();
-            });
-            observer.onNext(res);
-          } else if (isDone.filter(function(x, j) {
-            return j !== i;
-          }).every(identity)) {
-            observer.onCompleted();
-            return ;
-          }
-        }
-        ;
-        function done(i) {
-          isDone[i] = true;
-          if (isDone.every(identity)) {
-            observer.onCompleted();
-            return ;
-          }
-        }
-        var subscriptions = new Array(n);
-        for (var idx = 0; idx < n; idx++) {
-          (function(i) {
-            subscriptions[i] = new SingleAssignmentDisposable();
-            subscriptions[i].setDisposable(sources[i].subscribe(function(x) {
-              queues[i].push(x);
-              next(i);
-            }, function(e) {
-              observer.onError(e);
-            }, function() {
-              done(i);
-            }));
-          })(idx);
-        }
-        return new CompositeDisposable(subscriptions);
-      });
-    };
-    observableProto.asObservable = function() {
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        return source.subscribe(o);
-      }, this);
-    };
-    observableProto.bufferWithCount = function(count, skip) {
-      if (typeof skip !== 'number') {
-        skip = count;
-      }
-      return this.windowWithCount(count, skip).selectMany(function(x) {
-        return x.toArray();
-      }).where(function(x) {
-        return x.length > 0;
-      });
-    };
-    observableProto.dematerialize = function() {
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        return source.subscribe(function(x) {
-          return x.accept(o);
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, this);
-    };
-    observableProto.distinctUntilChanged = function(keySelector, comparer) {
-      var source = this;
-      comparer || (comparer = defaultComparer);
-      return new AnonymousObservable(function(o) {
-        var hasCurrentKey = false,
-            currentKey;
-        return source.subscribe(function(value) {
-          var key = value;
-          if (keySelector) {
-            try {
-              key = keySelector(value);
-            } catch (e) {
-              o.onError(e);
-              return ;
-            }
-          }
-          if (hasCurrentKey) {
-            try {
-              var comparerEquals = comparer(currentKey, key);
-            } catch (e) {
-              o.onError(e);
-              return ;
-            }
-          }
-          if (!hasCurrentKey || !comparerEquals) {
-            hasCurrentKey = true;
-            currentKey = key;
-            o.onNext(value);
-          }
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, this);
-    };
-    observableProto['do'] = observableProto.tap = observableProto.doAction = function(observerOrOnNext, onError, onCompleted) {
-      var source = this;
-      return new AnonymousObservable(function(observer) {
-        var tapObserver = !observerOrOnNext || isFunction(observerOrOnNext) ? observerCreate(observerOrOnNext || noop, onError || noop, onCompleted || noop) : observerOrOnNext;
-        return source.subscribe(function(x) {
-          try {
-            tapObserver.onNext(x);
-          } catch (e) {
-            observer.onError(e);
-          }
-          observer.onNext(x);
-        }, function(err) {
-          try {
-            tapObserver.onError(err);
-          } catch (e) {
-            observer.onError(e);
-          }
-          observer.onError(err);
-        }, function() {
-          try {
-            tapObserver.onCompleted();
-          } catch (e) {
-            observer.onError(e);
-          }
-          observer.onCompleted();
-        });
-      }, this);
-    };
-    observableProto.doOnNext = observableProto.tapOnNext = function(onNext, thisArg) {
-      return this.tap(typeof thisArg !== 'undefined' ? function(x) {
-        onNext.call(thisArg, x);
-      } : onNext);
-    };
-    observableProto.doOnError = observableProto.tapOnError = function(onError, thisArg) {
-      return this.tap(noop, typeof thisArg !== 'undefined' ? function(e) {
-        onError.call(thisArg, e);
-      } : onError);
-    };
-    observableProto.doOnCompleted = observableProto.tapOnCompleted = function(onCompleted, thisArg) {
-      return this.tap(noop, null, typeof thisArg !== 'undefined' ? function() {
-        onCompleted.call(thisArg);
-      } : onCompleted);
-    };
-    observableProto['finally'] = observableProto.ensure = function(action) {
-      var source = this;
-      return new AnonymousObservable(function(observer) {
-        var subscription;
-        try {
-          subscription = source.subscribe(observer);
-        } catch (e) {
-          action();
-          throw e;
-        }
-        return disposableCreate(function() {
-          try {
-            subscription.dispose();
-          } catch (e) {
-            throw e;
-          } finally {
-            action();
-          }
-        });
-      }, this);
-    };
-    observableProto.finallyAction = function(action) {
-      return this.ensure(action);
-    };
-    observableProto.ignoreElements = function() {
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        return source.subscribe(noop, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.materialize = function() {
-      var source = this;
-      return new AnonymousObservable(function(observer) {
-        return source.subscribe(function(value) {
-          observer.onNext(notificationCreateOnNext(value));
-        }, function(e) {
-          observer.onNext(notificationCreateOnError(e));
-          observer.onCompleted();
-        }, function() {
-          observer.onNext(notificationCreateOnCompleted());
-          observer.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.repeat = function(repeatCount) {
-      return enumerableRepeat(this, repeatCount).concat();
-    };
-    observableProto.retry = function(retryCount) {
-      return enumerableRepeat(this, retryCount).catchError();
-    };
-    observableProto.retryWhen = function(notifier) {
-      return enumerableRepeat(this).catchErrorWhen(notifier);
-    };
-    observableProto.scan = function() {
-      var hasSeed = false,
-          seed,
-          accumulator,
-          source = this;
-      if (arguments.length === 2) {
-        hasSeed = true;
-        seed = arguments[0];
-        accumulator = arguments[1];
-      } else {
-        accumulator = arguments[0];
-      }
-      return new AnonymousObservable(function(o) {
-        var hasAccumulation,
-            accumulation,
-            hasValue;
-        return source.subscribe(function(x) {
-          !hasValue && (hasValue = true);
-          try {
-            if (hasAccumulation) {
-              accumulation = accumulator(accumulation, x);
-            } else {
-              accumulation = hasSeed ? accumulator(seed, x) : x;
-              hasAccumulation = true;
-            }
-          } catch (e) {
-            o.onError(e);
-            return ;
-          }
-          o.onNext(accumulation);
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          !hasValue && hasSeed && o.onNext(seed);
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.skipLast = function(count) {
-      if (count < 0) {
-        throw new ArgumentOutOfRangeError();
-      }
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        var q = [];
-        return source.subscribe(function(x) {
-          q.push(x);
-          q.length > count && o.onNext(q.shift());
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.startWith = function() {
-      var values,
-          scheduler,
-          start = 0;
-      if (!!arguments.length && isScheduler(arguments[0])) {
-        scheduler = arguments[0];
-        start = 1;
-      } else {
-        scheduler = immediateScheduler;
-      }
-      for (var args = [],
-          i = start,
-          len = arguments.length; i < len; i++) {
-        args.push(arguments[i]);
-      }
-      return enumerableOf([observableFromArray(args, scheduler), this]).concat();
-    };
-    observableProto.takeLast = function(count) {
-      if (count < 0) {
-        throw new ArgumentOutOfRangeError();
-      }
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        var q = [];
-        return source.subscribe(function(x) {
-          q.push(x);
-          q.length > count && q.shift();
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          while (q.length > 0) {
-            o.onNext(q.shift());
-          }
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.takeLastBuffer = function(count) {
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        var q = [];
-        return source.subscribe(function(x) {
-          q.push(x);
-          q.length > count && q.shift();
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onNext(q);
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.windowWithCount = function(count, skip) {
-      var source = this;
-      +count || (count = 0);
-      Math.abs(count) === Infinity && (count = 0);
-      if (count <= 0) {
-        throw new ArgumentOutOfRangeError();
-      }
-      skip == null && (skip = count);
-      +skip || (skip = 0);
-      Math.abs(skip) === Infinity && (skip = 0);
-      if (skip <= 0) {
-        throw new ArgumentOutOfRangeError();
-      }
-      return new AnonymousObservable(function(observer) {
-        var m = new SingleAssignmentDisposable(),
-            refCountDisposable = new RefCountDisposable(m),
-            n = 0,
-            q = [];
-        function createWindow() {
-          var s = new Subject();
-          q.push(s);
-          observer.onNext(addRef(s, refCountDisposable));
-        }
-        createWindow();
-        m.setDisposable(source.subscribe(function(x) {
-          for (var i = 0,
-              len = q.length; i < len; i++) {
-            q[i].onNext(x);
-          }
-          var c = n - count + 1;
-          c >= 0 && c % skip === 0 && q.shift().onCompleted();
-          ++n % skip === 0 && createWindow();
-        }, function(e) {
-          while (q.length > 0) {
-            q.shift().onError(e);
-          }
-          observer.onError(e);
-        }, function() {
-          while (q.length > 0) {
-            q.shift().onCompleted();
-          }
-          observer.onCompleted();
-        }));
-        return refCountDisposable;
-      }, source);
-    };
-    function concatMap(source, selector, thisArg) {
-      var selectorFunc = bindCallback(selector, thisArg, 3);
-      return source.map(function(x, i) {
-        var result = selectorFunc(x, i, source);
-        isPromise(result) && (result = observableFromPromise(result));
-        (isArrayLike(result) || isIterable(result)) && (result = observableFrom(result));
-        return result;
-      }).concatAll();
-    }
-    observableProto.selectConcat = observableProto.concatMap = function(selector, resultSelector, thisArg) {
-      if (isFunction(selector) && isFunction(resultSelector)) {
-        return this.concatMap(function(x, i) {
-          var selectorResult = selector(x, i);
-          isPromise(selectorResult) && (selectorResult = observableFromPromise(selectorResult));
-          (isArrayLike(selectorResult) || isIterable(selectorResult)) && (selectorResult = observableFrom(selectorResult));
-          return selectorResult.map(function(y, i2) {
-            return resultSelector(x, y, i, i2);
-          });
-        });
-      }
-      return isFunction(selector) ? concatMap(this, selector, thisArg) : concatMap(this, function() {
-        return selector;
-      });
-    };
-    observableProto.concatMapObserver = observableProto.selectConcatObserver = function(onNext, onError, onCompleted, thisArg) {
-      var source = this,
-          onNextFunc = bindCallback(onNext, thisArg, 2),
-          onErrorFunc = bindCallback(onError, thisArg, 1),
-          onCompletedFunc = bindCallback(onCompleted, thisArg, 0);
-      return new AnonymousObservable(function(observer) {
-        var index = 0;
-        return source.subscribe(function(x) {
-          var result;
-          try {
-            result = onNextFunc(x, index++);
-          } catch (e) {
-            observer.onError(e);
-            return ;
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          observer.onNext(result);
-        }, function(err) {
-          var result;
-          try {
-            result = onErrorFunc(err);
-          } catch (e) {
-            observer.onError(e);
-            return ;
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          observer.onNext(result);
-          observer.onCompleted();
-        }, function() {
-          var result;
-          try {
-            result = onCompletedFunc();
-          } catch (e) {
-            observer.onError(e);
-            return ;
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          observer.onNext(result);
-          observer.onCompleted();
-        });
-      }, this).concatAll();
-    };
-    observableProto.defaultIfEmpty = function(defaultValue) {
-      var source = this;
-      defaultValue === undefined && (defaultValue = null);
-      return new AnonymousObservable(function(observer) {
-        var found = false;
-        return source.subscribe(function(x) {
-          found = true;
-          observer.onNext(x);
-        }, function(e) {
-          observer.onError(e);
-        }, function() {
-          !found && observer.onNext(defaultValue);
-          observer.onCompleted();
-        });
-      }, source);
-    };
-    function arrayIndexOfComparer(array, item, comparer) {
-      for (var i = 0,
-          len = array.length; i < len; i++) {
-        if (comparer(array[i], item)) {
-          return i;
-        }
-      }
-      return -1;
-    }
-    function HashSet(comparer) {
-      this.comparer = comparer;
-      this.set = [];
-    }
-    HashSet.prototype.push = function(value) {
-      var retValue = arrayIndexOfComparer(this.set, value, this.comparer) === -1;
-      retValue && this.set.push(value);
-      return retValue;
-    };
-    observableProto.distinct = function(keySelector, comparer) {
-      var source = this;
-      comparer || (comparer = defaultComparer);
-      return new AnonymousObservable(function(o) {
-        var hashSet = new HashSet(comparer);
-        return source.subscribe(function(x) {
-          var key = x;
-          if (keySelector) {
-            try {
-              key = keySelector(x);
-            } catch (e) {
-              o.onError(e);
-              return ;
-            }
-          }
-          hashSet.push(key) && o.onNext(x);
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, this);
-    };
-    var MapObservable = (function(__super__) {
-      inherits(MapObservable, __super__);
-      function MapObservable(source, selector, thisArg) {
-        this.source = source;
-        this.selector = bindCallback(selector, thisArg, 3);
-        __super__.call(this);
-      }
-      MapObservable.prototype.internalMap = function(selector, thisArg) {
-        var self = this;
-        return new MapObservable(this.source, function(x, i, o) {
-          return selector.call(this, self.selector(x, i, o), i, o);
-        }, thisArg);
-      };
-      MapObservable.prototype.subscribeCore = function(observer) {
-        return this.source.subscribe(new MapObserver(observer, this.selector, this));
-      };
-      return MapObservable;
-    }(ObservableBase));
-    function MapObserver(observer, selector, source) {
-      this.observer = observer;
-      this.selector = selector;
-      this.source = source;
-      this.i = 0;
-      this.isStopped = false;
-    }
-    MapObserver.prototype.onNext = function(x) {
-      if (this.isStopped) {
-        return ;
-      }
-      var result = tryCatch(this.selector).call(this, x, this.i++, this.source);
-      if (result === errorObj) {
-        return this.observer.onError(result.e);
-      }
-      this.observer.onNext(result);
-    };
-    MapObserver.prototype.onError = function(e) {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onError(e);
-      }
-    };
-    MapObserver.prototype.onCompleted = function() {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onCompleted();
-      }
-    };
-    MapObserver.prototype.dispose = function() {
-      this.isStopped = true;
-    };
-    MapObserver.prototype.fail = function(e) {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onError(e);
-        return true;
-      }
-      return false;
-    };
-    observableProto.map = observableProto.select = function(selector, thisArg) {
-      var selectorFn = typeof selector === 'function' ? selector : function() {
-        return selector;
-      };
-      return this instanceof MapObservable ? this.internalMap(selectorFn, thisArg) : new MapObservable(this, selectorFn, thisArg);
-    };
-    observableProto.pluck = function() {
-      var args = arguments,
-          len = arguments.length;
-      if (len === 0) {
-        throw new Error('List of properties cannot be empty.');
-      }
-      return this.map(function(x) {
-        var currentProp = x;
-        for (var i = 0; i < len; i++) {
-          var p = currentProp[args[i]];
-          if (typeof p !== 'undefined') {
-            currentProp = p;
-          } else {
-            return undefined;
-          }
-        }
-        return currentProp;
-      });
-    };
-    observableProto.flatMapObserver = observableProto.selectManyObserver = function(onNext, onError, onCompleted, thisArg) {
-      var source = this;
-      return new AnonymousObservable(function(observer) {
-        var index = 0;
-        return source.subscribe(function(x) {
-          var result;
-          try {
-            result = onNext.call(thisArg, x, index++);
-          } catch (e) {
-            observer.onError(e);
-            return ;
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          observer.onNext(result);
-        }, function(err) {
-          var result;
-          try {
-            result = onError.call(thisArg, err);
-          } catch (e) {
-            observer.onError(e);
-            return ;
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          observer.onNext(result);
-          observer.onCompleted();
-        }, function() {
-          var result;
-          try {
-            result = onCompleted.call(thisArg);
-          } catch (e) {
-            observer.onError(e);
-            return ;
-          }
-          isPromise(result) && (result = observableFromPromise(result));
-          observer.onNext(result);
-          observer.onCompleted();
-        });
-      }, source).mergeAll();
-    };
-    function flatMap(source, selector, thisArg) {
-      var selectorFunc = bindCallback(selector, thisArg, 3);
-      return source.map(function(x, i) {
-        var result = selectorFunc(x, i, source);
-        isPromise(result) && (result = observableFromPromise(result));
-        (isArrayLike(result) || isIterable(result)) && (result = observableFrom(result));
-        return result;
-      }).mergeAll();
-    }
-    observableProto.selectMany = observableProto.flatMap = function(selector, resultSelector, thisArg) {
-      if (isFunction(selector) && isFunction(resultSelector)) {
-        return this.flatMap(function(x, i) {
-          var selectorResult = selector(x, i);
-          isPromise(selectorResult) && (selectorResult = observableFromPromise(selectorResult));
-          (isArrayLike(selectorResult) || isIterable(selectorResult)) && (selectorResult = observableFrom(selectorResult));
-          return selectorResult.map(function(y, i2) {
-            return resultSelector(x, y, i, i2);
-          });
-        }, thisArg);
-      }
-      return isFunction(selector) ? flatMap(this, selector, thisArg) : flatMap(this, function() {
-        return selector;
-      });
-    };
-    observableProto.selectSwitch = observableProto.flatMapLatest = observableProto.switchMap = function(selector, thisArg) {
-      return this.select(selector, thisArg).switchLatest();
-    };
-    observableProto.skip = function(count) {
-      if (count < 0) {
-        throw new ArgumentOutOfRangeError();
-      }
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        var remaining = count;
-        return source.subscribe(function(x) {
-          if (remaining <= 0) {
-            o.onNext(x);
-          } else {
-            remaining--;
-          }
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.skipWhile = function(predicate, thisArg) {
-      var source = this,
-          callback = bindCallback(predicate, thisArg, 3);
-      return new AnonymousObservable(function(o) {
-        var i = 0,
-            running = false;
-        return source.subscribe(function(x) {
-          if (!running) {
-            try {
-              running = !callback(x, i++, source);
-            } catch (e) {
-              o.onError(e);
-              return ;
-            }
-          }
-          running && o.onNext(x);
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.take = function(count, scheduler) {
-      if (count < 0) {
-        throw new ArgumentOutOfRangeError();
-      }
-      if (count === 0) {
-        return observableEmpty(scheduler);
-      }
-      var source = this;
-      return new AnonymousObservable(function(o) {
-        var remaining = count;
-        return source.subscribe(function(x) {
-          if (remaining-- > 0) {
-            o.onNext(x);
-            remaining === 0 && o.onCompleted();
-          }
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, source);
-    };
-    observableProto.takeWhile = function(predicate, thisArg) {
-      var source = this,
-          callback = bindCallback(predicate, thisArg, 3);
-      return new AnonymousObservable(function(o) {
-        var i = 0,
-            running = true;
-        return source.subscribe(function(x) {
-          if (running) {
-            try {
-              running = callback(x, i++, source);
-            } catch (e) {
-              o.onError(e);
-              return ;
-            }
-            if (running) {
-              o.onNext(x);
-            } else {
-              o.onCompleted();
-            }
-          }
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          o.onCompleted();
-        });
-      }, source);
-    };
-    var FilterObservable = (function(__super__) {
-      inherits(FilterObservable, __super__);
-      function FilterObservable(source, predicate, thisArg) {
-        this.source = source;
-        this.predicate = bindCallback(predicate, thisArg, 3);
-        __super__.call(this);
-      }
-      FilterObservable.prototype.subscribeCore = function(observer) {
-        return this.source.subscribe(new FilterObserver(observer, this.predicate, this));
-      };
-      FilterObservable.prototype.internalFilter = function(predicate, thisArg) {
-        var self = this;
-        return new FilterObservable(this.source, function(x, i, o) {
-          return self.predicate(x, i, o) && predicate.call(this, x, i, o);
-        }, thisArg);
-      };
-      return FilterObservable;
-    }(ObservableBase));
-    function FilterObserver(observer, predicate, source) {
-      this.observer = observer;
-      this.predicate = predicate;
-      this.source = source;
-      this.i = 0;
-      this.isStopped = false;
-    }
-    FilterObserver.prototype.onNext = function(x) {
-      if (this.isStopped) {
-        return ;
-      }
-      var shouldYield = tryCatch(this.predicate).call(this, x, this.i++, this.source);
-      if (shouldYield === errorObj) {
-        return this.observer.onError(shouldYield.e);
-      }
-      shouldYield && this.observer.onNext(x);
-    };
-    FilterObserver.prototype.onError = function(e) {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onError(e);
-      }
-    };
-    FilterObserver.prototype.onCompleted = function() {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onCompleted();
-      }
-    };
-    FilterObserver.prototype.dispose = function() {
-      this.isStopped = true;
-    };
-    FilterObserver.prototype.fail = function(e) {
-      if (!this.isStopped) {
-        this.isStopped = true;
-        this.observer.onError(e);
-        return true;
-      }
-      return false;
-    };
-    observableProto.filter = observableProto.where = function(predicate, thisArg) {
-      return this instanceof FilterObservable ? this.internalFilter(predicate, thisArg) : new FilterObservable(this, predicate, thisArg);
-    };
-    observableProto.transduce = function(transducer) {
-      var source = this;
-      function transformForObserver(o) {
-        return {
-          '@@transducer/init': function() {
-            return o;
-          },
-          '@@transducer/step': function(obs, input) {
-            return obs.onNext(input);
-          },
-          '@@transducer/result': function(obs) {
-            return obs.onCompleted();
-          }
-        };
-      }
-      return new AnonymousObservable(function(o) {
-        var xform = transducer(transformForObserver(o));
-        return source.subscribe(function(v) {
-          try {
-            xform['@@transducer/step'](o, v);
-          } catch (e) {
-            o.onError(e);
-          }
-        }, function(e) {
-          o.onError(e);
-        }, function() {
-          xform['@@transducer/result'](o);
-        });
-      }, source);
-    };
-    var AnonymousObservable = Rx.AnonymousObservable = (function(__super__) {
-      inherits(AnonymousObservable, __super__);
-      function fixSubscriber(subscriber) {
-        return subscriber && isFunction(subscriber.dispose) ? subscriber : isFunction(subscriber) ? disposableCreate(subscriber) : disposableEmpty;
-      }
-      function setDisposable(s, state) {
-        var ado = state[0],
-            subscribe = state[1];
-        var sub = tryCatch(subscribe)(ado);
-        if (sub === errorObj) {
-          if (!ado.fail(errorObj.e)) {
-            return thrower(errorObj.e);
-          }
-        }
-        ado.setDisposable(fixSubscriber(sub));
-      }
-      function AnonymousObservable(subscribe, parent) {
-        this.source = parent;
-        function s(observer) {
-          var ado = new AutoDetachObserver(observer),
-              state = [ado, subscribe];
-          if (currentThreadScheduler.scheduleRequired()) {
-            currentThreadScheduler.scheduleWithState(state, setDisposable);
-          } else {
-            setDisposable(null, state);
-          }
-          return ado;
-        }
-        __super__.call(this, s);
-      }
-      return AnonymousObservable;
-    }(Observable));
-    var AutoDetachObserver = (function(__super__) {
-      inherits(AutoDetachObserver, __super__);
-      function AutoDetachObserver(observer) {
-        __super__.call(this);
-        this.observer = observer;
-        this.m = new SingleAssignmentDisposable();
-      }
-      var AutoDetachObserverPrototype = AutoDetachObserver.prototype;
-      AutoDetachObserverPrototype.next = function(value) {
-        var result = tryCatch(this.observer.onNext).call(this.observer, value);
-        if (result === errorObj) {
-          this.dispose();
-          thrower(result.e);
-        }
-      };
-      AutoDetachObserverPrototype.error = function(err) {
-        var result = tryCatch(this.observer.onError).call(this.observer, err);
-        this.dispose();
-        result === errorObj && thrower(result.e);
-      };
-      AutoDetachObserverPrototype.completed = function() {
-        var result = tryCatch(this.observer.onCompleted).call(this.observer);
-        this.dispose();
-        result === errorObj && thrower(result.e);
-      };
-      AutoDetachObserverPrototype.setDisposable = function(value) {
-        this.m.setDisposable(value);
-      };
-      AutoDetachObserverPrototype.getDisposable = function() {
-        return this.m.getDisposable();
-      };
-      AutoDetachObserverPrototype.dispose = function() {
-        __super__.prototype.dispose.call(this);
-        this.m.dispose();
-      };
-      return AutoDetachObserver;
-    }(AbstractObserver));
-    var InnerSubscription = function(subject, observer) {
-      this.subject = subject;
-      this.observer = observer;
-    };
-    InnerSubscription.prototype.dispose = function() {
-      if (!this.subject.isDisposed && this.observer !== null) {
-        var idx = this.subject.observers.indexOf(this.observer);
-        this.subject.observers.splice(idx, 1);
-        this.observer = null;
-      }
-    };
-    var Subject = Rx.Subject = (function(__super__) {
-      function subscribe(observer) {
-        checkDisposed(this);
-        if (!this.isStopped) {
-          this.observers.push(observer);
-          return new InnerSubscription(this, observer);
-        }
-        if (this.hasError) {
-          observer.onError(this.error);
-          return disposableEmpty;
-        }
-        observer.onCompleted();
-        return disposableEmpty;
-      }
-      inherits(Subject, __super__);
-      function Subject() {
-        __super__.call(this, subscribe);
-        this.isDisposed = false, this.isStopped = false, this.observers = [];
-        this.hasError = false;
-      }
-      addProperties(Subject.prototype, Observer.prototype, {
-        hasObservers: function() {
-          return this.observers.length > 0;
-        },
-        onCompleted: function() {
-          checkDisposed(this);
-          if (!this.isStopped) {
-            this.isStopped = true;
-            for (var i = 0,
-                os = cloneArray(this.observers),
-                len = os.length; i < len; i++) {
-              os[i].onCompleted();
-            }
-            this.observers.length = 0;
-          }
-        },
-        onError: function(error) {
-          checkDisposed(this);
-          if (!this.isStopped) {
-            this.isStopped = true;
-            this.error = error;
-            this.hasError = true;
-            for (var i = 0,
-                os = cloneArray(this.observers),
-                len = os.length; i < len; i++) {
-              os[i].onError(error);
-            }
-            this.observers.length = 0;
-          }
-        },
-        onNext: function(value) {
-          checkDisposed(this);
-          if (!this.isStopped) {
-            for (var i = 0,
-                os = cloneArray(this.observers),
-                len = os.length; i < len; i++) {
-              os[i].onNext(value);
-            }
-          }
-        },
-        dispose: function() {
-          this.isDisposed = true;
-          this.observers = null;
-        }
-      });
-      Subject.create = function(observer, observable) {
-        return new AnonymousSubject(observer, observable);
-      };
-      return Subject;
-    }(Observable));
-    var AsyncSubject = Rx.AsyncSubject = (function(__super__) {
-      function subscribe(observer) {
-        checkDisposed(this);
-        if (!this.isStopped) {
-          this.observers.push(observer);
-          return new InnerSubscription(this, observer);
-        }
-        if (this.hasError) {
-          observer.onError(this.error);
-        } else if (this.hasValue) {
-          observer.onNext(this.value);
-          observer.onCompleted();
-        } else {
-          observer.onCompleted();
-        }
-        return disposableEmpty;
-      }
-      inherits(AsyncSubject, __super__);
-      function AsyncSubject() {
-        __super__.call(this, subscribe);
-        this.isDisposed = false;
-        this.isStopped = false;
-        this.hasValue = false;
-        this.observers = [];
-        this.hasError = false;
-      }
-      addProperties(AsyncSubject.prototype, Observer, {
-        hasObservers: function() {
-          checkDisposed(this);
-          return this.observers.length > 0;
-        },
-        onCompleted: function() {
-          var i,
-              len;
-          checkDisposed(this);
-          if (!this.isStopped) {
-            this.isStopped = true;
-            var os = cloneArray(this.observers),
-                len = os.length;
-            if (this.hasValue) {
-              for (i = 0; i < len; i++) {
-                var o = os[i];
-                o.onNext(this.value);
-                o.onCompleted();
-              }
-            } else {
-              for (i = 0; i < len; i++) {
-                os[i].onCompleted();
-              }
-            }
-            this.observers.length = 0;
-          }
-        },
-        onError: function(error) {
-          checkDisposed(this);
-          if (!this.isStopped) {
-            this.isStopped = true;
-            this.hasError = true;
-            this.error = error;
-            for (var i = 0,
-                os = cloneArray(this.observers),
-                len = os.length; i < len; i++) {
-              os[i].onError(error);
-            }
-            this.observers.length = 0;
-          }
-        },
-        onNext: function(value) {
-          checkDisposed(this);
-          if (this.isStopped) {
-            return ;
-          }
-          this.value = value;
-          this.hasValue = true;
-        },
-        dispose: function() {
-          this.isDisposed = true;
-          this.observers = null;
-          this.exception = null;
-          this.value = null;
-        }
-      });
-      return AsyncSubject;
-    }(Observable));
-    var AnonymousSubject = Rx.AnonymousSubject = (function(__super__) {
-      inherits(AnonymousSubject, __super__);
-      function subscribe(observer) {
-        return this.observable.subscribe(observer);
-      }
-      function AnonymousSubject(observer, observable) {
-        this.observer = observer;
-        this.observable = observable;
-        __super__.call(this, subscribe);
-      }
-      addProperties(AnonymousSubject.prototype, Observer.prototype, {
-        onCompleted: function() {
-          this.observer.onCompleted();
-        },
-        onError: function(error) {
-          this.observer.onError(error);
-        },
-        onNext: function(value) {
-          this.observer.onNext(value);
-        }
-      });
-      return AnonymousSubject;
-    }(Observable));
-    if (typeof define == 'function' && typeof define.amd == 'object' && define.amd) {
-      root.Rx = Rx;
-      define(function() {
-        return Rx;
-      });
-    } else if (freeExports && freeModule) {
-      if (moduleExports) {
-        (freeModule.exports = Rx).Rx = Rx;
-      } else {
-        freeExports.Rx = Rx;
-      }
-    } else {
-      root.Rx = Rx;
-    }
-    var rEndingLine = captureLine();
-  }.call(this));
+  var ConnectionBackend = (function() {
+    function ConnectionBackend() {}
+    return ConnectionBackend;
+  })();
+  exports.ConnectionBackend = ConnectionBackend;
+  var Connection = (function() {
+    function Connection() {}
+    return Connection;
+  })();
+  exports.Connection = Connection;
   global.define = __define;
   return module.exports;
 });
 
-System.register("angular2/src/core/facade/lang", [], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/facade/lang";
-  var globalScope,
-      _global,
-      Type,
-      BaseException,
-      Math,
-      Date,
-      assertionsEnabled_,
-      StringWrapper,
-      StringJoiner,
-      NumberParseError,
-      NumberWrapper,
-      RegExp,
-      RegExpWrapper,
-      RegExpMatcherWrapper,
-      FunctionWrapper,
-      Json,
-      DateWrapper;
-  function getTypeNameForDebugging(type) {
-    return type['name'];
-  }
-  function makeTypeError(message) {
-    return new TypeError(message);
-  }
-  function assertionsEnabled() {
-    return assertionsEnabled_;
-  }
-  function CONST_EXPR(expr) {
-    return expr;
-  }
-  function CONST() {
-    return (function(target) {
-      return target;
-    });
-  }
-  function ABSTRACT() {
-    return (function(t) {
-      return t;
-    });
-  }
-  function isPresent(obj) {
-    return obj !== undefined && obj !== null;
-  }
-  function isBlank(obj) {
-    return obj === undefined || obj === null;
-  }
-  function isString(obj) {
-    return typeof obj === "string";
-  }
-  function isFunction(obj) {
-    return typeof obj === "function";
-  }
-  function isType(obj) {
-    return isFunction(obj);
-  }
-  function isStringMap(obj) {
-    return typeof obj === 'object' && obj !== null;
-  }
-  function isPromise(obj) {
-    return obj instanceof _global.Promise;
-  }
-  function isArray(obj) {
-    return Array.isArray(obj);
-  }
-  function isNumber(obj) {
-    return typeof obj === 'number';
-  }
-  function isDate(obj) {
-    return obj instanceof Date && !isNaN(obj.valueOf());
-  }
-  function stringify(token) {
-    if (typeof token === 'string') {
-      return token;
-    }
-    if (token === undefined || token === null) {
-      return '' + token;
-    }
-    if (token.name) {
-      return token.name;
-    }
-    var res = token.toString();
-    var newLineIndex = res.indexOf("\n");
-    return (newLineIndex === -1) ? res : res.substring(0, newLineIndex);
-  }
-  function serializeEnum(val) {
-    return val;
-  }
-  function deserializeEnum(val, values) {
-    return val;
-  }
-  function looseIdentical(a, b) {
-    return a === b || typeof a === "number" && typeof b === "number" && isNaN(a) && isNaN(b);
-  }
-  function getMapKey(value) {
-    return value;
-  }
-  function normalizeBlank(obj) {
-    return isBlank(obj) ? null : obj;
-  }
-  function normalizeBool(obj) {
-    return isBlank(obj) ? false : obj;
-  }
-  function isJsObject(o) {
-    return o !== null && (typeof o === "function" || typeof o === "object");
-  }
-  function print(obj) {
-    if (obj instanceof BaseException) {
-      console.log(obj.stack);
-    } else {
-      console.log(obj);
-    }
-  }
-  function setValueOnPath(global, path, value) {
-    var parts = path.split('.');
-    var obj = global;
-    while (parts.length > 1) {
-      var name = parts.shift();
-      if (obj.hasOwnProperty(name)) {
-        obj = obj[name];
-      } else {
-        obj = obj[name] = {};
+System.register("angular2/src/http/headers", ["angular2/src/core/facade/lang", "angular2/src/core/facade/exceptions", "angular2/src/core/facade/collection"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var exceptions_1 = require("angular2/src/core/facade/exceptions");
+  var collection_1 = require("angular2/src/core/facade/collection");
+  var Headers = (function() {
+    function Headers(headers) {
+      var _this = this;
+      if (headers instanceof Headers) {
+        this._headersMap = headers._headersMap;
+        return ;
       }
-    }
-    obj[parts.shift()] = value;
-  }
-  $__export("getTypeNameForDebugging", getTypeNameForDebugging);
-  $__export("makeTypeError", makeTypeError);
-  $__export("assertionsEnabled", assertionsEnabled);
-  $__export("CONST_EXPR", CONST_EXPR);
-  $__export("CONST", CONST);
-  $__export("ABSTRACT", ABSTRACT);
-  $__export("isPresent", isPresent);
-  $__export("isBlank", isBlank);
-  $__export("isString", isString);
-  $__export("isFunction", isFunction);
-  $__export("isType", isType);
-  $__export("isStringMap", isStringMap);
-  $__export("isPromise", isPromise);
-  $__export("isArray", isArray);
-  $__export("isNumber", isNumber);
-  $__export("isDate", isDate);
-  $__export("stringify", stringify);
-  $__export("serializeEnum", serializeEnum);
-  $__export("deserializeEnum", deserializeEnum);
-  $__export("looseIdentical", looseIdentical);
-  $__export("getMapKey", getMapKey);
-  $__export("normalizeBlank", normalizeBlank);
-  $__export("normalizeBool", normalizeBool);
-  $__export("isJsObject", isJsObject);
-  $__export("print", print);
-  $__export("setValueOnPath", setValueOnPath);
-  return {
-    setters: [],
-    execute: function() {
-      if (typeof window === 'undefined') {
-        if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-          globalScope = self;
-        } else {
-          globalScope = global;
-        }
-      } else {
-        globalScope = window;
+      this._headersMap = new collection_1.Map();
+      if (lang_1.isBlank(headers)) {
+        return ;
       }
-      ;
-      _global = globalScope;
-      $__export("global", _global);
-      Type = Function;
-      $__export("Type", Type);
-      BaseException = (function($__super) {
-        function BaseException(message, _originalException, _originalStack, _context) {
-          $traceurRuntime.superConstructor(BaseException).call(this, message);
-          this.message = message;
-          this._originalException = _originalException;
-          this._originalStack = _originalStack;
-          this._context = _context;
-          this.stack = (new Error(message)).stack;
-        }
-        return ($traceurRuntime.createClass)(BaseException, {
-          get originalException() {
-            return this._originalException;
-          },
-          get originalStack() {
-            return this._originalStack;
-          },
-          get context() {
-            return this._context;
-          },
-          toString: function() {
-            return this.message;
-          }
-        }, {}, $__super);
-      }(Error));
-      $__export("BaseException", BaseException);
-      Math = _global.Math;
-      $__export("Math", Math);
-      Date = _global.Date;
-      $__export("Date", Date);
-      assertionsEnabled_ = typeof _global['assert'] !== 'undefined';
-      _global.assert = function assert(condition) {
-        if (assertionsEnabled_) {
-          _global['assert'].call(condition);
-        }
-      };
-      StringWrapper = (function() {
-        function StringWrapper() {}
-        return ($traceurRuntime.createClass)(StringWrapper, {}, {
-          fromCharCode: function(code) {
-            return String.fromCharCode(code);
-          },
-          charCodeAt: function(s, index) {
-            return s.charCodeAt(index);
-          },
-          split: function(s, regExp) {
-            return s.split(regExp);
-          },
-          equals: function(s, s2) {
-            return s === s2;
-          },
-          replace: function(s, from, replace) {
-            return s.replace(from, replace);
-          },
-          replaceAll: function(s, from, replace) {
-            return s.replace(from, replace);
-          },
-          toUpperCase: function(s) {
-            return s.toUpperCase();
-          },
-          toLowerCase: function(s) {
-            return s.toLowerCase();
-          },
-          startsWith: function(s, start) {
-            return s.startsWith(start);
-          },
-          substring: function(s, start) {
-            var end = arguments[2] !== (void 0) ? arguments[2] : null;
-            return s.substring(start, end === null ? undefined : end);
-          },
-          replaceAllMapped: function(s, from, cb) {
-            return s.replace(from, function() {
-              for (var matches = [],
-                  $__1 = 0; $__1 < arguments.length; $__1++)
-                matches[$__1] = arguments[$__1];
-              matches.splice(-2, 2);
-              return cb(matches);
-            });
-          },
-          contains: function(s, substr) {
-            return s.indexOf(substr) != -1;
-          },
-          compare: function(a, b) {
-            if (a < b) {
-              return -1;
-            } else if (a > b) {
-              return 1;
-            } else {
-              return 0;
-            }
-          }
-        });
-      }());
-      $__export("StringWrapper", StringWrapper);
-      StringJoiner = (function() {
-        function StringJoiner() {
-          var parts = arguments[0] !== (void 0) ? arguments[0] : [];
-          this.parts = parts;
-        }
-        return ($traceurRuntime.createClass)(StringJoiner, {
-          add: function(part) {
-            this.parts.push(part);
-          },
-          toString: function() {
-            return this.parts.join("");
-          }
-        }, {});
-      }());
-      $__export("StringJoiner", StringJoiner);
-      NumberParseError = (function($__super) {
-        function NumberParseError(message) {
-          $traceurRuntime.superConstructor(NumberParseError).call(this);
-          this.message = message;
-        }
-        return ($traceurRuntime.createClass)(NumberParseError, {toString: function() {
-            return this.message;
-          }}, {}, $__super);
-      }(BaseException));
-      $__export("NumberParseError", NumberParseError);
-      NumberWrapper = (function() {
-        function NumberWrapper() {}
-        return ($traceurRuntime.createClass)(NumberWrapper, {}, {
-          toFixed: function(n, fractionDigits) {
-            return n.toFixed(fractionDigits);
-          },
-          equal: function(a, b) {
-            return a === b;
-          },
-          parseIntAutoRadix: function(text) {
-            var result = parseInt(text);
-            if (isNaN(result)) {
-              throw new NumberParseError("Invalid integer literal when parsing " + text);
-            }
-            return result;
-          },
-          parseInt: function(text, radix) {
-            if (radix == 10) {
-              if (/^(\-|\+)?[0-9]+$/.test(text)) {
-                return parseInt(text, radix);
-              }
-            } else if (radix == 16) {
-              if (/^(\-|\+)?[0-9ABCDEFabcdef]+$/.test(text)) {
-                return parseInt(text, radix);
-              }
-            } else {
-              var result = parseInt(text, radix);
-              if (!isNaN(result)) {
-                return result;
-              }
-            }
-            throw new NumberParseError("Invalid integer literal when parsing " + text + " in base " + radix);
-          },
-          parseFloat: function(text) {
-            return parseFloat(text);
-          },
-          get NaN() {
-            return NaN;
-          },
-          isNaN: function(value) {
-            return isNaN(value);
-          },
-          isInteger: function(value) {
-            return Number.isInteger(value);
-          }
-        });
-      }());
-      $__export("NumberWrapper", NumberWrapper);
-      RegExp = _global.RegExp;
-      $__export("RegExp", RegExp);
-      RegExpWrapper = (function() {
-        function RegExpWrapper() {}
-        return ($traceurRuntime.createClass)(RegExpWrapper, {}, {
-          create: function(regExpStr) {
-            var flags = arguments[1] !== (void 0) ? arguments[1] : '';
-            flags = flags.replace(/g/g, '');
-            return new _global.RegExp(regExpStr, flags + 'g');
-          },
-          firstMatch: function(regExp, input) {
-            regExp.lastIndex = 0;
-            return regExp.exec(input);
-          },
-          test: function(regExp, input) {
-            regExp.lastIndex = 0;
-            return regExp.test(input);
-          },
-          matcher: function(regExp, input) {
-            regExp.lastIndex = 0;
-            return {
-              re: regExp,
-              input: input
-            };
-          }
-        });
-      }());
-      $__export("RegExpWrapper", RegExpWrapper);
-      RegExpMatcherWrapper = (function() {
-        function RegExpMatcherWrapper() {}
-        return ($traceurRuntime.createClass)(RegExpMatcherWrapper, {}, {next: function(matcher) {
-            return matcher.re.exec(matcher.input);
-          }});
-      }());
-      $__export("RegExpMatcherWrapper", RegExpMatcherWrapper);
-      FunctionWrapper = (function() {
-        function FunctionWrapper() {}
-        return ($traceurRuntime.createClass)(FunctionWrapper, {}, {apply: function(fn, posArgs) {
-            return fn.apply(null, posArgs);
-          }});
-      }());
-      $__export("FunctionWrapper", FunctionWrapper);
-      Json = (function() {
-        function Json() {}
-        return ($traceurRuntime.createClass)(Json, {}, {
-          parse: function(s) {
-            return _global.JSON.parse(s);
-          },
-          stringify: function(data) {
-            return _global.JSON.stringify(data, null, 2);
-          }
-        });
-      }());
-      $__export("Json", Json);
-      DateWrapper = (function() {
-        function DateWrapper() {}
-        return ($traceurRuntime.createClass)(DateWrapper, {}, {
-          create: function(year) {
-            var month = arguments[1] !== (void 0) ? arguments[1] : 1;
-            var day = arguments[2] !== (void 0) ? arguments[2] : 1;
-            var hour = arguments[3] !== (void 0) ? arguments[3] : 0;
-            var minutes = arguments[4] !== (void 0) ? arguments[4] : 0;
-            var seconds = arguments[5] !== (void 0) ? arguments[5] : 0;
-            var milliseconds = arguments[6] !== (void 0) ? arguments[6] : 0;
-            return new Date(year, month - 1, day, hour, minutes, seconds, milliseconds);
-          },
-          fromMillis: function(ms) {
-            return new Date(ms);
-          },
-          toMillis: function(date) {
-            return date.getTime();
-          },
-          now: function() {
-            return new Date();
-          },
-          toJson: function(date) {
-            return date.toJSON();
-          }
-        });
-      }());
-      $__export("DateWrapper", DateWrapper);
+      collection_1.StringMapWrapper.forEach(headers, function(v, k) {
+        _this._headersMap.set(k, collection_1.isListLikeIterable(v) ? v : [v]);
+      });
     }
-  };
-});
-
-System.register("angular2/src/core/util/decorators", ["angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/util/decorators";
-  var global,
-      isFunction,
-      stringify,
-      Reflect;
-  function extractAnnotation(annotation) {
-    if (isFunction(annotation) && annotation.hasOwnProperty('annotation')) {
-      annotation = annotation.annotation;
-    }
-    return annotation;
-  }
-  function applyParams(fnOrArray, key) {
-    if (fnOrArray === Object || fnOrArray === String || fnOrArray === Function || fnOrArray === Number || fnOrArray === Array) {
-      throw new Error(("Can not use native " + stringify(fnOrArray) + " as constructor"));
-    }
-    if (isFunction(fnOrArray)) {
-      return fnOrArray;
-    } else if (fnOrArray instanceof Array) {
-      var annotations = fnOrArray;
-      var fn = fnOrArray[fnOrArray.length - 1];
-      if (!isFunction(fn)) {
-        throw new Error(("Last position of Class method array must be Function in key " + key + " was '" + stringify(fn) + "'"));
-      }
-      var annoLength = annotations.length - 1;
-      if (annoLength != fn.length) {
-        throw new Error(("Number of annotations (" + annoLength + ") does not match number of arguments (" + fn.length + ") in the function: " + stringify(fn)));
-      }
-      var paramsAnnotations = [];
-      for (var i = 0,
-          ii = annotations.length - 1; i < ii; i++) {
-        var paramAnnotations = [];
-        paramsAnnotations.push(paramAnnotations);
-        var annotation = annotations[i];
-        if (annotation instanceof Array) {
-          for (var j = 0; j < annotation.length; j++) {
-            paramAnnotations.push(extractAnnotation(annotation[j]));
-          }
-        } else if (isFunction(annotation)) {
-          paramAnnotations.push(extractAnnotation(annotation));
-        } else {
-          paramAnnotations.push(annotation);
-        }
-      }
-      Reflect.defineMetadata('parameters', paramsAnnotations, fn);
-      return fn;
-    } else {
-      throw new Error(("Only Function or Array is supported in Class definition for key '" + key + "' is '" + stringify(fnOrArray) + "'"));
-    }
-  }
-  function Class(clsDef) {
-    var constructor = applyParams(clsDef.hasOwnProperty('constructor') ? clsDef.constructor : undefined, 'constructor');
-    var proto = constructor.prototype;
-    if (clsDef.hasOwnProperty('extends')) {
-      if (isFunction(clsDef.extends)) {
-        constructor.prototype = proto = Object.create(clsDef.extends.prototype);
-      } else {
-        throw new Error(("Class definition 'extends' property must be a constructor function was: " + stringify(clsDef.extends)));
-      }
-    }
-    for (var key in clsDef) {
-      if (key != 'extends' && key != 'prototype' && clsDef.hasOwnProperty(key)) {
-        proto[key] = applyParams(clsDef[key], key);
-      }
-    }
-    if (this && this.annotations instanceof Array) {
-      Reflect.defineMetadata('annotations', this.annotations, constructor);
-    }
-    return constructor;
-  }
-  function makeDecorator(annotationCls) {
-    var chainFn = arguments[1] !== (void 0) ? arguments[1] : null;
-    function DecoratorFactory(objOrType) {
-      var annotationInstance = new annotationCls(objOrType);
-      if (this instanceof annotationCls) {
-        return annotationInstance;
-      } else {
-        var chainAnnotation = isFunction(this) && this.annotations instanceof Array ? this.annotations : [];
-        chainAnnotation.push(annotationInstance);
-        var TypeDecorator = function TypeDecorator(cls) {
-          var annotations = Reflect.getOwnMetadata('annotations', cls);
-          annotations = annotations || [];
-          annotations.push(annotationInstance);
-          Reflect.defineMetadata('annotations', annotations, cls);
-          return cls;
-        };
-        TypeDecorator.annotations = chainAnnotation;
-        TypeDecorator.Class = Class;
-        if (chainFn)
-          chainFn(TypeDecorator);
-        return TypeDecorator;
-      }
-    }
-    DecoratorFactory.prototype = Object.create(annotationCls.prototype);
-    return DecoratorFactory;
-  }
-  function makeParamDecorator(annotationCls) {
-    function ParamDecoratorFactory() {
-      for (var args = [],
-          $__0 = 0; $__0 < arguments.length; $__0++)
-        args[$__0] = arguments[$__0];
-      var annotationInstance = Object.create(annotationCls.prototype);
-      annotationCls.apply(annotationInstance, args);
-      if (this instanceof annotationCls) {
-        return annotationInstance;
-      } else {
-        ParamDecorator.annotation = annotationInstance;
-        return ParamDecorator;
-      }
-      function ParamDecorator(cls, unusedKey, index) {
-        var parameters = Reflect.getMetadata('parameters', cls);
-        parameters = parameters || [];
-        while (parameters.length <= index) {
-          parameters.push(null);
-        }
-        parameters[index] = parameters[index] || [];
-        var annotationsForParam = parameters[index];
-        annotationsForParam.push(annotationInstance);
-        Reflect.defineMetadata('parameters', parameters, cls);
-        return cls;
-      }
-    }
-    ParamDecoratorFactory.prototype = Object.create(annotationCls.prototype);
-    return ParamDecoratorFactory;
-  }
-  $__export("Class", Class);
-  $__export("makeDecorator", makeDecorator);
-  $__export("makeParamDecorator", makeParamDecorator);
-  return {
-    setters: [function($__m) {
-      global = $__m.global;
-      isFunction = $__m.isFunction;
-      stringify = $__m.stringify;
-    }],
-    execute: function() {
-      Reflect = global.Reflect;
-      if (!(Reflect && Reflect.getMetadata)) {
-        throw 'reflect-metadata shim is required when using class decorators';
-      }
-    }
-  };
-});
-
-System.register("angular2/src/core/di/forward_ref", ["angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/forward_ref";
-  var stringify,
-      isFunction;
-  function forwardRef(forwardRefFn) {
-    forwardRefFn.__forward_ref__ = forwardRef;
-    forwardRefFn.toString = function() {
-      return stringify(this());
+    Headers.prototype.append = function(name, value) {
+      var mapName = this._headersMap.get(name);
+      var list = collection_1.isListLikeIterable(mapName) ? mapName : [];
+      list.push(value);
+      this._headersMap.set(name, list);
     };
-    return forwardRefFn;
-  }
-  function resolveForwardRef(type) {
-    if (isFunction(type) && type.hasOwnProperty('__forward_ref__') && type.__forward_ref__ === forwardRef) {
-      return type();
-    } else {
-      return type;
-    }
-  }
-  $__export("forwardRef", forwardRef);
-  $__export("resolveForwardRef", resolveForwardRef);
-  return {
-    setters: [function($__m) {
-      stringify = $__m.stringify;
-      isFunction = $__m.isFunction;
-    }],
-    execute: function() {
-    }
-  };
-});
-
-System.register("angular2/src/core/facade/collection", ["angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/facade/collection";
-  var isJsObject,
-      global,
-      isPresent,
-      isBlank,
-      isArray,
-      Map,
-      Set,
-      StringMap,
-      createMapFromPairs,
-      createMapFromMap,
-      _clearValues,
-      _arrayFromMap,
-      MapWrapper,
-      StringMapWrapper,
-      ListWrapper,
-      createSetFromList,
-      SetWrapper;
-  function isListLikeIterable(obj) {
-    if (!isJsObject(obj))
-      return false;
-    return isArray(obj) || (!(obj instanceof Map) && Symbol.iterator in obj);
-  }
-  function iterateListLike(obj, fn) {
-    if (isArray(obj)) {
-      for (var i = 0; i < obj.length; i++) {
-        fn(obj[i]);
-      }
-    } else {
-      var iterator = obj[Symbol.iterator]();
-      var item;
-      while (!((item = iterator.next()).done)) {
-        fn(item.value);
-      }
-    }
-  }
-  $__export("isListLikeIterable", isListLikeIterable);
-  $__export("iterateListLike", iterateListLike);
-  return {
-    setters: [function($__m) {
-      isJsObject = $__m.isJsObject;
-      global = $__m.global;
-      isPresent = $__m.isPresent;
-      isBlank = $__m.isBlank;
-      isArray = $__m.isArray;
-    }],
-    execute: function() {
-      Map = global.Map;
-      $__export("Map", Map);
-      Set = global.Set;
-      $__export("Set", Set);
-      StringMap = global.Object;
-      $__export("StringMap", StringMap);
-      createMapFromPairs = (function() {
-        try {
-          if (new Map([[1, 2]]).size === 1) {
-            return function createMapFromPairs(pairs) {
-              return new Map(pairs);
-            };
-          }
-        } catch (e) {}
-        return function createMapAndPopulateFromPairs(pairs) {
-          var map = new Map();
-          for (var i = 0; i < pairs.length; i++) {
-            var pair = pairs[i];
-            map.set(pair[0], pair[1]);
-          }
-          return map;
-        };
-      })();
-      createMapFromMap = (function() {
-        try {
-          if (new Map(new Map())) {
-            return function createMapFromMap(m) {
-              return new Map(m);
-            };
-          }
-        } catch (e) {}
-        return function createMapAndPopulateFromMap(m) {
-          var map = new Map();
-          m.forEach((function(v, k) {
-            map.set(k, v);
-          }));
-          return map;
-        };
-      })();
-      _clearValues = (function() {
-        if ((new Map()).keys().next) {
-          return function _clearValues(m) {
-            var keyIterator = m.keys();
-            var k;
-            while (!((k = keyIterator.next()).done)) {
-              m.set(k.value, null);
-            }
-          };
-        } else {
-          return function _clearValuesWithForeEach(m) {
-            m.forEach((function(v, k) {
-              m.set(k, null);
-            }));
-          };
-        }
-      })();
-      _arrayFromMap = (function() {
-        try {
-          if ((new Map()).values().next) {
-            return function createArrayFromMap(m, getValues) {
-              return getValues ? Array.from(m.values()) : Array.from(m.keys());
-            };
-          }
-        } catch (e) {}
-        return function createArrayFromMapWithForeach(m, getValues) {
-          var res = ListWrapper.createFixedSize(m.size),
-              i = 0;
-          m.forEach((function(v, k) {
-            res[i] = getValues ? v : k;
-            i++;
-          }));
-          return res;
-        };
-      })();
-      MapWrapper = (function() {
-        function MapWrapper() {}
-        return ($traceurRuntime.createClass)(MapWrapper, {}, {
-          clone: function(m) {
-            return createMapFromMap(m);
-          },
-          createFromStringMap: function(stringMap) {
-            var result = new Map();
-            for (var prop in stringMap) {
-              result.set(prop, stringMap[prop]);
-            }
-            return result;
-          },
-          toStringMap: function(m) {
-            var r = {};
-            m.forEach((function(v, k) {
-              return r[k] = v;
-            }));
-            return r;
-          },
-          createFromPairs: function(pairs) {
-            return createMapFromPairs(pairs);
-          },
-          forEach: function(m, fn) {
-            m.forEach(fn);
-          },
-          get: function(map, key) {
-            return map.get(key);
-          },
-          size: function(m) {
-            return m.size;
-          },
-          delete: function(m, k) {
-            m.delete(k);
-          },
-          clearValues: function(m) {
-            _clearValues(m);
-          },
-          iterable: function(m) {
-            return m;
-          },
-          keys: function(m) {
-            return _arrayFromMap(m, false);
-          },
-          values: function(m) {
-            return _arrayFromMap(m, true);
-          }
-        });
-      }());
-      $__export("MapWrapper", MapWrapper);
-      StringMapWrapper = (function() {
-        function StringMapWrapper() {}
-        return ($traceurRuntime.createClass)(StringMapWrapper, {}, {
-          create: function() {
-            return {};
-          },
-          contains: function(map, key) {
-            return map.hasOwnProperty(key);
-          },
-          get: function(map, key) {
-            return map.hasOwnProperty(key) ? map[key] : undefined;
-          },
-          set: function(map, key, value) {
-            map[key] = value;
-          },
-          keys: function(map) {
-            return Object.keys(map);
-          },
-          isEmpty: function(map) {
-            for (var prop in map) {
-              return false;
-            }
-            return true;
-          },
-          delete: function(map, key) {
-            delete map[key];
-          },
-          forEach: function(map, callback) {
-            for (var prop in map) {
-              if (map.hasOwnProperty(prop)) {
-                callback(map[prop], prop);
-              }
-            }
-          },
-          merge: function(m1, m2) {
-            var m = {};
-            for (var attr in m1) {
-              if (m1.hasOwnProperty(attr)) {
-                m[attr] = m1[attr];
-              }
-            }
-            for (var attr in m2) {
-              if (m2.hasOwnProperty(attr)) {
-                m[attr] = m2[attr];
-              }
-            }
-            return m;
-          },
-          equals: function(m1, m2) {
-            var k1 = Object.keys(m1);
-            var k2 = Object.keys(m2);
-            if (k1.length != k2.length) {
-              return false;
-            }
-            var key;
-            for (var i = 0; i < k1.length; i++) {
-              key = k1[i];
-              if (m1[key] !== m2[key]) {
-                return false;
-              }
-            }
-            return true;
-          }
-        });
-      }());
-      $__export("StringMapWrapper", StringMapWrapper);
-      ListWrapper = (function() {
-        function ListWrapper() {}
-        return ($traceurRuntime.createClass)(ListWrapper, {}, {
-          createFixedSize: function(size) {
-            return new Array(size);
-          },
-          createGrowableSize: function(size) {
-            return new Array(size);
-          },
-          clone: function(array) {
-            return array.slice(0);
-          },
-          map: function(array, fn) {
-            return array.map(fn);
-          },
-          forEach: function(array, fn) {
-            for (var i = 0; i < array.length; i++) {
-              fn(array[i]);
-            }
-          },
-          forEachWithIndex: function(array, fn) {
-            for (var i = 0; i < array.length; i++) {
-              fn(array[i], i);
-            }
-          },
-          first: function(array) {
-            if (!array)
-              return null;
-            return array[0];
-          },
-          last: function(array) {
-            if (!array || array.length == 0)
-              return null;
-            return array[array.length - 1];
-          },
-          find: function(list, pred) {
-            for (var i = 0; i < list.length; ++i) {
-              if (pred(list[i]))
-                return list[i];
-            }
-            return null;
-          },
-          indexOf: function(array, value) {
-            var startIndex = arguments[2] !== (void 0) ? arguments[2] : 0;
-            return array.indexOf(value, startIndex);
-          },
-          reduce: function(list, fn, init) {
-            return list.reduce(fn, init);
-          },
-          filter: function(array, pred) {
-            return array.filter(pred);
-          },
-          any: function(list, pred) {
-            for (var i = 0; i < list.length; ++i) {
-              if (pred(list[i]))
-                return true;
-            }
-            return false;
-          },
-          contains: function(list, el) {
-            return list.indexOf(el) !== -1;
-          },
-          reversed: function(array) {
-            var a = ListWrapper.clone(array);
-            return a.reverse();
-          },
-          concat: function(a, b) {
-            return a.concat(b);
-          },
-          insert: function(list, index, value) {
-            list.splice(index, 0, value);
-          },
-          removeAt: function(list, index) {
-            var res = list[index];
-            list.splice(index, 1);
-            return res;
-          },
-          removeAll: function(list, items) {
-            for (var i = 0; i < items.length; ++i) {
-              var index = list.indexOf(items[i]);
-              list.splice(index, 1);
-            }
-          },
-          removeLast: function(list) {
-            return list.pop();
-          },
-          remove: function(list, el) {
-            var index = list.indexOf(el);
-            if (index > -1) {
-              list.splice(index, 1);
-              return true;
-            }
-            return false;
-          },
-          clear: function(list) {
-            list.splice(0, list.length);
-          },
-          join: function(list, s) {
-            return list.join(s);
-          },
-          isEmpty: function(list) {
-            return list.length == 0;
-          },
-          fill: function(list, value) {
-            var start = arguments[2] !== (void 0) ? arguments[2] : 0;
-            var end = arguments[3] !== (void 0) ? arguments[3] : null;
-            list.fill(value, start, end === null ? list.length : end);
-          },
-          equals: function(a, b) {
-            if (a.length != b.length)
-              return false;
-            for (var i = 0; i < a.length; ++i) {
-              if (a[i] !== b[i])
-                return false;
-            }
-            return true;
-          },
-          slice: function(l) {
-            var from = arguments[1] !== (void 0) ? arguments[1] : 0;
-            var to = arguments[2] !== (void 0) ? arguments[2] : null;
-            return l.slice(from, to === null ? undefined : to);
-          },
-          splice: function(l, from, length) {
-            return l.splice(from, length);
-          },
-          sort: function(l, compareFn) {
-            if (isPresent(compareFn)) {
-              l.sort(compareFn);
-            } else {
-              l.sort();
-            }
-          },
-          toString: function(l) {
-            return l.toString();
-          },
-          toJSON: function(l) {
-            return JSON.stringify(l);
-          },
-          maximum: function(list, predicate) {
-            if (list.length == 0) {
-              return null;
-            }
-            var solution = null;
-            var maxValue = -Infinity;
-            for (var index = 0; index < list.length; index++) {
-              var candidate = list[index];
-              if (isBlank(candidate)) {
-                continue;
-              }
-              var candidateValue = predicate(candidate);
-              if (candidateValue > maxValue) {
-                solution = candidate;
-                maxValue = candidateValue;
-              }
-            }
-            return solution;
-          }
-        });
-      }());
-      $__export("ListWrapper", ListWrapper);
-      createSetFromList = (function() {
-        var test = new Set([1, 2, 3]);
-        if (test.size === 3) {
-          return function createSetFromList(lst) {
-            return new Set(lst);
-          };
-        } else {
-          return function createSetAndPopulateFromList(lst) {
-            var res = new Set(lst);
-            if (res.size !== lst.length) {
-              for (var i = 0; i < lst.length; i++) {
-                res.add(lst[i]);
-              }
-            }
-            return res;
-          };
-        }
-      })();
-      SetWrapper = (function() {
-        function SetWrapper() {}
-        return ($traceurRuntime.createClass)(SetWrapper, {}, {
-          createFromList: function(lst) {
-            return createSetFromList(lst);
-          },
-          has: function(s, key) {
-            return s.has(key);
-          },
-          delete: function(m, k) {
-            m.delete(k);
-          }
-        });
-      }());
-      $__export("SetWrapper", SetWrapper);
-    }
-  };
-});
-
-System.register("angular2/src/core/reflection/reflector", ["angular2/src/core/facade/lang", "angular2/src/core/facade/collection"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/reflection/reflector";
-  var isPresent,
-      BaseException,
-      ListWrapper,
-      Map,
-      MapWrapper,
-      Set,
-      SetWrapper,
-      StringMapWrapper,
-      ReflectionInfo,
-      Reflector;
-  function _mergeMaps(target, config) {
-    StringMapWrapper.forEach(config, (function(v, k) {
-      return target.set(k, v);
-    }));
-  }
-  return {
-    setters: [function($__m) {
-      isPresent = $__m.isPresent;
-      BaseException = $__m.BaseException;
-    }, function($__m) {
-      ListWrapper = $__m.ListWrapper;
-      Map = $__m.Map;
-      MapWrapper = $__m.MapWrapper;
-      Set = $__m.Set;
-      SetWrapper = $__m.SetWrapper;
-      StringMapWrapper = $__m.StringMapWrapper;
-    }],
-    execute: function() {
-      ReflectionInfo = (function() {
-        function ReflectionInfo(annotations, parameters, factory, interfaces) {
-          this._annotations = annotations;
-          this._parameters = parameters;
-          this._factory = factory;
-          this._interfaces = interfaces;
-        }
-        return ($traceurRuntime.createClass)(ReflectionInfo, {}, {});
-      }());
-      $__export("ReflectionInfo", ReflectionInfo);
-      Reflector = (function() {
-        function Reflector(reflectionCapabilities) {
-          this._injectableInfo = new Map();
-          this._getters = new Map();
-          this._setters = new Map();
-          this._methods = new Map();
-          this._usedKeys = null;
-          this.reflectionCapabilities = reflectionCapabilities;
-        }
-        return ($traceurRuntime.createClass)(Reflector, {
-          isReflectionEnabled: function() {
-            return this.reflectionCapabilities.isReflectionEnabled();
-          },
-          trackUsage: function() {
-            this._usedKeys = new Set();
-          },
-          listUnusedKeys: function() {
-            var $__0 = this;
-            if (this._usedKeys == null) {
-              throw new BaseException('Usage tracking is disabled');
-            }
-            var allTypes = MapWrapper.keys(this._injectableInfo);
-            return ListWrapper.filter(allTypes, (function(key) {
-              return !SetWrapper.has($__0._usedKeys, key);
-            }));
-          },
-          registerFunction: function(func, funcInfo) {
-            this._injectableInfo.set(func, funcInfo);
-          },
-          registerType: function(type, typeInfo) {
-            this._injectableInfo.set(type, typeInfo);
-          },
-          registerGetters: function(getters) {
-            _mergeMaps(this._getters, getters);
-          },
-          registerSetters: function(setters) {
-            _mergeMaps(this._setters, setters);
-          },
-          registerMethods: function(methods) {
-            _mergeMaps(this._methods, methods);
-          },
-          factory: function(type) {
-            if (this._containsReflectionInfo(type)) {
-              var res = this._getReflectionInfo(type)._factory;
-              return isPresent(res) ? res : null;
-            } else {
-              return this.reflectionCapabilities.factory(type);
-            }
-          },
-          parameters: function(typeOrFunc) {
-            if (this._injectableInfo.has(typeOrFunc)) {
-              var res = this._getReflectionInfo(typeOrFunc)._parameters;
-              return isPresent(res) ? res : [];
-            } else {
-              return this.reflectionCapabilities.parameters(typeOrFunc);
-            }
-          },
-          annotations: function(typeOrFunc) {
-            if (this._injectableInfo.has(typeOrFunc)) {
-              var res = this._getReflectionInfo(typeOrFunc)._annotations;
-              return isPresent(res) ? res : [];
-            } else {
-              return this.reflectionCapabilities.annotations(typeOrFunc);
-            }
-          },
-          interfaces: function(type) {
-            if (this._injectableInfo.has(type)) {
-              var res = this._getReflectionInfo(type)._interfaces;
-              return isPresent(res) ? res : [];
-            } else {
-              return this.reflectionCapabilities.interfaces(type);
-            }
-          },
-          getter: function(name) {
-            if (this._getters.has(name)) {
-              return this._getters.get(name);
-            } else {
-              return this.reflectionCapabilities.getter(name);
-            }
-          },
-          setter: function(name) {
-            if (this._setters.has(name)) {
-              return this._setters.get(name);
-            } else {
-              return this.reflectionCapabilities.setter(name);
-            }
-          },
-          method: function(name) {
-            if (this._methods.has(name)) {
-              return this._methods.get(name);
-            } else {
-              return this.reflectionCapabilities.method(name);
-            }
-          },
-          _getReflectionInfo: function(typeOrFunc) {
-            if (isPresent(this._usedKeys)) {
-              this._usedKeys.add(typeOrFunc);
-            }
-            return this._injectableInfo.get(typeOrFunc);
-          },
-          _containsReflectionInfo: function(typeOrFunc) {
-            return this._injectableInfo.has(typeOrFunc);
-          },
-          importUri: function(type) {
-            return this.reflectionCapabilities.importUri(type);
-          }
-        }, {});
-      }());
-      $__export("Reflector", Reflector);
-    }
-  };
-});
-
-System.register("angular2/src/core/reflection/reflection_capabilities", ["angular2/src/core/facade/lang", "angular2/src/core/facade/collection"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/reflection/reflection_capabilities";
-  var isPresent,
-      isFunction,
-      global,
-      stringify,
-      BaseException,
-      ListWrapper,
-      ReflectionCapabilities;
-  return {
-    setters: [function($__m) {
-      isPresent = $__m.isPresent;
-      isFunction = $__m.isFunction;
-      global = $__m.global;
-      stringify = $__m.stringify;
-      BaseException = $__m.BaseException;
-    }, function($__m) {
-      ListWrapper = $__m.ListWrapper;
-    }],
-    execute: function() {
-      ReflectionCapabilities = (function() {
-        function ReflectionCapabilities(reflect) {
-          this._reflect = isPresent(reflect) ? reflect : global.Reflect;
-        }
-        return ($traceurRuntime.createClass)(ReflectionCapabilities, {
-          isReflectionEnabled: function() {
-            return true;
-          },
-          factory: function(t) {
-            switch (t.length) {
-              case 0:
-                return (function() {
-                  return new t();
-                });
-              case 1:
-                return (function(a1) {
-                  return new t(a1);
-                });
-              case 2:
-                return (function(a1, a2) {
-                  return new t(a1, a2);
-                });
-              case 3:
-                return (function(a1, a2, a3) {
-                  return new t(a1, a2, a3);
-                });
-              case 4:
-                return (function(a1, a2, a3, a4) {
-                  return new t(a1, a2, a3, a4);
-                });
-              case 5:
-                return (function(a1, a2, a3, a4, a5) {
-                  return new t(a1, a2, a3, a4, a5);
-                });
-              case 6:
-                return (function(a1, a2, a3, a4, a5, a6) {
-                  return new t(a1, a2, a3, a4, a5, a6);
-                });
-              case 7:
-                return (function(a1, a2, a3, a4, a5, a6, a7) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7);
-                });
-              case 8:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8);
-                });
-              case 9:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9);
-                });
-              case 10:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
-                });
-              case 11:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
-                });
-              case 12:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
-                });
-              case 13:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
-                });
-              case 14:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14);
-                });
-              case 15:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
-                });
-              case 16:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16);
-                });
-              case 17:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17);
-                });
-              case 18:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18);
-                });
-              case 19:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19);
-                });
-              case 20:
-                return (function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) {
-                  return new t(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20);
-                });
-            }
-            ;
-            throw new Error(("Cannot create a factory for '" + stringify(t) + "' because its constructor has more than 20 arguments"));
-          },
-          _zipTypesAndAnnotaions: function(paramTypes, paramAnnotations) {
-            var result;
-            if (typeof paramTypes === 'undefined') {
-              result = ListWrapper.createFixedSize(paramAnnotations.length);
-            } else {
-              result = ListWrapper.createFixedSize(paramTypes.length);
-            }
-            for (var i = 0; i < result.length; i++) {
-              if (typeof paramTypes === 'undefined') {
-                result[i] = [];
-              } else if (paramTypes[i] != Object) {
-                result[i] = [paramTypes[i]];
-              } else {
-                result[i] = [];
-              }
-              if (isPresent(paramAnnotations) && isPresent(paramAnnotations[i])) {
-                result[i] = result[i].concat(paramAnnotations[i]);
-              }
-            }
-            return result;
-          },
-          parameters: function(typeOfFunc) {
-            if (isPresent(typeOfFunc.parameters)) {
-              return typeOfFunc.parameters;
-            }
-            if (isPresent(this._reflect) && isPresent(this._reflect.getMetadata)) {
-              var paramAnnotations = this._reflect.getMetadata('parameters', typeOfFunc);
-              var paramTypes = this._reflect.getMetadata('design:paramtypes', typeOfFunc);
-              if (isPresent(paramTypes) || isPresent(paramAnnotations)) {
-                return this._zipTypesAndAnnotaions(paramTypes, paramAnnotations);
-              }
-            }
-            return ListWrapper.createFixedSize(typeOfFunc.length);
-          },
-          annotations: function(typeOfFunc) {
-            if (isPresent(typeOfFunc.annotations)) {
-              var annotations = typeOfFunc.annotations;
-              if (isFunction(annotations) && annotations.annotations) {
-                annotations = annotations.annotations;
-              }
-              return annotations;
-            }
-            if (isPresent(this._reflect) && isPresent(this._reflect.getMetadata)) {
-              var annotations = this._reflect.getMetadata('annotations', typeOfFunc);
-              if (isPresent(annotations))
-                return annotations;
-            }
-            return [];
-          },
-          interfaces: function(type) {
-            throw new BaseException("JavaScript does not support interfaces");
-          },
-          getter: function(name) {
-            return new Function('o', 'return o.' + name + ';');
-          },
-          setter: function(name) {
-            return new Function('o', 'v', 'return o.' + name + ' = v;');
-          },
-          method: function(name) {
-            var functionBody = ("if (!o." + name + ") throw new Error('\"" + name + "\" is undefined');\n        return o." + name + ".apply(o, args);");
-            return new Function('o', 'args', functionBody);
-          },
-          importUri: function(type) {
-            return './';
-          }
-        }, {});
-      }());
-      $__export("ReflectionCapabilities", ReflectionCapabilities);
-    }
-  };
-});
-
-System.register("angular2/src/core/di/type_literal", [], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/type_literal";
-  var TypeLiteral;
-  return {
-    setters: [],
-    execute: function() {
-      TypeLiteral = (function() {
-        function TypeLiteral() {}
-        return ($traceurRuntime.createClass)(TypeLiteral, {get type() {
-            throw new Error("Type literals are only supported in Dart");
-          }}, {});
-      }());
-      $__export("TypeLiteral", TypeLiteral);
-    }
-  };
-});
-
-System.register("angular2/src/core/di/exceptions", ["angular2/src/core/facade/collection", "angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/exceptions";
-  var ListWrapper,
-      stringify,
-      BaseException,
-      isBlank,
-      AbstractBindingError,
-      NoBindingError,
-      CyclicDependencyError,
-      InstantiationError,
-      InvalidBindingError,
-      NoAnnotationError,
-      OutOfBoundsError;
-  function findFirstClosedCycle(keys) {
-    var res = [];
-    for (var i = 0; i < keys.length; ++i) {
-      if (ListWrapper.contains(res, keys[i])) {
-        res.push(keys[i]);
-        return res;
+    Headers.prototype.delete = function(name) {
+      this._headersMap.delete(name);
+    };
+    Headers.prototype.forEach = function(fn) {
+      this._headersMap.forEach(fn);
+    };
+    Headers.prototype.get = function(header) {
+      return collection_1.ListWrapper.first(this._headersMap.get(header));
+    };
+    Headers.prototype.has = function(header) {
+      return this._headersMap.has(header);
+    };
+    Headers.prototype.keys = function() {
+      return collection_1.MapWrapper.keys(this._headersMap);
+    };
+    Headers.prototype.set = function(header, value) {
+      var list = [];
+      if (collection_1.isListLikeIterable(value)) {
+        var pushValue = value.join(',');
+        list.push(pushValue);
       } else {
-        res.push(keys[i]);
+        list.push(value);
       }
-    }
-    return res;
-  }
-  function constructResolvingPath(keys) {
-    if (keys.length > 1) {
-      var reversed = findFirstClosedCycle(ListWrapper.reversed(keys));
-      var tokenStrs = ListWrapper.map(reversed, (function(k) {
-        return stringify(k.token);
-      }));
-      return " (" + tokenStrs.join(' -> ') + ")";
-    } else {
-      return "";
-    }
-  }
-  return {
-    setters: [function($__m) {
-      ListWrapper = $__m.ListWrapper;
-    }, function($__m) {
-      stringify = $__m.stringify;
-      BaseException = $__m.BaseException;
-      isBlank = $__m.isBlank;
-    }],
-    execute: function() {
-      AbstractBindingError = (function($__super) {
-        function AbstractBindingError(injector, key, constructResolvingMessage, originalException, originalStack) {
-          $traceurRuntime.superConstructor(AbstractBindingError).call(this, "DI Exception", originalException, originalStack, null);
-          this.keys = [key];
-          this.injectors = [injector];
-          this.constructResolvingMessage = constructResolvingMessage;
-          this.message = this.constructResolvingMessage(this.keys);
-        }
-        return ($traceurRuntime.createClass)(AbstractBindingError, {
-          addKey: function(injector, key) {
-            this.injectors.push(injector);
-            this.keys.push(key);
-            this.message = this.constructResolvingMessage(this.keys);
-          },
-          get context() {
-            return this.injectors[this.injectors.length - 1].debugContext();
-          },
-          toString: function() {
-            return this.message;
-          }
-        }, {}, $__super);
-      }(BaseException));
-      $__export("AbstractBindingError", AbstractBindingError);
-      NoBindingError = (function($__super) {
-        function NoBindingError(injector, key) {
-          $traceurRuntime.superConstructor(NoBindingError).call(this, injector, key, function(keys) {
-            var first = stringify(ListWrapper.first(keys).token);
-            return ("No provider for " + first + "!" + constructResolvingPath(keys));
-          });
-        }
-        return ($traceurRuntime.createClass)(NoBindingError, {}, {}, $__super);
-      }(AbstractBindingError));
-      $__export("NoBindingError", NoBindingError);
-      CyclicDependencyError = (function($__super) {
-        function CyclicDependencyError(injector, key) {
-          $traceurRuntime.superConstructor(CyclicDependencyError).call(this, injector, key, function(keys) {
-            return ("Cannot instantiate cyclic dependency!" + constructResolvingPath(keys));
-          });
-        }
-        return ($traceurRuntime.createClass)(CyclicDependencyError, {}, {}, $__super);
-      }(AbstractBindingError));
-      $__export("CyclicDependencyError", CyclicDependencyError);
-      InstantiationError = (function($__super) {
-        function InstantiationError(injector, originalException, originalStack, key) {
-          $traceurRuntime.superConstructor(InstantiationError).call(this, injector, key, function(keys) {
-            var first = stringify(ListWrapper.first(keys).token);
-            return ("Error during instantiation of " + first + "!" + constructResolvingPath(keys) + ".");
-          }, originalException, originalStack);
-          this.causeKey = key;
-        }
-        return ($traceurRuntime.createClass)(InstantiationError, {}, {}, $__super);
-      }(AbstractBindingError));
-      $__export("InstantiationError", InstantiationError);
-      InvalidBindingError = (function($__super) {
-        function InvalidBindingError(binding) {
-          $traceurRuntime.superConstructor(InvalidBindingError).call(this);
-          this.message = "Invalid binding - only instances of Binding and Type are allowed, got: " + binding.toString();
-        }
-        return ($traceurRuntime.createClass)(InvalidBindingError, {toString: function() {
-            return this.message;
-          }}, {}, $__super);
-      }(BaseException));
-      $__export("InvalidBindingError", InvalidBindingError);
-      NoAnnotationError = (function($__super) {
-        function NoAnnotationError(typeOrFunc, params) {
-          $traceurRuntime.superConstructor(NoAnnotationError).call(this);
-          var signature = [];
-          for (var i = 0,
-              ii = params.length; i < ii; i++) {
-            var parameter = params[i];
-            if (isBlank(parameter) || parameter.length == 0) {
-              signature.push('?');
-            } else {
-              signature.push(ListWrapper.map(parameter, stringify).join(' '));
-            }
-          }
-          this.message = "Cannot resolve all parameters for " + stringify(typeOrFunc) + "(" + signature.join(', ') + "). " + 'Make sure they all have valid type or annotations.';
-        }
-        return ($traceurRuntime.createClass)(NoAnnotationError, {toString: function() {
-            return this.message;
-          }}, {}, $__super);
-      }(BaseException));
-      $__export("NoAnnotationError", NoAnnotationError);
-      OutOfBoundsError = (function($__super) {
-        function OutOfBoundsError(index) {
-          $traceurRuntime.superConstructor(OutOfBoundsError).call(this);
-          this.message = ("Index " + index + " is out-of-bounds.");
-        }
-        return ($traceurRuntime.createClass)(OutOfBoundsError, {toString: function() {
-            return this.message;
-          }}, {}, $__super);
-      }(BaseException));
-      $__export("OutOfBoundsError", OutOfBoundsError);
-    }
-  };
+      this._headersMap.set(header, list);
+    };
+    Headers.prototype.values = function() {
+      return collection_1.MapWrapper.values(this._headersMap);
+    };
+    Headers.prototype.getAll = function(header) {
+      var headers = this._headersMap.get(header);
+      return collection_1.isListLikeIterable(headers) ? headers : [];
+    };
+    Headers.prototype.entries = function() {
+      throw new exceptions_1.BaseException('"entries" method is not implemented on Headers class');
+    };
+    return Headers;
+  })();
+  exports.Headers = Headers;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/core/di/opaque_token", ["angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/opaque_token";
-  var __decorate,
-      __metadata,
-      CONST,
-      OpaqueToken;
-  return {
-    setters: [function($__m) {
-      CONST = $__m.CONST;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      OpaqueToken = (($traceurRuntime.createClass)(function(desc) {
-        this._desc = 'Token(' + desc + ')';
-      }, {toString: function() {
-          return this._desc;
-        }}, {}));
-      $__export("OpaqueToken", OpaqueToken);
-      $__export("OpaqueToken", OpaqueToken = __decorate([CONST(), __metadata('design:paramtypes', [String])], OpaqueToken));
-    }
-  };
+System.register("angular2/src/http/enums", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  (function(RequestMethods) {
+    RequestMethods[RequestMethods["Get"] = 0] = "Get";
+    RequestMethods[RequestMethods["Post"] = 1] = "Post";
+    RequestMethods[RequestMethods["Put"] = 2] = "Put";
+    RequestMethods[RequestMethods["Delete"] = 3] = "Delete";
+    RequestMethods[RequestMethods["Options"] = 4] = "Options";
+    RequestMethods[RequestMethods["Head"] = 5] = "Head";
+    RequestMethods[RequestMethods["Patch"] = 6] = "Patch";
+  })(exports.RequestMethods || (exports.RequestMethods = {}));
+  var RequestMethods = exports.RequestMethods;
+  (function(ReadyStates) {
+    ReadyStates[ReadyStates["Unsent"] = 0] = "Unsent";
+    ReadyStates[ReadyStates["Open"] = 1] = "Open";
+    ReadyStates[ReadyStates["HeadersReceived"] = 2] = "HeadersReceived";
+    ReadyStates[ReadyStates["Loading"] = 3] = "Loading";
+    ReadyStates[ReadyStates["Done"] = 4] = "Done";
+    ReadyStates[ReadyStates["Cancelled"] = 5] = "Cancelled";
+  })(exports.ReadyStates || (exports.ReadyStates = {}));
+  var ReadyStates = exports.ReadyStates;
+  (function(ResponseTypes) {
+    ResponseTypes[ResponseTypes["Basic"] = 0] = "Basic";
+    ResponseTypes[ResponseTypes["Cors"] = 1] = "Cors";
+    ResponseTypes[ResponseTypes["Default"] = 2] = "Default";
+    ResponseTypes[ResponseTypes["Error"] = 3] = "Error";
+    ResponseTypes[ResponseTypes["Opaque"] = 4] = "Opaque";
+  })(exports.ResponseTypes || (exports.ResponseTypes = {}));
+  var ResponseTypes = exports.ResponseTypes;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/url_search_params", ["angular2/src/core/facade/lang", "angular2/src/core/facade/collection"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/url_search_params";
-  var CONST_EXPR,
-      isPresent,
-      StringWrapper,
-      Map,
-      MapWrapper,
-      ListWrapper,
-      isListLikeIterable,
-      URLSearchParamsUnionFixer,
-      URLSearchParams;
-  function paramParser() {
-    var rawParams = arguments[0] !== (void 0) ? arguments[0] : '';
-    var map = new Map();
+System.register("angular2/src/http/url_search_params", ["angular2/src/core/facade/lang", "angular2/src/core/facade/collection"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var collection_1 = require("angular2/src/core/facade/collection");
+  function paramParser(rawParams) {
+    if (rawParams === void 0) {
+      rawParams = '';
+    }
+    var map = new collection_1.Map();
     if (rawParams.length > 0) {
-      var params = StringWrapper.split(rawParams, new RegExp('&'));
-      ListWrapper.forEach(params, (function(param) {
-        var split = StringWrapper.split(param, new RegExp('='));
+      var params = lang_1.StringWrapper.split(rawParams, new RegExp('&'));
+      params.forEach(function(param) {
+        var split = lang_1.StringWrapper.split(param, new RegExp('='));
         var key = split[0];
         var val = split[1];
-        var list = isPresent(map.get(key)) ? map.get(key) : [];
+        var list = lang_1.isPresent(map.get(key)) ? map.get(key) : [];
         list.push(val);
         map.set(key, list);
-      }));
+      });
     }
     return map;
   }
-  return {
-    setters: [function($__m) {
-      CONST_EXPR = $__m.CONST_EXPR;
-      isPresent = $__m.isPresent;
-      StringWrapper = $__m.StringWrapper;
-    }, function($__m) {
-      Map = $__m.Map;
-      MapWrapper = $__m.MapWrapper;
-      ListWrapper = $__m.ListWrapper;
-      isListLikeIterable = $__m.isListLikeIterable;
-    }],
-    execute: function() {
-      URLSearchParamsUnionFixer = CONST_EXPR("UnionFixer");
-      $__export("URLSearchParamsUnionFixer", URLSearchParamsUnionFixer);
-      URLSearchParams = (function() {
-        function URLSearchParams() {
-          var rawParams = arguments[0] !== (void 0) ? arguments[0] : '';
-          this.rawParams = rawParams;
-          this.paramsMap = paramParser(rawParams);
+  var URLSearchParams = (function() {
+    function URLSearchParams(rawParams) {
+      if (rawParams === void 0) {
+        rawParams = '';
+      }
+      this.rawParams = rawParams;
+      this.paramsMap = paramParser(rawParams);
+    }
+    URLSearchParams.prototype.clone = function() {
+      var clone = new URLSearchParams();
+      clone.appendAll(this);
+      return clone;
+    };
+    URLSearchParams.prototype.has = function(param) {
+      return this.paramsMap.has(param);
+    };
+    URLSearchParams.prototype.get = function(param) {
+      var storedParam = this.paramsMap.get(param);
+      if (collection_1.isListLikeIterable(storedParam)) {
+        return collection_1.ListWrapper.first(storedParam);
+      } else {
+        return null;
+      }
+    };
+    URLSearchParams.prototype.getAll = function(param) {
+      var mapParam = this.paramsMap.get(param);
+      return lang_1.isPresent(mapParam) ? mapParam : [];
+    };
+    URLSearchParams.prototype.set = function(param, val) {
+      var mapParam = this.paramsMap.get(param);
+      var list = lang_1.isPresent(mapParam) ? mapParam : [];
+      collection_1.ListWrapper.clear(list);
+      list.push(val);
+      this.paramsMap.set(param, list);
+    };
+    URLSearchParams.prototype.setAll = function(searchParams) {
+      var _this = this;
+      searchParams.paramsMap.forEach(function(value, param) {
+        var mapParam = _this.paramsMap.get(param);
+        var list = lang_1.isPresent(mapParam) ? mapParam : [];
+        collection_1.ListWrapper.clear(list);
+        list.push(value[0]);
+        _this.paramsMap.set(param, list);
+      });
+    };
+    URLSearchParams.prototype.append = function(param, val) {
+      var mapParam = this.paramsMap.get(param);
+      var list = lang_1.isPresent(mapParam) ? mapParam : [];
+      list.push(val);
+      this.paramsMap.set(param, list);
+    };
+    URLSearchParams.prototype.appendAll = function(searchParams) {
+      var _this = this;
+      searchParams.paramsMap.forEach(function(value, param) {
+        var mapParam = _this.paramsMap.get(param);
+        var list = lang_1.isPresent(mapParam) ? mapParam : [];
+        for (var i = 0; i < value.length; ++i) {
+          list.push(value[i]);
         }
-        return ($traceurRuntime.createClass)(URLSearchParams, {
-          clone: function() {
-            var clone = new URLSearchParams();
-            clone.appendAll(this);
-            return clone;
-          },
-          has: function(param) {
-            return this.paramsMap.has(param);
-          },
-          get: function(param) {
-            var storedParam = this.paramsMap.get(param);
-            if (isListLikeIterable(storedParam)) {
-              return ListWrapper.first(storedParam);
-            } else {
-              return null;
-            }
-          },
-          getAll: function(param) {
-            var mapParam = this.paramsMap.get(param);
-            return isPresent(mapParam) ? mapParam : [];
-          },
-          set: function(param, val) {
-            var mapParam = this.paramsMap.get(param);
-            var list = isPresent(mapParam) ? mapParam : [];
-            ListWrapper.clear(list);
-            list.push(val);
-            this.paramsMap.set(param, list);
-          },
-          setAll: function(searchParams) {
-            var $__0 = this;
-            MapWrapper.forEach(searchParams.paramsMap, (function(value, param) {
-              var mapParam = $__0.paramsMap.get(param);
-              var list = isPresent(mapParam) ? mapParam : [];
-              ListWrapper.clear(list);
-              list.push(value[0]);
-              $__0.paramsMap.set(param, list);
-            }));
-          },
-          append: function(param, val) {
-            var mapParam = this.paramsMap.get(param);
-            var list = isPresent(mapParam) ? mapParam : [];
-            list.push(val);
-            this.paramsMap.set(param, list);
-          },
-          appendAll: function(searchParams) {
-            var $__0 = this;
-            MapWrapper.forEach(searchParams.paramsMap, (function(value, param) {
-              var mapParam = $__0.paramsMap.get(param);
-              var list = isPresent(mapParam) ? mapParam : [];
-              for (var i = 0; i < value.length; ++i) {
-                list.push(value[i]);
-              }
-              $__0.paramsMap.set(param, list);
-            }));
-          },
-          replaceAll: function(searchParams) {
-            var $__0 = this;
-            MapWrapper.forEach(searchParams.paramsMap, (function(value, param) {
-              var mapParam = $__0.paramsMap.get(param);
-              var list = isPresent(mapParam) ? mapParam : [];
-              ListWrapper.clear(list);
-              for (var i = 0; i < value.length; ++i) {
-                list.push(value[i]);
-              }
-              $__0.paramsMap.set(param, list);
-            }));
-          },
-          toString: function() {
-            var paramsList = [];
-            MapWrapper.forEach(this.paramsMap, (function(values, k) {
-              ListWrapper.forEach(values, (function(v) {
-                paramsList.push(k + '=' + v);
-              }));
-            }));
-            return ListWrapper.join(paramsList, '&');
-          },
-          delete: function(param) {
-            MapWrapper.delete(this.paramsMap, param);
-          }
-        }, {});
-      }());
-      $__export("URLSearchParams", URLSearchParams);
+        _this.paramsMap.set(param, list);
+      });
+    };
+    URLSearchParams.prototype.replaceAll = function(searchParams) {
+      var _this = this;
+      searchParams.paramsMap.forEach(function(value, param) {
+        var mapParam = _this.paramsMap.get(param);
+        var list = lang_1.isPresent(mapParam) ? mapParam : [];
+        collection_1.ListWrapper.clear(list);
+        for (var i = 0; i < value.length; ++i) {
+          list.push(value[i]);
+        }
+        _this.paramsMap.set(param, list);
+      });
+    };
+    URLSearchParams.prototype.toString = function() {
+      var paramsList = [];
+      this.paramsMap.forEach(function(values, k) {
+        values.forEach(function(v) {
+          return paramsList.push(k + '=' + v);
+        });
+      });
+      return paramsList.join('&');
+    };
+    URLSearchParams.prototype.delete = function(param) {
+      this.paramsMap.delete(param);
+    };
+    return URLSearchParams;
+  })();
+  exports.URLSearchParams = URLSearchParams;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/static_response", ["angular2/src/core/facade/lang", "angular2/src/core/facade/exceptions", "angular2/src/http/http_utils"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var exceptions_1 = require("angular2/src/core/facade/exceptions");
+  var http_utils_1 = require("angular2/src/http/http_utils");
+  var Response = (function() {
+    function Response(responseOptions) {
+      this._body = responseOptions.body;
+      this.status = responseOptions.status;
+      this.statusText = responseOptions.statusText;
+      this.headers = responseOptions.headers;
+      this.type = responseOptions.type;
+      this.url = responseOptions.url;
+    }
+    Response.prototype.blob = function() {
+      throw new exceptions_1.BaseException('"blob()" method not implemented on Response superclass');
+    };
+    Response.prototype.json = function() {
+      var jsonResponse;
+      if (http_utils_1.isJsObject(this._body)) {
+        jsonResponse = this._body;
+      } else if (lang_1.isString(this._body)) {
+        jsonResponse = lang_1.Json.parse(this._body);
+      }
+      return jsonResponse;
+    };
+    Response.prototype.text = function() {
+      return this._body.toString();
+    };
+    Response.prototype.arrayBuffer = function() {
+      throw new exceptions_1.BaseException('"arrayBuffer()" method not implemented on Response superclass');
+    };
+    return Response;
+  })();
+  exports.Response = Response;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/base_response_options", ["angular2/angular2", "angular2/src/core/facade/lang", "angular2/src/http/headers", "angular2/src/http/enums"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __extends = (this && this.__extends) || function(d, b) {
+    for (var p in b)
+      if (b.hasOwnProperty(p))
+        d[p] = b[p];
+    function __() {
+      this.constructor = d;
+    }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
     }
   };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var angular2_1 = require("angular2/angular2");
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var headers_1 = require("angular2/src/http/headers");
+  var enums_1 = require("angular2/src/http/enums");
+  var ResponseOptions = (function() {
+    function ResponseOptions(_a) {
+      var _b = _a === void 0 ? {} : _a,
+          body = _b.body,
+          status = _b.status,
+          headers = _b.headers,
+          statusText = _b.statusText,
+          type = _b.type,
+          url = _b.url;
+      this.body = lang_1.isPresent(body) ? body : null;
+      this.status = lang_1.isPresent(status) ? status : null;
+      this.headers = lang_1.isPresent(headers) ? headers : null;
+      this.statusText = lang_1.isPresent(statusText) ? statusText : null;
+      this.type = lang_1.isPresent(type) ? type : null;
+      this.url = lang_1.isPresent(url) ? url : null;
+    }
+    ResponseOptions.prototype.merge = function(options) {
+      return new ResponseOptions({
+        body: lang_1.isPresent(options) && lang_1.isPresent(options.body) ? options.body : this.body,
+        status: lang_1.isPresent(options) && lang_1.isPresent(options.status) ? options.status : this.status,
+        headers: lang_1.isPresent(options) && lang_1.isPresent(options.headers) ? options.headers : this.headers,
+        statusText: lang_1.isPresent(options) && lang_1.isPresent(options.statusText) ? options.statusText : this.statusText,
+        type: lang_1.isPresent(options) && lang_1.isPresent(options.type) ? options.type : this.type,
+        url: lang_1.isPresent(options) && lang_1.isPresent(options.url) ? options.url : this.url
+      });
+    };
+    return ResponseOptions;
+  })();
+  exports.ResponseOptions = ResponseOptions;
+  var BaseResponseOptions = (function(_super) {
+    __extends(BaseResponseOptions, _super);
+    function BaseResponseOptions() {
+      _super.call(this, {
+        status: 200,
+        statusText: 'Ok',
+        type: enums_1.ResponseTypes.Default,
+        headers: new headers_1.Headers()
+      });
+    }
+    BaseResponseOptions = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [])], BaseResponseOptions);
+    return BaseResponseOptions;
+  })(ResponseOptions);
+  exports.BaseResponseOptions = BaseResponseOptions;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/headers", ["angular2/src/core/facade/lang", "angular2/src/core/facade/collection"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/headers";
-  var isBlank,
-      BaseException,
-      isListLikeIterable,
-      Map,
-      MapWrapper,
-      ListWrapper,
-      StringMap,
-      Headers;
-  return {
-    setters: [function($__m) {
-      isBlank = $__m.isBlank;
-      BaseException = $__m.BaseException;
-    }, function($__m) {
-      isListLikeIterable = $__m.isListLikeIterable;
-      Map = $__m.Map;
-      MapWrapper = $__m.MapWrapper;
-      ListWrapper = $__m.ListWrapper;
-      StringMap = $__m.StringMap;
-    }],
-    execute: function() {
-      Headers = (function() {
-        function Headers(headers) {
-          var $__0 = this;
-          if (isBlank(headers)) {
-            this._headersMap = new Map();
-            return ;
-          }
-          if (headers instanceof Headers) {
-            this._headersMap = headers._headersMap;
-          } else if (headers instanceof StringMap) {
-            this._headersMap = MapWrapper.createFromStringMap(headers);
-            MapWrapper.forEach(this._headersMap, (function(v, k) {
-              if (!isListLikeIterable(v)) {
-                var list = [];
-                list.push(v);
-                $__0._headersMap.set(k, list);
-              }
-            }));
-          }
-        }
-        return ($traceurRuntime.createClass)(Headers, {
-          append: function(name, value) {
-            var mapName = this._headersMap.get(name);
-            var list = isListLikeIterable(mapName) ? mapName : [];
-            list.push(value);
-            this._headersMap.set(name, list);
-          },
-          delete: function(name) {
-            MapWrapper.delete(this._headersMap, name);
-          },
-          forEach: function(fn) {
-            MapWrapper.forEach(this._headersMap, fn);
-          },
-          get: function(header) {
-            return ListWrapper.first(this._headersMap.get(header));
-          },
-          has: function(header) {
-            return this._headersMap.has(header);
-          },
-          keys: function() {
-            return MapWrapper.keys(this._headersMap);
-          },
-          set: function(header, value) {
-            var list = [];
-            if (isListLikeIterable(value)) {
-              var pushValue = value.join(',');
-              list.push(pushValue);
-            } else {
-              list.push(value);
-            }
-            this._headersMap.set(header, list);
-          },
-          values: function() {
-            return MapWrapper.values(this._headersMap);
-          },
-          getAll: function(header) {
-            var headers = this._headersMap.get(header);
-            return isListLikeIterable(headers) ? headers : [];
-          },
-          entries: function() {
-            throw new BaseException('"entries" method is not implemented on Headers class');
-          }
-        }, {});
-      }());
-      $__export("Headers", Headers);
+System.register("angular2/src/http/backends/browser_xhr", ["angular2/angular2"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
     }
   };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var angular2_1 = require("angular2/angular2");
+  var BrowserXhr = (function() {
+    function BrowserXhr() {}
+    BrowserXhr.prototype.build = function() {
+      return (new XMLHttpRequest());
+    };
+    BrowserXhr = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [])], BrowserXhr);
+    return BrowserXhr;
+  })();
+  exports.BrowserXhr = BrowserXhr;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/enums", [], function($__export) {
+System.register("@reactivex/rxjs/dist/cjs/util/errorObject", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
   "use strict";
-  var __moduleName = "angular2/src/http/enums";
-  var RequestModesOpts,
-      RequestCacheOpts,
-      RequestCredentialsOpts,
-      RequestMethods,
-      ReadyStates,
-      ResponseTypes;
-  return {
-    setters: [],
-    execute: function() {
-      $__export("RequestModesOpts", RequestModesOpts);
-      (function(RequestModesOpts) {
-        RequestModesOpts[RequestModesOpts["Cors"] = 0] = "Cors";
-        RequestModesOpts[RequestModesOpts["NoCors"] = 1] = "NoCors";
-        RequestModesOpts[RequestModesOpts["SameOrigin"] = 2] = "SameOrigin";
-      })(RequestModesOpts || ($__export("RequestModesOpts", RequestModesOpts = {})));
-      $__export("RequestCacheOpts", RequestCacheOpts);
-      (function(RequestCacheOpts) {
-        RequestCacheOpts[RequestCacheOpts["Default"] = 0] = "Default";
-        RequestCacheOpts[RequestCacheOpts["NoStore"] = 1] = "NoStore";
-        RequestCacheOpts[RequestCacheOpts["Reload"] = 2] = "Reload";
-        RequestCacheOpts[RequestCacheOpts["NoCache"] = 3] = "NoCache";
-        RequestCacheOpts[RequestCacheOpts["ForceCache"] = 4] = "ForceCache";
-        RequestCacheOpts[RequestCacheOpts["OnlyIfCached"] = 5] = "OnlyIfCached";
-      })(RequestCacheOpts || ($__export("RequestCacheOpts", RequestCacheOpts = {})));
-      $__export("RequestCredentialsOpts", RequestCredentialsOpts);
-      (function(RequestCredentialsOpts) {
-        RequestCredentialsOpts[RequestCredentialsOpts["Omit"] = 0] = "Omit";
-        RequestCredentialsOpts[RequestCredentialsOpts["SameOrigin"] = 1] = "SameOrigin";
-        RequestCredentialsOpts[RequestCredentialsOpts["Include"] = 2] = "Include";
-      })(RequestCredentialsOpts || ($__export("RequestCredentialsOpts", RequestCredentialsOpts = {})));
-      $__export("RequestMethods", RequestMethods);
-      (function(RequestMethods) {
-        RequestMethods[RequestMethods["Get"] = 0] = "Get";
-        RequestMethods[RequestMethods["Post"] = 1] = "Post";
-        RequestMethods[RequestMethods["Put"] = 2] = "Put";
-        RequestMethods[RequestMethods["Delete"] = 3] = "Delete";
-        RequestMethods[RequestMethods["Options"] = 4] = "Options";
-        RequestMethods[RequestMethods["Head"] = 5] = "Head";
-        RequestMethods[RequestMethods["Patch"] = 6] = "Patch";
-      })(RequestMethods || ($__export("RequestMethods", RequestMethods = {})));
-      $__export("ReadyStates", ReadyStates);
-      (function(ReadyStates) {
-        ReadyStates[ReadyStates["Unsent"] = 0] = "Unsent";
-        ReadyStates[ReadyStates["Open"] = 1] = "Open";
-        ReadyStates[ReadyStates["HeadersReceived"] = 2] = "HeadersReceived";
-        ReadyStates[ReadyStates["Loading"] = 3] = "Loading";
-        ReadyStates[ReadyStates["Done"] = 4] = "Done";
-        ReadyStates[ReadyStates["Cancelled"] = 5] = "Cancelled";
-      })(ReadyStates || ($__export("ReadyStates", ReadyStates = {})));
-      $__export("ResponseTypes", ResponseTypes);
-      (function(ResponseTypes) {
-        ResponseTypes[ResponseTypes["Basic"] = 0] = "Basic";
-        ResponseTypes[ResponseTypes["Cors"] = 1] = "Cors";
-        ResponseTypes[ResponseTypes["Default"] = 2] = "Default";
-        ResponseTypes[ResponseTypes["Error"] = 3] = "Error";
-        ResponseTypes[ResponseTypes["Opaque"] = 4] = "Opaque";
-      })(ResponseTypes || ($__export("ResponseTypes", ResponseTypes = {})));
+  exports.__esModule = true;
+  var errorObject = {e: {}};
+  exports.errorObject = errorObject;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/ErrorObservable", ["@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
     }
-  };
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var ErrorObservable = (function(_Observable) {
+    _inherits(ErrorObservable, _Observable);
+    function ErrorObservable(error, scheduler) {
+      _classCallCheck(this, ErrorObservable);
+      _Observable.call(this);
+      this.error = error;
+      this.scheduler = scheduler;
+    }
+    ErrorObservable.create = function create(error, scheduler) {
+      return new ErrorObservable(error, scheduler);
+    };
+    ErrorObservable.dispatch = function dispatch(_ref) {
+      var error = _ref.error;
+      var subscriber = _ref.subscriber;
+      subscriber.error(error);
+    };
+    ErrorObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var error = this.error;
+      var scheduler = this.scheduler;
+      if (scheduler) {
+        subscriber.add(scheduler.schedule(ErrorObservable.dispatch, 0, {
+          error: error,
+          subscriber: subscriber
+        }));
+      } else {
+        subscriber.error(error);
+      }
+    };
+    return ErrorObservable;
+  })(_Observable3['default']);
+  exports['default'] = ErrorObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/http_utils", ["angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/http_utils";
-  return {
-    setters: [function($__m) {
-      $__export("isJsObject", $__m.isJsObject);
-    }],
-    execute: function() {}
-  };
+System.register("@reactivex/rxjs/dist/cjs/observables/EmptyObservable", ["@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var EmptyObservable = (function(_Observable) {
+    _inherits(EmptyObservable, _Observable);
+    function EmptyObservable(scheduler) {
+      _classCallCheck(this, EmptyObservable);
+      _Observable.call(this);
+      this.scheduler = scheduler;
+    }
+    EmptyObservable.create = function create(scheduler) {
+      return new EmptyObservable(scheduler);
+    };
+    EmptyObservable.dispatch = function dispatch(_ref) {
+      var subscriber = _ref.subscriber;
+      subscriber.complete();
+    };
+    EmptyObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var scheduler = this.scheduler;
+      if (scheduler) {
+        subscriber.add(scheduler.schedule(EmptyObservable.dispatch, 0, {subscriber: subscriber}));
+      } else {
+        subscriber.complete();
+      }
+    };
+    return EmptyObservable;
+  })(_Observable3['default']);
+  exports['default'] = EmptyObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/base_response_options", ["angular2/di", "angular2/src/core/facade/lang", "angular2/src/http/headers", "angular2/src/http/enums"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/base_response_options";
-  var __decorate,
-      __metadata,
-      Injectable,
-      isPresent,
-      Headers,
-      ResponseTypes,
-      ResponseOptions,
-      BaseResponseOptions;
-  return {
-    setters: [function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      isPresent = $__m.isPresent;
-    }, function($__m) {
-      Headers = $__m.Headers;
-    }, function($__m) {
-      ResponseTypes = $__m.ResponseTypes;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
+System.register("@reactivex/rxjs/dist/cjs/OuterSubscriber", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var OuterSubscriber = (function(_Subscriber) {
+    _inherits(OuterSubscriber, _Subscriber);
+    function OuterSubscriber() {
+      _classCallCheck(this, OuterSubscriber);
+      _Subscriber.apply(this, arguments);
+    }
+    OuterSubscriber.prototype.notifyComplete = function notifyComplete(inner) {
+      this.destination.complete();
+    };
+    OuterSubscriber.prototype.notifyNext = function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      this.destination.next(innerValue);
+    };
+    OuterSubscriber.prototype.notifyError = function notifyError(error, inner) {
+      this.destination.error(error);
+    };
+    return OuterSubscriber;
+  })(_Subscriber3['default']);
+  exports['default'] = OuterSubscriber;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/Symbol_iterator", ["@reactivex/rxjs/dist/cjs/util/root"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  var _root = require("@reactivex/rxjs/dist/cjs/util/root");
+  if (!_root.root.Symbol) {
+    _root.root.Symbol = {};
+  }
+  if (!_root.root.Symbol.iterator) {
+    if (typeof _root.root.Symbol['for'] === 'function') {
+      _root.root.Symbol.iterator = _root.root.Symbol['for']('iterator');
+    } else if (_root.root.Set && typeof new _root.root.Set()['@@iterator'] === 'function') {
+      _root.root.Symbol.iterator = '@@iterator';
+    } else {
+      _root.root.Symbol.iterator = '_es6shim_iterator_';
+    }
+  }
+  exports['default'] = _root.root.Symbol.iterator;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/InnerSubscriber", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var InnerSubscriber = (function(_Subscriber) {
+    _inherits(InnerSubscriber, _Subscriber);
+    function InnerSubscriber(parent, outerValue, outerIndex) {
+      _classCallCheck(this, InnerSubscriber);
+      _Subscriber.call(this);
+      this.parent = parent;
+      this.outerValue = outerValue;
+      this.outerIndex = outerIndex;
+      this.index = 0;
+    }
+    InnerSubscriber.prototype._next = function _next(value) {
+      var index = this.index++;
+      this.parent.notifyNext(this.outerValue, value, this.outerIndex, index);
+    };
+    InnerSubscriber.prototype._error = function _error(error) {
+      this.parent.notifyError(error, this);
+    };
+    InnerSubscriber.prototype._complete = function _complete() {
+      this.parent.notifyComplete(this);
+    };
+    return InnerSubscriber;
+  })(_Subscriber3['default']);
+  exports['default'] = InnerSubscriber;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction", ["@reactivex/rxjs/dist/cjs/Subscription"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subscription2 = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription3 = _interopRequireDefault(_Subscription2);
+  var ImmediateAction = (function(_Subscription) {
+    _inherits(ImmediateAction, _Subscription);
+    function ImmediateAction(scheduler, work) {
+      _classCallCheck(this, ImmediateAction);
+      _Subscription.call(this);
+      this.scheduler = scheduler;
+      this.work = work;
+    }
+    ImmediateAction.prototype.schedule = function schedule(state) {
+      if (this.isUnsubscribed) {
+        return this;
+      }
+      this.state = state;
+      var scheduler = this.scheduler;
+      scheduler.actions.push(this);
+      scheduler.flush();
+      return this;
+    };
+    ImmediateAction.prototype.execute = function execute() {
+      if (this.isUnsubscribed) {
+        throw new Error('How did did we execute a canceled Action?');
+      }
+      this.work(this.state);
+    };
+    ImmediateAction.prototype.unsubscribe = function unsubscribe() {
+      var scheduler = this.scheduler;
+      var actions = scheduler.actions;
+      var index = actions.indexOf(this);
+      this.work = void 0;
+      this.state = void 0;
+      this.scheduler = void 0;
+      if (index !== -1) {
+        actions.splice(index, 1);
+      }
+      _Subscription.prototype.unsubscribe.call(this);
+    };
+    return ImmediateAction;
+  })(_Subscription3['default']);
+  exports['default'] = ImmediateAction;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/schedulers/FutureAction", ["@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _ImmediateAction2 = require("@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction");
+  var _ImmediateAction3 = _interopRequireDefault(_ImmediateAction2);
+  var FutureAction = (function(_ImmediateAction) {
+    _inherits(FutureAction, _ImmediateAction);
+    function FutureAction(scheduler, work) {
+      _classCallCheck(this, FutureAction);
+      _ImmediateAction.call(this, scheduler, work);
+      this.scheduler = scheduler;
+      this.work = work;
+    }
+    FutureAction.prototype.schedule = function schedule(state) {
+      var _this = this;
+      var delay = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      if (this.isUnsubscribed) {
+        return this;
+      }
+      this.delay = delay;
+      this.state = state;
+      var id = this.id;
+      if (id != null) {
+        this.id = undefined;
+        clearTimeout(id);
+      }
+      var scheduler = this.scheduler;
+      this.id = setTimeout(function() {
+        _this.id = void 0;
+        scheduler.actions.push(_this);
+        scheduler.flush();
+      }, this.delay);
+      return this;
+    };
+    FutureAction.prototype.unsubscribe = function unsubscribe() {
+      var id = this.id;
+      if (id != null) {
+        this.id = void 0;
+        clearTimeout(id);
+      }
+      _ImmediateAction.prototype.unsubscribe.call(this);
+    };
+    return FutureAction;
+  })(_ImmediateAction3['default']);
+  exports['default'] = FutureAction;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/DeferObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var DeferObservable = (function(_Observable) {
+    _inherits(DeferObservable, _Observable);
+    function DeferObservable(observableFactory) {
+      _classCallCheck(this, DeferObservable);
+      _Observable.call(this);
+      this.observableFactory = observableFactory;
+    }
+    DeferObservable.create = function create(observableFactory) {
+      return new DeferObservable(observableFactory);
+    };
+    DeferObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var result = _utilTryCatch2['default'](this.observableFactory)();
+      if (result === _utilErrorObject.errorObject) {
+        subscriber.error(_utilErrorObject.errorObject.e);
+      } else {
+        result.subscribe(subscriber);
+      }
+    };
+    return DeferObservable;
+  })(_Observable3['default']);
+  exports['default'] = DeferObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/ForkJoinObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var ForkJoinObservable = (function(_Observable) {
+    _inherits(ForkJoinObservable, _Observable);
+    function ForkJoinObservable(observables) {
+      _classCallCheck(this, ForkJoinObservable);
+      _Observable.call(this);
+      this.observables = observables;
+    }
+    ForkJoinObservable.create = function create() {
+      for (var _len = arguments.length,
+          observables = Array(_len),
+          _key = 0; _key < _len; _key++) {
+        observables[_key] = arguments[_key];
+      }
+      return new ForkJoinObservable(observables);
+    };
+    ForkJoinObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var observables = this.observables;
+      var len = observables.length;
+      var context = {
+        complete: 0,
+        total: len,
+        values: emptyArray(len)
       };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      ResponseOptions = (function() {
-        function ResponseOptions() {
-          var $__2 = arguments[0] !== (void 0) ? arguments[0] : {},
-              body = $__2.body,
-              status = $__2.status,
-              headers = $__2.headers,
-              statusText = $__2.statusText,
-              type = $__2.type,
-              url = $__2.url;
-          this.body = isPresent(body) ? body : null;
-          this.status = isPresent(status) ? status : null;
-          this.headers = isPresent(headers) ? headers : null;
-          this.statusText = isPresent(statusText) ? statusText : null;
-          this.type = isPresent(type) ? type : null;
-          this.url = isPresent(url) ? url : null;
-        }
-        return ($traceurRuntime.createClass)(ResponseOptions, {merge: function(options) {
-            return new ResponseOptions({
-              body: isPresent(options) && isPresent(options.body) ? options.body : this.body,
-              status: isPresent(options) && isPresent(options.status) ? options.status : this.status,
-              headers: isPresent(options) && isPresent(options.headers) ? options.headers : this.headers,
-              statusText: isPresent(options) && isPresent(options.statusText) ? options.statusText : this.statusText,
-              type: isPresent(options) && isPresent(options.type) ? options.type : this.type,
-              url: isPresent(options) && isPresent(options.url) ? options.url : this.url
+      for (var i = 0; i < len; i++) {
+        observables[i].subscribe(new AllSubscriber(subscriber, this, i, context));
+      }
+    };
+    return ForkJoinObservable;
+  })(_Observable3['default']);
+  exports['default'] = ForkJoinObservable;
+  var AllSubscriber = (function(_Subscriber) {
+    _inherits(AllSubscriber, _Subscriber);
+    function AllSubscriber(destination, parent, index, context) {
+      _classCallCheck(this, AllSubscriber);
+      _Subscriber.call(this, destination);
+      this.parent = parent;
+      this.index = index;
+      this.context = context;
+    }
+    AllSubscriber.prototype._next = function _next(value) {
+      this._value = value;
+    };
+    AllSubscriber.prototype._complete = function _complete() {
+      var context = this.context;
+      context.values[this.index] = this._value;
+      if (context.values.every(hasValue)) {
+        this.destination.next(context.values);
+        this.destination.complete();
+      }
+    };
+    return AllSubscriber;
+  })(_Subscriber3['default']);
+  function hasValue(x) {
+    return x !== null;
+  }
+  function emptyArray(len) {
+    var arr = [];
+    for (var i = 0; i < len; i++) {
+      arr.push(null);
+    }
+    return arr;
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/PromiseObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  var PromiseObservable = (function(_Observable) {
+    _inherits(PromiseObservable, _Observable);
+    function PromiseObservable(promise, scheduler) {
+      _classCallCheck(this, PromiseObservable);
+      _Observable.call(this);
+      this.promise = promise;
+      this.scheduler = scheduler;
+      this._isScalar = false;
+    }
+    PromiseObservable.create = function create(promise) {
+      var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersImmediate2['default'] : arguments[1];
+      return new PromiseObservable(promise, scheduler);
+    };
+    PromiseObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var _this = this;
+      var scheduler = this.scheduler;
+      var promise = this.promise;
+      if (scheduler === _schedulersImmediate2['default']) {
+        if (this._isScalar) {
+          subscriber.next(this.value);
+          subscriber.complete();
+        } else {
+          promise.then(function(value) {
+            _this._isScalar = true;
+            _this.value = value;
+            subscriber.next(value);
+            subscriber.complete();
+          }, function(err) {
+            return subscriber.error(err);
+          }).then(null, function(err) {
+            setTimeout(function() {
+              throw err;
             });
-          }}, {});
-      }());
-      $__export("ResponseOptions", ResponseOptions);
-      BaseResponseOptions = (function($__super) {
-        function $__0() {
-          $traceurRuntime.superConstructor($__0).call(this, {
-            status: 200,
-            statusText: 'Ok',
-            type: ResponseTypes.Default,
-            headers: new Headers()
           });
         }
-        return ($traceurRuntime.createClass)($__0, {}, {}, $__super);
-      }(ResponseOptions));
-      $__export("BaseResponseOptions", BaseResponseOptions);
-      $__export("BaseResponseOptions", BaseResponseOptions = __decorate([Injectable(), __metadata('design:paramtypes', [])], BaseResponseOptions));
-    }
-  };
+      } else {
+        var _ret = (function() {
+          var subscription = new _Subscription2['default']();
+          if (_this._isScalar) {
+            var value = _this.value;
+            subscription.add(scheduler.schedule(dispatchNext, 0, {
+              value: value,
+              subscriber: subscriber
+            }));
+          } else {
+            promise.then(function(value) {
+              _this._isScalar = true;
+              _this.value = value;
+              subscription.add(scheduler.schedule(dispatchNext, 0, {
+                value: value,
+                subscriber: subscriber
+              }));
+            }, function(err) {
+              return subscription.add(scheduler.schedule(dispatchError, 0, {
+                err: err,
+                subscriber: subscriber
+              }));
+            }).then(null, function(err) {
+              scheduler.schedule(function() {
+                throw err;
+              });
+            });
+          }
+          return {v: subscription};
+        })();
+        if (typeof _ret === 'object')
+          return _ret.v;
+      }
+    };
+    return PromiseObservable;
+  })(_Observable3['default']);
+  exports['default'] = PromiseObservable;
+  function dispatchNext(_ref) {
+    var value = _ref.value;
+    var subscriber = _ref.subscriber;
+    subscriber.next(value);
+    subscriber.complete();
+  }
+  function dispatchError(_ref2) {
+    var err = _ref2.err;
+    var subscriber = _ref2.subscriber;
+    subscriber.error(err);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/backends/browser_xhr", ["angular2/di"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/backends/browser_xhr";
-  var __decorate,
-      __metadata,
-      Injectable,
-      BrowserXhr;
-  return {
-    setters: [function($__m) {
-      Injectable = $__m.Injectable;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
+System.register("@reactivex/rxjs/dist/cjs/observables/IteratorObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/util/root", "@reactivex/rxjs/dist/cjs/util/Symbol_iterator", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _utilRoot = require("@reactivex/rxjs/dist/cjs/util/root");
+  var _utilSymbol_iterator = require("@reactivex/rxjs/dist/cjs/util/Symbol_iterator");
+  var _utilSymbol_iterator2 = _interopRequireDefault(_utilSymbol_iterator);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var IteratorObservable = (function(_Observable) {
+    _inherits(IteratorObservable, _Observable);
+    function IteratorObservable(iterator, project, thisArg, scheduler) {
+      _classCallCheck(this, IteratorObservable);
+      _Observable.call(this);
+      this.iterator = iterator;
+      this.project = project;
+      this.thisArg = thisArg;
+      this.scheduler = scheduler;
+    }
+    IteratorObservable.create = function create(iterator, project, thisArg, scheduler) {
+      if (iterator == null) {
+        throw new Error('iterator cannot be null.');
+      }
+      if (project && typeof project !== 'function') {
+        throw new Error('When provided, `project` must be a function.');
+      }
+      return new IteratorObservable(iterator, project, thisArg, scheduler);
+    };
+    IteratorObservable.dispatch = function dispatch(state) {
+      var index = state.index;
+      var hasError = state.hasError;
+      var thisArg = state.thisArg;
+      var project = state.project;
+      var iterator = state.iterator;
+      var subscriber = state.subscriber;
+      if (hasError) {
+        subscriber.error(state.error);
+        return ;
+      }
+      var result = iterator.next();
+      if (result.done) {
+        subscriber.complete();
+        return ;
+      }
+      if (project) {
+        result = _utilTryCatch2['default'](project).call(thisArg, result.value, index);
+        if (result === _utilErrorObject.errorObject) {
+          state.error = _utilErrorObject.errorObject.e;
+          state.hasError = true;
+        } else {
+          subscriber.next(result);
+          state.index = index + 1;
         }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      BrowserXhr = (($traceurRuntime.createClass)(function() {}, {build: function() {
-          return (new XMLHttpRequest());
-        }}, {}));
-      $__export("BrowserXhr", BrowserXhr);
-      $__export("BrowserXhr", BrowserXhr = __decorate([Injectable(), __metadata('design:paramtypes', [])], BrowserXhr));
+      } else {
+        subscriber.next(result.value);
+        state.index = index + 1;
+      }
+      if (subscriber.isUnsubscribed) {
+        return ;
+      }
+      this.schedule(state);
+    };
+    IteratorObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var index = 0;
+      var project = this.project;
+      var thisArg = this.thisArg;
+      var iterator = getIterator(Object(this.iterator));
+      var scheduler = this.scheduler;
+      if (scheduler) {
+        subscriber.add(scheduler.schedule(IteratorObservable.dispatch, 0, {
+          index: index,
+          thisArg: thisArg,
+          project: project,
+          iterator: iterator,
+          subscriber: subscriber
+        }));
+      } else {
+        do {
+          var result = iterator.next();
+          if (result.done) {
+            subscriber.complete();
+            break;
+          } else if (project) {
+            result = _utilTryCatch2['default'](project).call(thisArg, result.value, index++);
+            if (result === _utilErrorObject.errorObject) {
+              subscriber.error(_utilErrorObject.errorObject.e);
+              break;
+            }
+            subscriber.next(result);
+          } else {
+            subscriber.next(result.value);
+          }
+          if (subscriber.isUnsubscribed) {
+            break;
+          }
+        } while (true);
+      }
+    };
+    return IteratorObservable;
+  })(_Observable3['default']);
+  exports['default'] = IteratorObservable;
+  var maxSafeInteger = Math.pow(2, 53) - 1;
+  var StringIterator = (function() {
+    function StringIterator(str) {
+      var idx = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      var len = arguments.length <= 2 || arguments[2] === undefined ? str.length : arguments[2];
+      return (function() {
+        _classCallCheck(this, StringIterator);
+        this.str = str;
+        this.idx = idx;
+        this.len = len;
+      }).apply(this, arguments);
     }
-  };
+    StringIterator.prototype[_utilSymbol_iterator2['default']] = function() {
+      return this;
+    };
+    StringIterator.prototype.next = function next() {
+      return this.idx < this.len ? {
+        done: false,
+        value: this.str.charAt(this.idx++)
+      } : {
+        done: true,
+        value: undefined
+      };
+    };
+    return StringIterator;
+  })();
+  var ArrayIterator = (function() {
+    function ArrayIterator(arr) {
+      var idx = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      var len = arguments.length <= 2 || arguments[2] === undefined ? toLength(arr) : arguments[2];
+      return (function() {
+        _classCallCheck(this, ArrayIterator);
+        this.arr = arr;
+        this.idx = idx;
+        this.len = len;
+      }).apply(this, arguments);
+    }
+    ArrayIterator.prototype[_utilSymbol_iterator2['default']] = function() {
+      return this;
+    };
+    ArrayIterator.prototype.next = function next() {
+      return this.idx < this.len ? {
+        done: false,
+        value: this.arr[this.idx++]
+      } : {
+        done: true,
+        value: undefined
+      };
+    };
+    return ArrayIterator;
+  })();
+  function getIterator(o) {
+    var i = o[_utilSymbol_iterator2['default']];
+    if (!i && typeof o === 'string') {
+      return new StringIterator(o);
+    }
+    if (!i && o.length !== undefined) {
+      return new ArrayIterator(o);
+    }
+    if (!i) {
+      throw new TypeError('Object is not iterable');
+    }
+    return o[_utilSymbol_iterator2['default']]();
+  }
+  function toLength(o) {
+    var len = +o.length;
+    if (isNaN(len)) {
+      return 0;
+    }
+    if (len === 0 || !numberIsFinite(len)) {
+      return len;
+    }
+    len = sign(len) * Math.floor(Math.abs(len));
+    if (len <= 0) {
+      return 0;
+    }
+    if (len > maxSafeInteger) {
+      return maxSafeInteger;
+    }
+    return len;
+  }
+  function numberIsFinite(value) {
+    return typeof value === 'number' && _utilRoot.root.isFinite(value);
+  }
+  function isNan(n) {
+    return n !== n;
+  }
+  function sign(value) {
+    var valueAsNumber = +value;
+    if (valueAsNumber === 0) {
+      return valueAsNumber;
+    }
+    if (isNaN(valueAsNumber)) {
+      return valueAsNumber;
+    }
+    return valueAsNumber < 0 ? -1 : 1;
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/backends/browser_jsonp", ["angular2/di", "angular2/src/core/facade/lang"], function($__export) {
+System.register("@reactivex/rxjs/dist/cjs/Notification", ["@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Observable = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable2 = _interopRequireDefault(_Observable);
+  var Notification = (function() {
+    function Notification(kind, value, exception) {
+      _classCallCheck(this, Notification);
+      this.kind = kind;
+      this.value = value;
+      this.exception = exception;
+      this.hasValue = kind === 'N';
+    }
+    Notification.prototype.observe = function observe(observer) {
+      switch (this.kind) {
+        case 'N':
+          return observer.next(this.value);
+        case 'E':
+          return observer.error(this.exception);
+        case 'C':
+          return observer.complete();
+      }
+    };
+    Notification.prototype['do'] = function _do(next, error, complete) {
+      var kind = this.kind;
+      switch (kind) {
+        case 'N':
+          return next(this.value);
+        case 'E':
+          return error(this.exception);
+        case 'C':
+          return complete();
+      }
+    };
+    Notification.prototype.accept = function accept(nextOrObserver, error, complete) {
+      if (nextOrObserver && typeof nextOrObserver.next === 'function') {
+        return this.observe(nextOrObserver);
+      } else {
+        return this['do'](nextOrObserver, error, complete);
+      }
+    };
+    Notification.prototype.toObservable = function toObservable() {
+      var kind = this.kind;
+      var value = this.value;
+      switch (kind) {
+        case 'N':
+          return _Observable2['default'].of(value);
+        case 'E':
+          return _Observable2['default']['throw'](value);
+        case 'C':
+          return _Observable2['default'].empty();
+      }
+    };
+    Notification.createNext = function createNext(value) {
+      if (typeof value !== 'undefined') {
+        return new Notification('N', value);
+      }
+      return this.undefinedValueNotification;
+    };
+    Notification.createError = function createError(err) {
+      return new Notification('E', undefined, err);
+    };
+    Notification.createComplete = function createComplete() {
+      return this.completeNotification;
+    };
+    return Notification;
+  })();
+  exports['default'] = Notification;
+  Notification.completeNotification = new Notification('C');
+  Notification.undefinedValueNotification = new Notification('N', undefined);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/FromEventObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/Subscription"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var FromEventObservable = (function(_Observable) {
+    _inherits(FromEventObservable, _Observable);
+    function FromEventObservable(sourceObj, eventName, selector) {
+      _classCallCheck(this, FromEventObservable);
+      _Observable.call(this);
+      this.sourceObj = sourceObj;
+      this.eventName = eventName;
+      this.selector = selector;
+    }
+    FromEventObservable.create = function create(sourceObj, eventName, selector) {
+      return new FromEventObservable(sourceObj, eventName, selector);
+    };
+    FromEventObservable.setupSubscription = function setupSubscription(sourceObj, eventName, handler, subscriber) {
+      var unsubscribe = undefined;
+      var tag = sourceObj.toString();
+      if (tag === '[object NodeList]' || tag === '[object HTMLCollection]') {
+        for (var i = 0,
+            len = sourceObj.length; i < len; i++) {
+          FromEventObservable.setupSubscription(sourceObj[i], eventName, handler, subscriber);
+        }
+      } else if (typeof sourceObj.addEventListener === 'function' && typeof sourceObj.removeEventListener === 'function') {
+        sourceObj.addEventListener(eventName, handler);
+        unsubscribe = function() {
+          return sourceObj.removeEventListener(eventName, handler);
+        };
+      } else if (typeof sourceObj.on === 'function' && typeof sourceObj.off === 'function') {
+        sourceObj.on(eventName, handler);
+        unsubscribe = function() {
+          return sourceObj.off(eventName, handler);
+        };
+      } else if (typeof sourceObj.addListener === 'function' && typeof sourceObj.removeListener === 'function') {
+        sourceObj.addListener(eventName, handler);
+        unsubscribe = function() {
+          return sourceObj.removeListener(eventName, handler);
+        };
+      }
+      subscriber.add(new _Subscription2['default'](unsubscribe));
+    };
+    FromEventObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var sourceObj = this.sourceObj;
+      var eventName = this.eventName;
+      var selector = this.selector;
+      var handler = selector ? function(e) {
+        var result = _utilTryCatch2['default'](selector)(e);
+        if (result === _utilErrorObject.errorObject) {
+          subscriber.error(result.e);
+        } else {
+          subscriber.next(result);
+        }
+      } : function(e) {
+        return subscriber.next(e);
+      };
+      FromEventObservable.setupSubscription(sourceObj, eventName, handler, subscriber);
+    };
+    return FromEventObservable;
+  })(_Observable3['default']);
+  exports['default'] = FromEventObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/FromEventPatternObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var FromEventPatternObservable = (function(_Observable) {
+    _inherits(FromEventPatternObservable, _Observable);
+    function FromEventPatternObservable(addHandler, removeHandler, selector) {
+      _classCallCheck(this, FromEventPatternObservable);
+      _Observable.call(this);
+      this.addHandler = addHandler;
+      this.removeHandler = removeHandler;
+      this.selector = selector;
+    }
+    FromEventPatternObservable.create = function create(addHandler, removeHandler, selector) {
+      return new FromEventPatternObservable(addHandler, removeHandler, selector);
+    };
+    FromEventPatternObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var addHandler = this.addHandler;
+      var removeHandler = this.removeHandler;
+      var selector = this.selector;
+      var handler = selector ? function(e) {
+        var result = _utilTryCatch2['default'](selector).apply(null, arguments);
+        if (result === _utilErrorObject.errorObject) {
+          subscriber.error(result.e);
+        } else {
+          subscriber.next(result);
+        }
+      } : function(e) {
+        subscriber.next(e);
+      };
+      var result = _utilTryCatch2['default'](addHandler)(handler);
+      if (result === _utilErrorObject.errorObject) {
+        subscriber.error(result.e);
+      }
+      subscriber.add(new _Subscription2['default'](function() {
+        removeHandler(handler);
+      }));
+    };
+    return FromEventPatternObservable;
+  })(_Observable3['default']);
+  exports['default'] = FromEventPatternObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/isNumeric", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
   "use strict";
-  var __moduleName = "angular2/src/http/backends/browser_jsonp";
-  var __decorate,
-      __metadata,
-      Injectable,
-      global,
-      _nextRequestId,
-      JSONP_HOME,
-      _jsonpConnections,
-      BrowserJsonp;
+  exports.__esModule = true;
+  exports["default"] = isNumeric;
+  var is_array = Array.isArray;
+  function isNumeric(val) {
+    return !is_array(val) && val - parseFloat(val) + 1 >= 0;
+  }
+  ;
+  module.exports = exports["default"];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/Immediate", ["@reactivex/rxjs/dist/cjs/util/root"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  var _root = require("@reactivex/rxjs/dist/cjs/util/root");
+  var Immediate = {
+    setImmediate: function setImmediate(x) {
+      return 0;
+    },
+    clearImmediate: function clearImmediate(id) {}
+  };
+  exports.Immediate = Immediate;
+  if (_root.root && _root.root.setImmediate) {
+    Immediate.setImmediate = _root.root.setImmediate;
+    Immediate.clearImmediate = _root.root.clearImmediate;
+  } else {
+    exports.Immediate = Immediate = (function(global, Immediate) {
+      var nextHandle = 1,
+          tasksByHandle = {},
+          currentlyRunningATask = false,
+          doc = global.document,
+          setImmediate = undefined;
+      if (({}).toString.call(global.process) === '[object process]') {
+        setImmediate = installNextTickImplementation();
+      } else if (canUsePostMessage()) {
+        setImmediate = installPostMessageImplementation();
+      } else if (global.MessageChannel) {
+        setImmediate = installMessageChannelImplementation();
+      } else if (doc && 'onreadystatechange' in doc.createElement('script')) {
+        setImmediate = installReadyStateChangeImplementation();
+      } else {
+        setImmediate = installSetTimeoutImplementation();
+      }
+      Immediate.setImmediate = setImmediate;
+      Immediate.clearImmediate = clearImmediate;
+      return Immediate;
+      function clearImmediate(handle) {
+        delete tasksByHandle[handle];
+      }
+      function addFromSetImmediateArguments(args) {
+        tasksByHandle[nextHandle] = partiallyApplied.apply(undefined, args);
+        return nextHandle++;
+      }
+      function partiallyApplied(handler) {
+        for (var _len = arguments.length,
+            args = Array(_len > 1 ? _len - 1 : 0),
+            _key = 1; _key < _len; _key++) {
+          args[_key - 1] = arguments[_key];
+        }
+        return function() {
+          if (typeof handler === 'function') {
+            handler.apply(undefined, args);
+          } else {
+            new Function('' + handler)();
+          }
+        };
+      }
+      function runIfPresent(handle) {
+        if (currentlyRunningATask) {
+          setTimeout(partiallyApplied(runIfPresent, handle), 0);
+        } else {
+          var task = tasksByHandle[handle];
+          if (task) {
+            currentlyRunningATask = true;
+            try {
+              task();
+            } finally {
+              clearImmediate(handle);
+              currentlyRunningATask = false;
+            }
+          }
+        }
+      }
+      function installNextTickImplementation() {
+        return function setImmediate() {
+          var handle = addFromSetImmediateArguments(arguments);
+          global.process.nextTick(partiallyApplied(runIfPresent, handle));
+          return handle;
+        };
+      }
+      function canUsePostMessage() {
+        if (global.postMessage && !global.importScripts) {
+          var postMessageIsAsynchronous = true;
+          var oldOnMessage = global.onmessage;
+          global.onmessage = function() {
+            postMessageIsAsynchronous = false;
+          };
+          global.postMessage('', '*');
+          global.onmessage = oldOnMessage;
+          return postMessageIsAsynchronous;
+        }
+      }
+      function installPostMessageImplementation() {
+        var messagePrefix = 'setImmediate$' + Math.random() + '$';
+        var onGlobalMessage = function onGlobalMessage(event) {
+          if (event.source === global && typeof event.data === 'string' && event.data.indexOf(messagePrefix) === 0) {
+            runIfPresent(+event.data.slice(messagePrefix.length));
+          }
+        };
+        if (global.addEventListener) {
+          global.addEventListener('message', onGlobalMessage, false);
+        } else {
+          global.attachEvent('onmessage', onGlobalMessage);
+        }
+        return function setImmediate() {
+          var handle = addFromSetImmediateArguments(arguments);
+          global.postMessage(messagePrefix + handle, '*');
+          return handle;
+        };
+      }
+      function installMessageChannelImplementation() {
+        var channel = new MessageChannel();
+        channel.port1.onmessage = function(event) {
+          var handle = event.data;
+          runIfPresent(handle);
+        };
+        return function setImmediate() {
+          var handle = addFromSetImmediateArguments(arguments);
+          channel.port2.postMessage(handle);
+          return handle;
+        };
+      }
+      function installReadyStateChangeImplementation() {
+        var html = doc.documentElement;
+        return function setImmediate() {
+          var handle = addFromSetImmediateArguments(arguments);
+          var script = doc.createElement('script');
+          script.onreadystatechange = function() {
+            runIfPresent(handle);
+            script.onreadystatechange = null;
+            html.removeChild(script);
+            script = null;
+          };
+          html.appendChild(script);
+          return handle;
+        };
+      }
+      function installSetTimeoutImplementation() {
+        return function setImmediate() {
+          var handle = addFromSetImmediateArguments(arguments);
+          setTimeout(partiallyApplied(runIfPresent, handle), 0);
+          return handle;
+        };
+      }
+    })(_root.root, Immediate);
+  }
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mergeAll-support", ["@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  var MergeAllOperator = (function() {
+    function MergeAllOperator(concurrent) {
+      _classCallCheck(this, MergeAllOperator);
+      this.concurrent = concurrent;
+    }
+    MergeAllOperator.prototype.call = function call(observer) {
+      return new MergeAllSubscriber(observer, this.concurrent);
+    };
+    return MergeAllOperator;
+  })();
+  exports.MergeAllOperator = MergeAllOperator;
+  var MergeAllSubscriber = (function(_OuterSubscriber) {
+    _inherits(MergeAllSubscriber, _OuterSubscriber);
+    function MergeAllSubscriber(destination, concurrent) {
+      _classCallCheck(this, MergeAllSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.concurrent = concurrent;
+      this.hasCompleted = false;
+      this.buffer = [];
+      this.active = 0;
+    }
+    MergeAllSubscriber.prototype._next = function _next(observable) {
+      if (this.active < this.concurrent) {
+        if (observable._isScalar) {
+          this.destination.next(observable.value);
+        } else {
+          this.active++;
+          this.add(_utilSubscribeToResult2['default'](this, observable));
+        }
+      } else {
+        this.buffer.push(observable);
+      }
+    };
+    MergeAllSubscriber.prototype._complete = function _complete() {
+      this.hasCompleted = true;
+      if (this.active === 0 && this.buffer.length === 0) {
+        this.destination.complete();
+      }
+    };
+    MergeAllSubscriber.prototype.notifyComplete = function notifyComplete(innerSub) {
+      var buffer = this.buffer;
+      this.remove(innerSub);
+      this.active--;
+      if (buffer.length > 0) {
+        this._next(buffer.shift());
+      } else if (this.active === 0 && this.hasCompleted) {
+        this.destination.complete();
+      }
+    };
+    return MergeAllSubscriber;
+  })(_OuterSubscriber3['default']);
+  exports.MergeAllSubscriber = MergeAllSubscriber;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/InfiniteObservable", ["@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var InfiniteObservable = (function(_Observable) {
+    _inherits(InfiniteObservable, _Observable);
+    function InfiniteObservable() {
+      _classCallCheck(this, InfiniteObservable);
+      _Observable.call(this);
+    }
+    InfiniteObservable.create = function create() {
+      return new InfiniteObservable();
+    };
+    InfiniteObservable.prototype._subscribe = function _subscribe(subscriber) {};
+    return InfiniteObservable;
+  })(_Observable3['default']);
+  exports['default'] = InfiniteObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/RangeObservable", ["@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var RangeObservable = (function(_Observable) {
+    _inherits(RangeObservable, _Observable);
+    function RangeObservable(start, end, scheduler) {
+      _classCallCheck(this, RangeObservable);
+      _Observable.call(this);
+      this.start = start;
+      this.end = end;
+      this.scheduler = scheduler;
+    }
+    RangeObservable.create = function create(start, end, scheduler) {
+      if (start === undefined)
+        start = 0;
+      if (end === undefined)
+        end = 0;
+      return new RangeObservable(start, end, scheduler);
+    };
+    RangeObservable.dispatch = function dispatch(state) {
+      var start = state.start;
+      var index = state.index;
+      var end = state.end;
+      var subscriber = state.subscriber;
+      if (index >= end) {
+        subscriber.complete();
+        return ;
+      }
+      subscriber.next(start);
+      if (subscriber.isUnsubscribed) {
+        return ;
+      }
+      state.index = index + 1;
+      state.start = start + 1;
+      this.schedule(state);
+    };
+    RangeObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var index = 0;
+      var start = this.start;
+      var end = this.end;
+      var scheduler = this.scheduler;
+      if (scheduler) {
+        subscriber.add(scheduler.schedule(RangeObservable.dispatch, 0, {
+          index: index,
+          end: end,
+          start: start,
+          subscriber: subscriber
+        }));
+      } else {
+        do {
+          if (index++ >= end) {
+            subscriber.complete();
+            break;
+          }
+          subscriber.next(start++);
+          if (subscriber.isUnsubscribed) {
+            break;
+          }
+        } while (true);
+      }
+    };
+    return RangeObservable;
+  })(_Observable3['default']);
+  exports['default'] = RangeObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/TimerObservable", ["@reactivex/rxjs/dist/cjs/util/isNumeric", "@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _utilIsNumeric = require("@reactivex/rxjs/dist/cjs/util/isNumeric");
+  var _utilIsNumeric2 = _interopRequireDefault(_utilIsNumeric);
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  var TimerObservable = (function(_Observable) {
+    _inherits(TimerObservable, _Observable);
+    function TimerObservable(dueTime, period, scheduler) {
+      if (dueTime === undefined)
+        dueTime = 0;
+      _classCallCheck(this, TimerObservable);
+      _Observable.call(this);
+      this.dueTime = dueTime;
+      this.period = period;
+      this.scheduler = scheduler;
+      if (_utilIsNumeric2['default'](period)) {
+        this._period = Number(period) < 1 && 1 || Number(period);
+      } else if (period && typeof period.schedule === 'function') {
+        scheduler = period;
+      }
+      if (!scheduler || typeof scheduler.schedule !== 'function') {
+        scheduler = _schedulersNextTick2['default'];
+      }
+      this.scheduler = scheduler;
+    }
+    TimerObservable.create = function create(dueTime, period, scheduler) {
+      if (dueTime === undefined)
+        dueTime = 0;
+      return new TimerObservable(dueTime, period, scheduler);
+    };
+    TimerObservable.dispatch = function dispatch(state) {
+      var index = state.index;
+      var period = state.period;
+      var subscriber = state.subscriber;
+      var action = this;
+      subscriber.next(index);
+      if (typeof period === 'undefined') {
+        subscriber.complete();
+        return ;
+      } else if (subscriber.isUnsubscribed) {
+        return ;
+      }
+      if (typeof action.delay === 'undefined') {
+        action.add(action.scheduler.schedule(TimerObservable.dispatch, period, {
+          index: index + 1,
+          period: period,
+          subscriber: subscriber
+        }));
+      } else {
+        state.index = index + 1;
+        action.schedule(state, period);
+      }
+    };
+    TimerObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var index = 0;
+      var period = this._period;
+      var dueTime = this.dueTime;
+      var scheduler = this.scheduler;
+      subscriber.add(scheduler.schedule(TimerObservable.dispatch, dueTime, {
+        index: index,
+        period: period,
+        subscriber: subscriber
+      }));
+    };
+    return TimerObservable;
+  })(_Observable3['default']);
+  exports['default'] = TimerObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/zip-support", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult", "@reactivex/rxjs/dist/cjs/util/Symbol_iterator"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  var _utilSymbol_iterator = require("@reactivex/rxjs/dist/cjs/util/Symbol_iterator");
+  var _utilSymbol_iterator2 = _interopRequireDefault(_utilSymbol_iterator);
+  var isArray = Array.isArray;
+  var ZipOperator = (function() {
+    function ZipOperator(project) {
+      _classCallCheck(this, ZipOperator);
+      this.project = project;
+    }
+    ZipOperator.prototype.call = function call(subscriber) {
+      return new ZipSubscriber(subscriber, this.project);
+    };
+    return ZipOperator;
+  })();
+  exports.ZipOperator = ZipOperator;
+  var ZipSubscriber = (function(_Subscriber) {
+    _inherits(ZipSubscriber, _Subscriber);
+    function ZipSubscriber(destination, project) {
+      var values = arguments.length <= 2 || arguments[2] === undefined ? Object.create(null) : arguments[2];
+      _classCallCheck(this, ZipSubscriber);
+      _Subscriber.call(this, destination);
+      this.index = 0;
+      this.iterators = [];
+      this.active = 0;
+      this.project = typeof project === 'function' ? project : null;
+      this.values = values;
+    }
+    ZipSubscriber.prototype._next = function _next(value) {
+      var iterators = this.iterators;
+      var index = this.index++;
+      if (isArray(value)) {
+        iterators.push(new StaticArrayIterator(value));
+      } else if (typeof value[_utilSymbol_iterator2['default']] === 'function') {
+        iterators.push(new StaticIterator(value[_utilSymbol_iterator2['default']]()));
+      } else {
+        iterators.push(new ZipBufferIterator(this.destination, this, value, index));
+      }
+    };
+    ZipSubscriber.prototype._complete = function _complete() {
+      var values = this.values;
+      var iterators = this.iterators;
+      var len = iterators.length;
+      this.active = len;
+      for (var i = 0; i < len; i++) {
+        var iterator = iterators[i];
+        if (iterator.stillUnsubscribed) {
+          iterator.subscribe(iterator, i);
+        } else {
+          this.active--;
+        }
+      }
+    };
+    ZipSubscriber.prototype.notifyInactive = function notifyInactive() {
+      this.active--;
+      if (this.active === 0) {
+        this.destination.complete();
+      }
+    };
+    ZipSubscriber.prototype.checkIterators = function checkIterators() {
+      var iterators = this.iterators;
+      var len = iterators.length;
+      var destination = this.destination;
+      for (var i = 0; i < len; i++) {
+        var iterator = iterators[i];
+        if (typeof iterator.hasValue === 'function' && !iterator.hasValue()) {
+          return ;
+        }
+      }
+      var shouldComplete = false;
+      var args = [];
+      for (var i = 0; i < len; i++) {
+        var iterator = iterators[i];
+        var result = iterator.next();
+        if (iterator.hasCompleted()) {
+          shouldComplete = true;
+        }
+        if (result.done) {
+          destination.complete();
+          return ;
+        }
+        args.push(result.value);
+      }
+      var project = this.project;
+      if (project) {
+        var result = _utilTryCatch2['default'](project).apply(this, args);
+        if (result === _utilErrorObject.errorObject) {
+          destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          destination.next(result);
+        }
+      } else {
+        destination.next(args);
+      }
+      if (shouldComplete) {
+        destination.complete();
+      }
+    };
+    return ZipSubscriber;
+  })(_Subscriber3['default']);
+  exports.ZipSubscriber = ZipSubscriber;
+  var StaticIterator = (function() {
+    function StaticIterator(iterator) {
+      _classCallCheck(this, StaticIterator);
+      this.iterator = iterator;
+      this.nextResult = iterator.next();
+    }
+    StaticIterator.prototype.hasValue = function hasValue() {
+      return true;
+    };
+    StaticIterator.prototype.next = function next() {
+      var result = this.nextResult;
+      this.nextResult = this.iterator.next();
+      return result;
+    };
+    StaticIterator.prototype.hasCompleted = function hasCompleted() {
+      var nextResult = this.nextResult;
+      return nextResult && nextResult.done;
+    };
+    return StaticIterator;
+  })();
+  var StaticArrayIterator = (function() {
+    function StaticArrayIterator(array) {
+      _classCallCheck(this, StaticArrayIterator);
+      this.array = array;
+      this.index = 0;
+      this.length = 0;
+      this.length = array.length;
+    }
+    StaticArrayIterator.prototype[_utilSymbol_iterator2['default']] = function() {
+      return this;
+    };
+    StaticArrayIterator.prototype.next = function next(value) {
+      var i = this.index++;
+      var array = this.array;
+      return i < this.length ? {
+        value: array[i],
+        done: false
+      } : {done: true};
+    };
+    StaticArrayIterator.prototype.hasValue = function hasValue() {
+      return this.array.length > this.index;
+    };
+    StaticArrayIterator.prototype.hasCompleted = function hasCompleted() {
+      return this.array.length === this.index;
+    };
+    return StaticArrayIterator;
+  })();
+  var ZipBufferIterator = (function(_OuterSubscriber) {
+    _inherits(ZipBufferIterator, _OuterSubscriber);
+    function ZipBufferIterator(destination, parent, observable, index) {
+      _classCallCheck(this, ZipBufferIterator);
+      _OuterSubscriber.call(this, destination);
+      this.parent = parent;
+      this.observable = observable;
+      this.index = index;
+      this.stillUnsubscribed = true;
+      this.buffer = [];
+      this.isComplete = false;
+    }
+    ZipBufferIterator.prototype[_utilSymbol_iterator2['default']] = function() {
+      return this;
+    };
+    ZipBufferIterator.prototype.next = function next() {
+      var buffer = this.buffer;
+      if (buffer.length === 0 && this.isComplete) {
+        return {done: true};
+      } else {
+        return {
+          value: buffer.shift(),
+          done: false
+        };
+      }
+    };
+    ZipBufferIterator.prototype.hasValue = function hasValue() {
+      return this.buffer.length > 0;
+    };
+    ZipBufferIterator.prototype.hasCompleted = function hasCompleted() {
+      return this.buffer.length === 0 && this.isComplete;
+    };
+    ZipBufferIterator.prototype.notifyComplete = function notifyComplete() {
+      if (this.buffer.length > 0) {
+        this.isComplete = true;
+        this.parent.notifyInactive();
+      } else {
+        this.destination.complete();
+      }
+    };
+    ZipBufferIterator.prototype.notifyNext = function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      this.buffer.push(innerValue);
+      this.parent.checkIterators();
+    };
+    ZipBufferIterator.prototype.subscribe = function subscribe(value, index) {
+      this.add(_utilSubscribeToResult2['default'](this, this.observable, this, index));
+    };
+    return ZipBufferIterator;
+  })(_OuterSubscriber3['default']);
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/buffer", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = buffer;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  function buffer(closingNotifier) {
+    return this.lift(new BufferOperator(closingNotifier));
+  }
+  var BufferOperator = (function() {
+    function BufferOperator(closingNotifier) {
+      _classCallCheck(this, BufferOperator);
+      this.closingNotifier = closingNotifier;
+    }
+    BufferOperator.prototype.call = function call(subscriber) {
+      return new BufferSubscriber(subscriber, this.closingNotifier);
+    };
+    return BufferOperator;
+  })();
+  var BufferSubscriber = (function(_Subscriber) {
+    _inherits(BufferSubscriber, _Subscriber);
+    function BufferSubscriber(destination, closingNotifier) {
+      _classCallCheck(this, BufferSubscriber);
+      _Subscriber.call(this, destination);
+      this.buffer = [];
+      this.add(closingNotifier._subscribe(new BufferClosingNotifierSubscriber(this)));
+    }
+    BufferSubscriber.prototype._next = function _next(value) {
+      this.buffer.push(value);
+    };
+    BufferSubscriber.prototype._error = function _error(err) {
+      this.destination.error(err);
+    };
+    BufferSubscriber.prototype._complete = function _complete() {
+      this.destination.complete();
+    };
+    BufferSubscriber.prototype.flushBuffer = function flushBuffer() {
+      var buffer = this.buffer;
+      this.buffer = [];
+      this.destination.next(buffer);
+    };
+    return BufferSubscriber;
+  })(_Subscriber4['default']);
+  var BufferClosingNotifierSubscriber = (function(_Subscriber2) {
+    _inherits(BufferClosingNotifierSubscriber, _Subscriber2);
+    function BufferClosingNotifierSubscriber(parent) {
+      _classCallCheck(this, BufferClosingNotifierSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+    }
+    BufferClosingNotifierSubscriber.prototype._next = function _next(value) {
+      this.parent.flushBuffer();
+    };
+    BufferClosingNotifierSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    BufferClosingNotifierSubscriber.prototype._complete = function _complete() {
+      this.parent.complete();
+    };
+    return BufferClosingNotifierSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/bufferCount", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = bufferCount;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function bufferCount(bufferSize) {
+    var startBufferEvery = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+    return this.lift(new BufferCountOperator(bufferSize, startBufferEvery));
+  }
+  var BufferCountOperator = (function() {
+    function BufferCountOperator(bufferSize, startBufferEvery) {
+      _classCallCheck(this, BufferCountOperator);
+      this.bufferSize = bufferSize;
+      this.startBufferEvery = startBufferEvery;
+    }
+    BufferCountOperator.prototype.call = function call(subscriber) {
+      return new BufferCountSubscriber(subscriber, this.bufferSize, this.startBufferEvery);
+    };
+    return BufferCountOperator;
+  })();
+  var BufferCountSubscriber = (function(_Subscriber) {
+    _inherits(BufferCountSubscriber, _Subscriber);
+    function BufferCountSubscriber(destination, bufferSize, startBufferEvery) {
+      _classCallCheck(this, BufferCountSubscriber);
+      _Subscriber.call(this, destination);
+      this.bufferSize = bufferSize;
+      this.startBufferEvery = startBufferEvery;
+      this.buffers = [[]];
+      this.count = 0;
+    }
+    BufferCountSubscriber.prototype._next = function _next(value) {
+      var count = this.count += 1;
+      var destination = this.destination;
+      var bufferSize = this.bufferSize;
+      var startBufferEvery = this.startBufferEvery == null ? bufferSize : this.startBufferEvery;
+      var buffers = this.buffers;
+      var len = buffers.length;
+      var remove = -1;
+      if (count % startBufferEvery === 0) {
+        buffers.push([]);
+      }
+      for (var i = 0; i < len; i++) {
+        var buffer = buffers[i];
+        buffer.push(value);
+        if (buffer.length === bufferSize) {
+          remove = i;
+          this.destination.next(buffer);
+        }
+      }
+      if (remove !== -1) {
+        buffers.splice(remove, 1);
+      }
+    };
+    BufferCountSubscriber.prototype._error = function _error(err) {
+      this.destination.error(err);
+    };
+    BufferCountSubscriber.prototype._complete = function _complete() {
+      var destination = this.destination;
+      var buffers = this.buffers;
+      while (buffers.length > 0) {
+        var buffer = buffers.shift();
+        if (buffer.length > 0) {
+          destination.next(buffer);
+        }
+      }
+      destination.complete();
+    };
+    return BufferCountSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/bufferTime", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = bufferTime;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  function bufferTime(bufferTimeSpan) {
+    var bufferCreationInterval = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+    var scheduler = arguments.length <= 2 || arguments[2] === undefined ? _schedulersNextTick2['default'] : arguments[2];
+    return this.lift(new BufferTimeOperator(bufferTimeSpan, bufferCreationInterval, scheduler));
+  }
+  var BufferTimeOperator = (function() {
+    function BufferTimeOperator(bufferTimeSpan, bufferCreationInterval, scheduler) {
+      _classCallCheck(this, BufferTimeOperator);
+      this.bufferTimeSpan = bufferTimeSpan;
+      this.bufferCreationInterval = bufferCreationInterval;
+      this.scheduler = scheduler;
+    }
+    BufferTimeOperator.prototype.call = function call(subscriber) {
+      return new BufferTimeSubscriber(subscriber, this.bufferTimeSpan, this.bufferCreationInterval, this.scheduler);
+    };
+    return BufferTimeOperator;
+  })();
+  var BufferTimeSubscriber = (function(_Subscriber) {
+    _inherits(BufferTimeSubscriber, _Subscriber);
+    function BufferTimeSubscriber(destination, bufferTimeSpan, bufferCreationInterval, scheduler) {
+      _classCallCheck(this, BufferTimeSubscriber);
+      _Subscriber.call(this, destination);
+      this.bufferTimeSpan = bufferTimeSpan;
+      this.bufferCreationInterval = bufferCreationInterval;
+      this.scheduler = scheduler;
+      this.buffers = [];
+      var buffer = this.openBuffer();
+      if (bufferCreationInterval !== null && bufferCreationInterval >= 0) {
+        var closeState = {
+          subscriber: this,
+          buffer: buffer
+        };
+        var creationState = {
+          bufferTimeSpan: bufferTimeSpan,
+          bufferCreationInterval: bufferCreationInterval,
+          subscriber: this,
+          scheduler: scheduler
+        };
+        this.add(scheduler.schedule(dispatchBufferClose, bufferTimeSpan, closeState));
+        this.add(scheduler.schedule(dispatchBufferCreation, bufferCreationInterval, creationState));
+      } else {
+        var timeSpanOnlyState = {
+          subscriber: this,
+          buffer: buffer,
+          bufferTimeSpan: bufferTimeSpan
+        };
+        this.add(scheduler.schedule(dispatchBufferTimeSpanOnly, bufferTimeSpan, timeSpanOnlyState));
+      }
+    }
+    BufferTimeSubscriber.prototype._next = function _next(value) {
+      var buffers = this.buffers;
+      var len = buffers.length;
+      for (var i = 0; i < len; i++) {
+        buffers[i].push(value);
+      }
+    };
+    BufferTimeSubscriber.prototype._error = function _error(err) {
+      this.buffers.length = 0;
+      this.destination.error(err);
+    };
+    BufferTimeSubscriber.prototype._complete = function _complete() {
+      var buffers = this.buffers;
+      while (buffers.length > 0) {
+        this.destination.next(buffers.shift());
+      }
+      this.destination.complete();
+    };
+    BufferTimeSubscriber.prototype.openBuffer = function openBuffer() {
+      var buffer = [];
+      this.buffers.push(buffer);
+      return buffer;
+    };
+    BufferTimeSubscriber.prototype.closeBuffer = function closeBuffer(buffer) {
+      this.destination.next(buffer);
+      var buffers = this.buffers;
+      buffers.splice(buffers.indexOf(buffer), 1);
+    };
+    return BufferTimeSubscriber;
+  })(_Subscriber3['default']);
+  function dispatchBufferTimeSpanOnly(state) {
+    var subscriber = state.subscriber;
+    var prevBuffer = state.buffer;
+    if (prevBuffer) {
+      subscriber.closeBuffer(prevBuffer);
+    }
+    state.buffer = subscriber.openBuffer();
+    if (!subscriber.isUnsubscribed) {
+      this.schedule(state, state.bufferTimeSpan);
+    }
+  }
+  function dispatchBufferCreation(state) {
+    var bufferCreationInterval = state.bufferCreationInterval;
+    var bufferTimeSpan = state.bufferTimeSpan;
+    var subscriber = state.subscriber;
+    var scheduler = state.scheduler;
+    var buffer = subscriber.openBuffer();
+    var action = this;
+    if (!subscriber.isUnsubscribed) {
+      action.add(scheduler.schedule(dispatchBufferClose, bufferTimeSpan, {
+        subscriber: subscriber,
+        buffer: buffer
+      }));
+      action.schedule(state, bufferCreationInterval);
+    }
+  }
+  function dispatchBufferClose(_ref) {
+    var subscriber = _ref.subscriber;
+    var buffer = _ref.buffer;
+    subscriber.closeBuffer(buffer);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/bufferToggle", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = bufferToggle;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber4 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber5 = _interopRequireDefault(_Subscriber4);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function bufferToggle(openings, closingSelector) {
+    return this.lift(new BufferToggleOperator(openings, closingSelector));
+  }
+  var BufferToggleOperator = (function() {
+    function BufferToggleOperator(openings, closingSelector) {
+      _classCallCheck(this, BufferToggleOperator);
+      this.openings = openings;
+      this.closingSelector = closingSelector;
+    }
+    BufferToggleOperator.prototype.call = function call(subscriber) {
+      return new BufferToggleSubscriber(subscriber, this.openings, this.closingSelector);
+    };
+    return BufferToggleOperator;
+  })();
+  var BufferToggleSubscriber = (function(_Subscriber) {
+    _inherits(BufferToggleSubscriber, _Subscriber);
+    function BufferToggleSubscriber(destination, openings, closingSelector) {
+      _classCallCheck(this, BufferToggleSubscriber);
+      _Subscriber.call(this, destination);
+      this.openings = openings;
+      this.closingSelector = closingSelector;
+      this.buffers = [];
+      this.add(this.openings._subscribe(new BufferToggleOpeningsSubscriber(this)));
+    }
+    BufferToggleSubscriber.prototype._next = function _next(value) {
+      var buffers = this.buffers;
+      var len = buffers.length;
+      for (var i = 0; i < len; i++) {
+        buffers[i].push(value);
+      }
+    };
+    BufferToggleSubscriber.prototype._error = function _error(err) {
+      this.buffers = null;
+      this.destination.error(err);
+    };
+    BufferToggleSubscriber.prototype._complete = function _complete() {
+      var buffers = this.buffers;
+      while (buffers.length > 0) {
+        this.destination.next(buffers.shift());
+      }
+      this.destination.complete();
+    };
+    BufferToggleSubscriber.prototype.openBuffer = function openBuffer(value) {
+      var closingSelector = this.closingSelector;
+      var buffers = this.buffers;
+      var closingNotifier = _utilTryCatch2['default'](closingSelector)(value);
+      if (closingNotifier === _utilErrorObject.errorObject) {
+        var err = closingNotifier.e;
+        this.buffers = null;
+        this.destination.error(err);
+      } else {
+        var buffer = [];
+        var context = {
+          buffer: buffer,
+          subscription: new _Subscription2['default']()
+        };
+        buffers.push(buffer);
+        var subscriber = new BufferClosingNotifierSubscriber(this, context);
+        var subscription = closingNotifier._subscribe(subscriber);
+        this.add(context.subscription.add(subscription));
+      }
+    };
+    BufferToggleSubscriber.prototype.closeBuffer = function closeBuffer(context) {
+      var buffer = context.buffer;
+      var subscription = context.subscription;
+      var buffers = this.buffers;
+      this.destination.next(buffer);
+      buffers.splice(buffers.indexOf(buffer), 1);
+      this.remove(subscription);
+      subscription.unsubscribe();
+    };
+    return BufferToggleSubscriber;
+  })(_Subscriber5['default']);
+  var BufferClosingNotifierSubscriber = (function(_Subscriber2) {
+    _inherits(BufferClosingNotifierSubscriber, _Subscriber2);
+    function BufferClosingNotifierSubscriber(parent, context) {
+      _classCallCheck(this, BufferClosingNotifierSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+      this.context = context;
+    }
+    BufferClosingNotifierSubscriber.prototype._next = function _next() {
+      this.parent.closeBuffer(this.context);
+    };
+    BufferClosingNotifierSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    BufferClosingNotifierSubscriber.prototype._complete = function _complete() {};
+    return BufferClosingNotifierSubscriber;
+  })(_Subscriber5['default']);
+  var BufferToggleOpeningsSubscriber = (function(_Subscriber3) {
+    _inherits(BufferToggleOpeningsSubscriber, _Subscriber3);
+    function BufferToggleOpeningsSubscriber(parent) {
+      _classCallCheck(this, BufferToggleOpeningsSubscriber);
+      _Subscriber3.call(this, null);
+      this.parent = parent;
+    }
+    BufferToggleOpeningsSubscriber.prototype._next = function _next(value) {
+      this.parent.openBuffer(value);
+    };
+    BufferToggleOpeningsSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    BufferToggleOpeningsSubscriber.prototype._complete = function _complete() {};
+    return BufferToggleOpeningsSubscriber;
+  })(_Subscriber5['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/bufferWhen", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = bufferWhen;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function bufferWhen(closingSelector) {
+    return this.lift(new BufferWhenOperator(closingSelector));
+  }
+  var BufferWhenOperator = (function() {
+    function BufferWhenOperator(closingSelector) {
+      _classCallCheck(this, BufferWhenOperator);
+      this.closingSelector = closingSelector;
+    }
+    BufferWhenOperator.prototype.call = function call(subscriber) {
+      return new BufferWhenSubscriber(subscriber, this.closingSelector);
+    };
+    return BufferWhenOperator;
+  })();
+  var BufferWhenSubscriber = (function(_Subscriber) {
+    _inherits(BufferWhenSubscriber, _Subscriber);
+    function BufferWhenSubscriber(destination, closingSelector) {
+      _classCallCheck(this, BufferWhenSubscriber);
+      _Subscriber.call(this, destination);
+      this.closingSelector = closingSelector;
+      this.openBuffer();
+    }
+    BufferWhenSubscriber.prototype._next = function _next(value) {
+      this.buffer.push(value);
+    };
+    BufferWhenSubscriber.prototype._error = function _error(err) {
+      this.buffer = null;
+      this.destination.error(err);
+    };
+    BufferWhenSubscriber.prototype._complete = function _complete() {
+      var buffer = this.buffer;
+      this.destination.next(buffer);
+      this.buffer = null;
+      this.destination.complete();
+    };
+    BufferWhenSubscriber.prototype.openBuffer = function openBuffer() {
+      var prevClosingNotification = this.closingNotification;
+      if (prevClosingNotification) {
+        this.remove(prevClosingNotification);
+        prevClosingNotification.unsubscribe();
+      }
+      var buffer = this.buffer;
+      if (buffer) {
+        this.destination.next(buffer);
+      }
+      this.buffer = [];
+      var closingNotifier = _utilTryCatch2['default'](this.closingSelector)();
+      if (closingNotifier === _utilErrorObject.errorObject) {
+        var err = closingNotifier.e;
+        this.buffer = null;
+        this.destination.error(err);
+      } else {
+        this.add(this.closingNotification = closingNotifier._subscribe(new BufferClosingNotifierSubscriber(this)));
+      }
+    };
+    return BufferWhenSubscriber;
+  })(_Subscriber4['default']);
+  var BufferClosingNotifierSubscriber = (function(_Subscriber2) {
+    _inherits(BufferClosingNotifierSubscriber, _Subscriber2);
+    function BufferClosingNotifierSubscriber(parent) {
+      _classCallCheck(this, BufferClosingNotifierSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+    }
+    BufferClosingNotifierSubscriber.prototype._next = function _next() {
+      this.parent.openBuffer();
+    };
+    BufferClosingNotifierSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    BufferClosingNotifierSubscriber.prototype._complete = function _complete() {
+      this.parent.openBuffer();
+    };
+    return BufferClosingNotifierSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/catch", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = _catch;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function _catch(selector) {
+    var catchOperator = new CatchOperator(selector);
+    var caught = this.lift(catchOperator);
+    catchOperator.caught = caught;
+    return caught;
+  }
+  var CatchOperator = (function() {
+    function CatchOperator(selector) {
+      _classCallCheck(this, CatchOperator);
+      this.selector = selector;
+    }
+    CatchOperator.prototype.call = function call(subscriber) {
+      return new CatchSubscriber(subscriber, this.selector, this.caught);
+    };
+    return CatchOperator;
+  })();
+  var CatchSubscriber = (function(_Subscriber) {
+    _inherits(CatchSubscriber, _Subscriber);
+    function CatchSubscriber(destination, selector, caught) {
+      _classCallCheck(this, CatchSubscriber);
+      _Subscriber.call(this, destination);
+      this.selector = selector;
+      this.caught = caught;
+    }
+    CatchSubscriber.prototype._error = function _error(err) {
+      var result = _utilTryCatch2['default'](this.selector)(err, this.caught);
+      if (result === _utilErrorObject.errorObject) {
+        this.destination.error(_utilErrorObject.errorObject.e);
+      } else {
+        this.add(result.subscribe(this.destination));
+      }
+    };
+    return CatchSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/combineAll", ["@reactivex/rxjs/dist/cjs/operators/combineLatest-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = combineAll;
+  var _combineLatestSupport = require("@reactivex/rxjs/dist/cjs/operators/combineLatest-support");
+  function combineAll(project) {
+    return this.lift(new _combineLatestSupport.CombineLatestOperator(project));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/combineLatest", ["@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/operators/combineLatest-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = combineLatest;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _combineLatestSupport = require("@reactivex/rxjs/dist/cjs/operators/combineLatest-support");
+  function combineLatest() {
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    observables.unshift(this);
+    var project = undefined;
+    if (typeof observables[observables.length - 1] === 'function') {
+      project = observables.pop();
+    }
+    return new _observablesArrayObservable2['default'](observables).lift(new _combineLatestSupport.CombineLatestOperator(project));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/concat", ["@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = concat;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _Observable = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable2 = _interopRequireDefault(_Observable);
+  function concat() {
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    var args = observables;
+    args.unshift(this);
+    if (args.length > 1 && typeof args[args.length - 1].schedule === 'function') {
+      args.splice(args.length - 2, 0, 1);
+    }
+    return _Observable2['default'].fromArray(args).mergeAll(1);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/concatAll", ["@reactivex/rxjs/dist/cjs/operators/mergeAll-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = concatAll;
+  var _mergeAllSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeAll-support");
+  function concatAll() {
+    return this.lift(new _mergeAllSupport.MergeAllOperator(1));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mergeMap-support", ["@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/subscribeToResult", "@reactivex/rxjs/dist/cjs/OuterSubscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var MergeMapOperator = (function() {
+    function MergeMapOperator(project, resultSelector) {
+      var concurrent = arguments.length <= 2 || arguments[2] === undefined ? Number.POSITIVE_INFINITY : arguments[2];
+      _classCallCheck(this, MergeMapOperator);
+      this.project = project;
+      this.resultSelector = resultSelector;
+      this.concurrent = concurrent;
+    }
+    MergeMapOperator.prototype.call = function call(observer) {
+      return new MergeMapSubscriber(observer, this.project, this.resultSelector, this.concurrent);
+    };
+    return MergeMapOperator;
+  })();
+  exports.MergeMapOperator = MergeMapOperator;
+  var MergeMapSubscriber = (function(_OuterSubscriber) {
+    _inherits(MergeMapSubscriber, _OuterSubscriber);
+    function MergeMapSubscriber(destination, project, resultSelector) {
+      var concurrent = arguments.length <= 3 || arguments[3] === undefined ? Number.POSITIVE_INFINITY : arguments[3];
+      _classCallCheck(this, MergeMapSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.project = project;
+      this.resultSelector = resultSelector;
+      this.concurrent = concurrent;
+      this.hasCompleted = false;
+      this.buffer = [];
+      this.active = 0;
+      this.index = 0;
+    }
+    MergeMapSubscriber.prototype._next = function _next(value) {
+      if (this.active < this.concurrent) {
+        var resultSelector = this.resultSelector;
+        var index = this.index++;
+        var ish = _utilTryCatch2['default'](this.project)(value, index);
+        var destination = this.destination;
+        if (ish === _utilErrorObject.errorObject) {
+          destination.error(ish.e);
+        } else {
+          this.active++;
+          this._innerSub(ish, value, index);
+        }
+      } else {
+        this.buffer.push(value);
+      }
+    };
+    MergeMapSubscriber.prototype._innerSub = function _innerSub(ish, value, index) {
+      this.add(_utilSubscribeToResult2['default'](this, ish, value, index));
+    };
+    MergeMapSubscriber.prototype._complete = function _complete() {
+      this.hasCompleted = true;
+      if (this.active === 0 && this.buffer.length === 0) {
+        this.destination.complete();
+      }
+    };
+    MergeMapSubscriber.prototype.notifyNext = function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      var destination = this.destination;
+      var resultSelector = this.resultSelector;
+      if (resultSelector) {
+        var result = _utilTryCatch2['default'](resultSelector)(outerValue, innerValue, outerIndex, innerIndex);
+        if (result === _utilErrorObject.errorObject) {
+          destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          destination.next(result);
+        }
+      } else {
+        destination.next(innerValue);
+      }
+    };
+    MergeMapSubscriber.prototype.notifyComplete = function notifyComplete(innerSub) {
+      var buffer = this.buffer;
+      this.remove(innerSub);
+      this.active--;
+      if (buffer.length > 0) {
+        this._next(buffer.shift());
+      } else if (this.active === 0 && this.hasCompleted) {
+        this.destination.complete();
+      }
+    };
+    return MergeMapSubscriber;
+  })(_OuterSubscriber3['default']);
+  exports.MergeMapSubscriber = MergeMapSubscriber;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support", ["@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  var MergeMapToOperator = (function() {
+    function MergeMapToOperator(ish, resultSelector) {
+      var concurrent = arguments.length <= 2 || arguments[2] === undefined ? Number.POSITIVE_INFINITY : arguments[2];
+      _classCallCheck(this, MergeMapToOperator);
+      this.ish = ish;
+      this.resultSelector = resultSelector;
+      this.concurrent = concurrent;
+    }
+    MergeMapToOperator.prototype.call = function call(observer) {
+      return new MergeMapToSubscriber(observer, this.ish, this.resultSelector, this.concurrent);
+    };
+    return MergeMapToOperator;
+  })();
+  exports.MergeMapToOperator = MergeMapToOperator;
+  var MergeMapToSubscriber = (function(_OuterSubscriber) {
+    _inherits(MergeMapToSubscriber, _OuterSubscriber);
+    function MergeMapToSubscriber(destination, ish, resultSelector) {
+      var concurrent = arguments.length <= 3 || arguments[3] === undefined ? Number.POSITIVE_INFINITY : arguments[3];
+      _classCallCheck(this, MergeMapToSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.ish = ish;
+      this.resultSelector = resultSelector;
+      this.concurrent = concurrent;
+      this.hasCompleted = false;
+      this.buffer = [];
+      this.active = 0;
+      this.index = 0;
+    }
+    MergeMapToSubscriber.prototype._next = function _next(value) {
+      if (this.active < this.concurrent) {
+        var resultSelector = this.resultSelector;
+        var index = this.index++;
+        var ish = this.ish;
+        var destination = this.destination;
+        if (ish === _utilErrorObject.errorObject) {
+          destination.error(ish.e);
+        } else {
+          this.active--;
+          this._innerSub(ish, destination, resultSelector, value, index);
+        }
+      } else {
+        this.buffer.push(value);
+      }
+    };
+    MergeMapToSubscriber.prototype._innerSub = function _innerSub(ish, destination, resultSelector, value, index) {
+      this.add(_utilSubscribeToResult2['default'](this, ish, value, index));
+    };
+    MergeMapToSubscriber.prototype._complete = function _complete() {
+      this.hasCompleted = true;
+      if (this.active === 0 && this.buffer.length === 0) {
+        this.destination.complete();
+      }
+    };
+    MergeMapToSubscriber.prototype.notifyNext = function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      var resultSelector = this.resultSelector;
+      var destination = this.destination;
+      if (resultSelector) {
+        var result = _utilTryCatch2['default'](resultSelector)(outerValue, innerValue, outerIndex, innerIndex);
+        if (result === _utilErrorObject.errorObject) {
+          destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          destination.next(result);
+        }
+      } else {
+        destination.next(innerValue);
+      }
+    };
+    MergeMapToSubscriber.prototype.notifyError = function notifyError(err) {
+      this.destination.error(err);
+    };
+    MergeMapToSubscriber.prototype.notifyComplete = function notifyComplete(innerSub) {
+      var buffer = this.buffer;
+      this.remove(innerSub);
+      this.active--;
+      if (buffer.length > 0) {
+        this._next(buffer.shift());
+      } else if (this.active === 0 && this.hasCompleted) {
+        this.destination.complete();
+      }
+    };
+    return MergeMapToSubscriber;
+  })(_OuterSubscriber3['default']);
+  exports.MergeMapToSubscriber = MergeMapToSubscriber;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/bindCallback", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = bindCallback;
+  function bindCallback(func, thisArg, argCount) {
+    if (typeof thisArg === 'undefined') {
+      return func;
+    }
+    switch (argCount) {
+      case 0:
+        return function() {
+          return func.call(thisArg);
+        };
+      case 1:
+        return function(arg) {
+          return func.call(thisArg, arg);
+        };
+      case 2:
+        return function(value, index) {
+          return func.call(thisArg, value, index);
+        };
+      case 3:
+        return function(value, index, collection) {
+          return func.call(thisArg, value, index, collection);
+        };
+    }
+    return function() {
+      return func.apply(thisArg, arguments);
+    };
+  }
+  ;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/dematerialize", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = dematerialize;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function dematerialize() {
+    return this.lift(new DeMaterializeOperator());
+  }
+  var DeMaterializeOperator = (function() {
+    function DeMaterializeOperator() {
+      _classCallCheck(this, DeMaterializeOperator);
+    }
+    DeMaterializeOperator.prototype.call = function call(subscriber) {
+      return new DeMaterializeSubscriber(subscriber);
+    };
+    return DeMaterializeOperator;
+  })();
+  var DeMaterializeSubscriber = (function(_Subscriber) {
+    _inherits(DeMaterializeSubscriber, _Subscriber);
+    function DeMaterializeSubscriber(destination) {
+      _classCallCheck(this, DeMaterializeSubscriber);
+      _Subscriber.call(this, destination);
+    }
+    DeMaterializeSubscriber.prototype._next = function _next(value) {
+      value.observe(this.destination);
+    };
+    return DeMaterializeSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/debounce", ["@reactivex/rxjs/dist/cjs/observables/PromiseObservable", "@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  var _createClass = (function() {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ('value' in descriptor)
+          descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+    return function(Constructor, protoProps, staticProps) {
+      if (protoProps)
+        defineProperties(Constructor.prototype, protoProps);
+      if (staticProps)
+        defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  })();
+  exports['default'] = debounce;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _observablesPromiseObservable = require("@reactivex/rxjs/dist/cjs/observables/PromiseObservable");
+  var _observablesPromiseObservable2 = _interopRequireDefault(_observablesPromiseObservable);
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function debounce(durationSelector) {
+    return this.lift(new DebounceOperator(durationSelector));
+  }
+  var DebounceOperator = (function() {
+    function DebounceOperator(durationSelector) {
+      _classCallCheck(this, DebounceOperator);
+      this.durationSelector = durationSelector;
+    }
+    DebounceOperator.prototype.call = function call(observer) {
+      return new DebounceSubscriber(observer, this.durationSelector);
+    };
+    return DebounceOperator;
+  })();
+  var DebounceSubscriber = (function(_Subscriber) {
+    _inherits(DebounceSubscriber, _Subscriber);
+    function DebounceSubscriber(destination, durationSelector) {
+      _classCallCheck(this, DebounceSubscriber);
+      _Subscriber.call(this, destination);
+      this.durationSelector = durationSelector;
+      this.debouncedSubscription = null;
+      this.lastValue = null;
+      this._index = 0;
+    }
+    DebounceSubscriber.prototype._next = function _next(value) {
+      var destination = this.destination;
+      var currentIndex = ++this._index;
+      var debounce = _utilTryCatch2['default'](this.durationSelector)(value);
+      if (debounce === _utilErrorObject.errorObject) {
+        destination.error(_utilErrorObject.errorObject.e);
+      } else {
+        if (typeof debounce.subscribe !== 'function' && typeof debounce.then === 'function') {
+          debounce = _observablesPromiseObservable2['default'].create(debounce);
+        }
+        this.lastValue = value;
+        this.add(this.debouncedSubscription = debounce._subscribe(new DurationSelectorSubscriber(this, currentIndex)));
+      }
+    };
+    DebounceSubscriber.prototype._complete = function _complete() {
+      this.debouncedNext();
+      this.destination.complete();
+    };
+    DebounceSubscriber.prototype.debouncedNext = function debouncedNext() {
+      this.clearDebounce();
+      if (this.lastValue != null) {
+        this.destination.next(this.lastValue);
+        this.lastValue = null;
+      }
+    };
+    DebounceSubscriber.prototype.clearDebounce = function clearDebounce() {
+      var debouncedSubscription = this.debouncedSubscription;
+      if (debouncedSubscription !== null) {
+        this.remove(debouncedSubscription);
+        this.debouncedSubscription = null;
+      }
+    };
+    _createClass(DebounceSubscriber, [{
+      key: 'index',
+      get: function get() {
+        return this._index;
+      }
+    }]);
+    return DebounceSubscriber;
+  })(_Subscriber4['default']);
+  var DurationSelectorSubscriber = (function(_Subscriber2) {
+    _inherits(DurationSelectorSubscriber, _Subscriber2);
+    function DurationSelectorSubscriber(parent, currentIndex) {
+      _classCallCheck(this, DurationSelectorSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+      this.currentIndex = currentIndex;
+    }
+    DurationSelectorSubscriber.prototype.debounceNext = function debounceNext() {
+      var parent = this.parent;
+      if (this.currentIndex === parent.index) {
+        parent.debouncedNext();
+        if (!this.isUnsubscribed) {
+          this.unsubscribe();
+        }
+      }
+    };
+    DurationSelectorSubscriber.prototype._next = function _next(unused) {
+      this.debounceNext();
+    };
+    DurationSelectorSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    DurationSelectorSubscriber.prototype._complete = function _complete() {
+      this.debounceNext();
+    };
+    return DurationSelectorSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/debounceTime", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = debounceTime;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  function debounceTime(dueTime) {
+    var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersNextTick2['default'] : arguments[1];
+    return this.lift(new DebounceTimeOperator(dueTime, scheduler));
+  }
+  var DebounceTimeOperator = (function() {
+    function DebounceTimeOperator(dueTime, scheduler) {
+      _classCallCheck(this, DebounceTimeOperator);
+      this.dueTime = dueTime;
+      this.scheduler = scheduler;
+    }
+    DebounceTimeOperator.prototype.call = function call(subscriber) {
+      return new DebounceTimeSubscriber(subscriber, this.dueTime, this.scheduler);
+    };
+    return DebounceTimeOperator;
+  })();
+  var DebounceTimeSubscriber = (function(_Subscriber) {
+    _inherits(DebounceTimeSubscriber, _Subscriber);
+    function DebounceTimeSubscriber(destination, dueTime, scheduler) {
+      _classCallCheck(this, DebounceTimeSubscriber);
+      _Subscriber.call(this, destination);
+      this.dueTime = dueTime;
+      this.scheduler = scheduler;
+      this.debouncedSubscription = null;
+      this.lastValue = null;
+    }
+    DebounceTimeSubscriber.prototype._next = function _next(value) {
+      this.clearDebounce();
+      this.lastValue = value;
+      this.add(this.debouncedSubscription = this.scheduler.schedule(dispatchNext, this.dueTime, this));
+    };
+    DebounceTimeSubscriber.prototype._complete = function _complete() {
+      this.debouncedNext();
+      this.destination.complete();
+    };
+    DebounceTimeSubscriber.prototype.debouncedNext = function debouncedNext() {
+      this.clearDebounce();
+      if (this.lastValue != null) {
+        this.destination.next(this.lastValue);
+        this.lastValue = null;
+      }
+    };
+    DebounceTimeSubscriber.prototype.clearDebounce = function clearDebounce() {
+      var debouncedSubscription = this.debouncedSubscription;
+      if (debouncedSubscription !== null) {
+        this.remove(debouncedSubscription);
+        debouncedSubscription.unsubscribe();
+        this.debouncedSubscription = null;
+      }
+    };
+    return DebounceTimeSubscriber;
+  })(_Subscriber3['default']);
+  function dispatchNext(subscriber) {
+    subscriber.debouncedNext();
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/defaultIfEmpty", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = defaultIfEmpty;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function defaultIfEmpty() {
+    var defaultValue = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+    return this.lift(new DefaultIfEmptyOperator(defaultValue));
+  }
+  var DefaultIfEmptyOperator = (function() {
+    function DefaultIfEmptyOperator(defaultValue) {
+      _classCallCheck(this, DefaultIfEmptyOperator);
+      this.defaultValue = defaultValue;
+    }
+    DefaultIfEmptyOperator.prototype.call = function call(subscriber) {
+      return new DefaultIfEmptySubscriber(subscriber, this.defaultValue);
+    };
+    return DefaultIfEmptyOperator;
+  })();
+  var DefaultIfEmptySubscriber = (function(_Subscriber) {
+    _inherits(DefaultIfEmptySubscriber, _Subscriber);
+    function DefaultIfEmptySubscriber(destination, defaultValue) {
+      _classCallCheck(this, DefaultIfEmptySubscriber);
+      _Subscriber.call(this, destination);
+      this.defaultValue = defaultValue;
+      this.isEmpty = true;
+    }
+    DefaultIfEmptySubscriber.prototype._next = function _next(x) {
+      this.isEmpty = false;
+      this.destination.next(x);
+    };
+    DefaultIfEmptySubscriber.prototype._complete = function _complete() {
+      if (this.isEmpty) {
+        this.destination.next(this.defaultValue);
+      }
+      this.destination.complete();
+    };
+    return DefaultIfEmptySubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/delay", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Notification", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = delay;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _Notification = require("@reactivex/rxjs/dist/cjs/Notification");
+  var _Notification2 = _interopRequireDefault(_Notification);
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  function delay(delay) {
+    var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersImmediate2['default'] : arguments[1];
+    return this.lift(new DelayOperator(delay, scheduler));
+  }
+  var DelayOperator = (function() {
+    function DelayOperator(delay, scheduler) {
+      _classCallCheck(this, DelayOperator);
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    DelayOperator.prototype.call = function call(subscriber) {
+      return new DelaySubscriber(subscriber, this.delay, this.scheduler);
+    };
+    return DelayOperator;
+  })();
+  var DelaySubscriber = (function(_Subscriber) {
+    _inherits(DelaySubscriber, _Subscriber);
+    function DelaySubscriber(destination, delay, scheduler) {
+      _classCallCheck(this, DelaySubscriber);
+      _Subscriber.call(this, destination);
+      this.queue = [];
+      this.active = false;
+      this.errored = false;
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    DelaySubscriber.dispatch = function dispatch(state) {
+      var source = state.source;
+      var queue = source.queue;
+      var scheduler = state.scheduler;
+      var destination = state.destination;
+      while (queue.length > 0 && queue[0].time - scheduler.now() <= 0) {
+        queue.shift().notification.observe(destination);
+      }
+      if (queue.length > 0) {
+        var _delay = Math.max(0, queue[0].time - scheduler.now());
+        this.schedule(state, _delay);
+      } else {
+        source.active = false;
+      }
+    };
+    DelaySubscriber.prototype._next = function _next(x) {
+      if (this.errored) {
+        return ;
+      }
+      var scheduler = this.scheduler;
+      this.queue.push(new DelayMessage(scheduler.now() + this.delay, _Notification2['default'].createNext(x)));
+      if (this.active === false) {
+        this._schedule(scheduler);
+      }
+    };
+    DelaySubscriber.prototype._error = function _error(e) {
+      var scheduler = this.scheduler;
+      this.errored = true;
+      this.queue = [new DelayMessage(scheduler.now() + this.delay, _Notification2['default'].createError(e))];
+      if (this.active === false) {
+        this._schedule(scheduler);
+      }
+    };
+    DelaySubscriber.prototype._complete = function _complete() {
+      if (this.errored) {
+        return ;
+      }
+      var scheduler = this.scheduler;
+      this.queue.push(new DelayMessage(scheduler.now() + this.delay, _Notification2['default'].createComplete()));
+      if (this.active === false) {
+        this._schedule(scheduler);
+      }
+    };
+    DelaySubscriber.prototype._schedule = function _schedule(scheduler) {
+      this.active = true;
+      this.add(scheduler.schedule(DelaySubscriber.dispatch, this.delay, {
+        source: this,
+        destination: this.destination,
+        scheduler: scheduler
+      }));
+    };
+    return DelaySubscriber;
+  })(_Subscriber3['default']);
+  var DelayMessage = function DelayMessage(time, notification) {
+    _classCallCheck(this, DelayMessage);
+    this.time = time;
+    this.notification = notification;
+  };
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/distinctUntilChanged", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/bindCallback"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = distinctUntilChanged;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  function distinctUntilChanged(compare, thisArg) {
+    return this.lift(new DistinctUntilChangedOperator(thisArg ? _utilBindCallback2['default'](compare, thisArg, 2) : compare));
+  }
+  var DistinctUntilChangedOperator = (function() {
+    function DistinctUntilChangedOperator(compare) {
+      _classCallCheck(this, DistinctUntilChangedOperator);
+      this.compare = compare;
+    }
+    DistinctUntilChangedOperator.prototype.call = function call(subscriber) {
+      return new DistinctUntilChangedSubscriber(subscriber, this.compare);
+    };
+    return DistinctUntilChangedOperator;
+  })();
+  var DistinctUntilChangedSubscriber = (function(_Subscriber) {
+    _inherits(DistinctUntilChangedSubscriber, _Subscriber);
+    function DistinctUntilChangedSubscriber(destination, compare) {
+      _classCallCheck(this, DistinctUntilChangedSubscriber);
+      _Subscriber.call(this, destination);
+      this.hasValue = false;
+      if (typeof compare === 'function') {
+        this.compare = compare;
+      }
+    }
+    DistinctUntilChangedSubscriber.prototype.compare = function compare(x, y) {
+      return x === y;
+    };
+    DistinctUntilChangedSubscriber.prototype._next = function _next(x) {
+      var result = false;
+      if (this.hasValue) {
+        result = _utilTryCatch2['default'](this.compare)(this.value, x);
+        if (result === _utilErrorObject.errorObject) {
+          this.destination.error(_utilErrorObject.errorObject.e);
+          return ;
+        }
+      } else {
+        this.hasValue = true;
+      }
+      if (Boolean(result) === false) {
+        this.value = x;
+        this.destination.next(x);
+      }
+    };
+    return DistinctUntilChangedSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/do", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/noop", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = _do;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilNoop = require("@reactivex/rxjs/dist/cjs/util/noop");
+  var _utilNoop2 = _interopRequireDefault(_utilNoop);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function _do(nextOrObserver, error, complete) {
+    var next = undefined;
+    if (nextOrObserver && typeof nextOrObserver === 'object') {
+      next = nextOrObserver.next;
+      error = nextOrObserver.error;
+      complete = nextOrObserver.complete;
+    } else {
+      next = nextOrObserver;
+    }
+    return this.lift(new DoOperator(next || _utilNoop2['default'], error || _utilNoop2['default'], complete || _utilNoop2['default']));
+  }
+  var DoOperator = (function() {
+    function DoOperator(next, error, complete) {
+      _classCallCheck(this, DoOperator);
+      this.next = next;
+      this.error = error;
+      this.complete = complete;
+    }
+    DoOperator.prototype.call = function call(subscriber) {
+      return new DoSubscriber(subscriber, this.next, this.error, this.complete);
+    };
+    return DoOperator;
+  })();
+  var DoSubscriber = (function(_Subscriber) {
+    _inherits(DoSubscriber, _Subscriber);
+    function DoSubscriber(destination, next, error, complete) {
+      _classCallCheck(this, DoSubscriber);
+      _Subscriber.call(this, destination);
+      this.__next = next;
+      this.__error = error;
+      this.__complete = complete;
+    }
+    DoSubscriber.prototype._next = function _next(x) {
+      var result = _utilTryCatch2['default'](this.__next)(x);
+      if (result === _utilErrorObject.errorObject) {
+        this.destination.error(_utilErrorObject.errorObject.e);
+      } else {
+        this.destination.next(x);
+      }
+    };
+    DoSubscriber.prototype._error = function _error(e) {
+      var result = _utilTryCatch2['default'](this.__error)(e);
+      if (result === _utilErrorObject.errorObject) {
+        this.destination.error(_utilErrorObject.errorObject.e);
+      } else {
+        this.destination.error(e);
+      }
+    };
+    DoSubscriber.prototype._complete = function _complete() {
+      var result = _utilTryCatch2['default'](this.__complete)();
+      if (result === _utilErrorObject.errorObject) {
+        this.destination.error(_utilErrorObject.errorObject.e);
+      } else {
+        this.destination.complete();
+      }
+    };
+    return DoSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/expand-support", ["@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  var ExpandOperator = (function() {
+    function ExpandOperator(project) {
+      var concurrent = arguments.length <= 1 || arguments[1] === undefined ? Number.POSITIVE_INFINITY : arguments[1];
+      _classCallCheck(this, ExpandOperator);
+      this.project = project;
+      this.concurrent = concurrent;
+    }
+    ExpandOperator.prototype.call = function call(subscriber) {
+      return new ExpandSubscriber(subscriber, this.project, this.concurrent);
+    };
+    return ExpandOperator;
+  })();
+  exports.ExpandOperator = ExpandOperator;
+  var ExpandSubscriber = (function(_OuterSubscriber) {
+    _inherits(ExpandSubscriber, _OuterSubscriber);
+    function ExpandSubscriber(destination, project) {
+      var concurrent = arguments.length <= 2 || arguments[2] === undefined ? Number.POSITIVE_INFINITY : arguments[2];
+      _classCallCheck(this, ExpandSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.project = project;
+      this.concurrent = concurrent;
+      this.index = 0;
+      this.active = 0;
+      this.hasCompleted = false;
+      if (concurrent < Number.POSITIVE_INFINITY) {
+        this.buffer = [];
+      }
+    }
+    ExpandSubscriber.prototype._next = function _next(value) {
+      var index = this.index++;
+      this.destination.next(value);
+      if (this.active < this.concurrent) {
+        var result = _utilTryCatch2['default'](this.project)(value, index);
+        if (result === _utilErrorObject.errorObject) {
+          this.destination.error(result.e);
+        } else {
+          if (result._isScalar) {
+            this._next(result.value);
+          } else {
+            this.active++;
+            this.add(_utilSubscribeToResult2['default'](this, result, value, index));
+          }
+        }
+      } else {
+        this.buffer.push(value);
+      }
+    };
+    ExpandSubscriber.prototype._complete = function _complete() {
+      this.hasCompleted = true;
+      if (this.hasCompleted && this.active === 0) {
+        this.destination.complete();
+      }
+    };
+    ExpandSubscriber.prototype.notifyComplete = function notifyComplete(innerSub) {
+      var buffer = this.buffer;
+      this.remove(innerSub);
+      this.active--;
+      if (buffer && buffer.length > 0) {
+        this._next(buffer.shift());
+      }
+      if (this.hasCompleted && this.active === 0) {
+        this.destination.complete();
+      }
+    };
+    ExpandSubscriber.prototype.notifyNext = function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      this._next(innerValue);
+    };
+    return ExpandSubscriber;
+  })(_OuterSubscriber3['default']);
+  exports.ExpandSubscriber = ExpandSubscriber;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/filter", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/bindCallback"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = filter;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  function filter(select, thisArg) {
+    return this.lift(new FilterOperator(select, thisArg));
+  }
+  var FilterOperator = (function() {
+    function FilterOperator(select, thisArg) {
+      _classCallCheck(this, FilterOperator);
+      this.select = _utilBindCallback2['default'](select, thisArg, 2);
+    }
+    FilterOperator.prototype.call = function call(subscriber) {
+      return new FilterSubscriber(subscriber, this.select);
+    };
+    return FilterOperator;
+  })();
+  var FilterSubscriber = (function(_Subscriber) {
+    _inherits(FilterSubscriber, _Subscriber);
+    function FilterSubscriber(destination, select) {
+      _classCallCheck(this, FilterSubscriber);
+      _Subscriber.call(this, destination);
+      this.count = 0;
+      this.select = select;
+    }
+    FilterSubscriber.prototype._next = function _next(x) {
+      var result = _utilTryCatch2['default'](this.select)(x, this.count++);
+      if (result === _utilErrorObject.errorObject) {
+        this.destination.error(_utilErrorObject.errorObject.e);
+      } else if (Boolean(result)) {
+        this.destination.next(x);
+      }
+    };
+    return FilterSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/finally", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/util/bindCallback"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = _finally;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  function _finally(finallySelector, thisArg) {
+    return this.lift(new FinallyOperator(thisArg ? _utilBindCallback2['default'](finallySelector, thisArg, 2) : finallySelector));
+  }
+  var FinallyOperator = (function() {
+    function FinallyOperator(finallySelector) {
+      _classCallCheck(this, FinallyOperator);
+      this.finallySelector = finallySelector;
+    }
+    FinallyOperator.prototype.call = function call(subscriber) {
+      return new FinallySubscriber(subscriber, this.finallySelector);
+    };
+    return FinallyOperator;
+  })();
+  var FinallySubscriber = (function(_Subscriber) {
+    _inherits(FinallySubscriber, _Subscriber);
+    function FinallySubscriber(destination, finallySelector) {
+      _classCallCheck(this, FinallySubscriber);
+      _Subscriber.call(this, destination);
+      this.add(new _Subscription2['default'](finallySelector));
+    }
+    return FinallySubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/EmptyError", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var EmptyError = function EmptyError() {
+    _classCallCheck(this, EmptyError);
+    this.name = 'EmptyError';
+    this.message = 'no elements in sequence';
+  };
+  exports['default'] = EmptyError;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/Map", ["@reactivex/rxjs/dist/cjs/util/root"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  var _root = require("@reactivex/rxjs/dist/cjs/util/root");
+  exports['default'] = _root.root.Map || (function() {
+    function Map() {
+      this.size = 0;
+      this._values = [];
+      this._keys = [];
+    }
+    Map.prototype['delete'] = function(key) {
+      var i = this._keys.indexOf(key);
+      if (i === -1) {
+        return false;
+      }
+      this._values.splice(i, 1);
+      this._keys.splice(i, 1);
+      this.size--;
+      return true;
+    };
+    Map.prototype.get = function(key) {
+      var i = this._keys.indexOf(key);
+      return i === -1 ? undefined : this._values[i];
+    };
+    Map.prototype.set = function(key, value) {
+      var i = this._keys.indexOf(key);
+      if (i === -1) {
+        this._keys.push(key);
+        this._values.push(value);
+        this.size++;
+      } else {
+        this._values[i] = value;
+      }
+      return this;
+    };
+    Map.prototype.forEach = function(cb, thisArg) {
+      for (var i = 0; i < this.size; i++) {
+        cb.call(thisArg, this._values[i], this._keys[i]);
+      }
+    };
+    return Map;
+  })();
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/FastMap", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  "use strict";
+  exports.__esModule = true;
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+  var FastMap = (function() {
+    function FastMap() {
+      _classCallCheck(this, FastMap);
+      this.size = 0;
+      this._values = {};
+    }
+    FastMap.prototype["delete"] = function _delete(key) {
+      this._values[key] = null;
+      return true;
+    };
+    FastMap.prototype.set = function set(key, value) {
+      this._values[key] = value;
+      return this;
+    };
+    FastMap.prototype.get = function get(key) {
+      return this._values[key];
+    };
+    FastMap.prototype.forEach = function forEach(cb, thisArg) {
+      var values = this._values;
+      for (var key in values) {
+        if (values.hasOwnProperty(key) && values[key] !== null) {
+          cb.call(thisArg, values[key], key);
+        }
+      }
+    };
+    FastMap.prototype.clear = function clear() {
+      this._values = {};
+    };
+    return FastMap;
+  })();
+  exports["default"] = FastMap;
+  module.exports = exports["default"];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/groupBy-support", ["@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/Observable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subscription3 = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription4 = _interopRequireDefault(_Subscription3);
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var RefCountSubscription = (function(_Subscription) {
+    _inherits(RefCountSubscription, _Subscription);
+    function RefCountSubscription() {
+      _classCallCheck(this, RefCountSubscription);
+      _Subscription.call(this);
+      this.attemptedToUnsubscribePrimary = false;
+      this.count = 0;
+    }
+    RefCountSubscription.prototype.setPrimary = function setPrimary(subscription) {
+      this.primary = subscription;
+    };
+    RefCountSubscription.prototype.unsubscribe = function unsubscribe() {
+      if (!this.isUnsubscribed && !this.attemptedToUnsubscribePrimary) {
+        this.attemptedToUnsubscribePrimary = true;
+        if (this.count === 0) {
+          _Subscription.prototype.unsubscribe.call(this);
+          this.primary.unsubscribe();
+        }
+      }
+    };
+    return RefCountSubscription;
+  })(_Subscription4['default']);
+  exports.RefCountSubscription = RefCountSubscription;
+  var GroupedObservable = (function(_Observable) {
+    _inherits(GroupedObservable, _Observable);
+    function GroupedObservable(key, groupSubject, refCountSubscription) {
+      _classCallCheck(this, GroupedObservable);
+      _Observable.call(this);
+      this.key = key;
+      this.groupSubject = groupSubject;
+      this.refCountSubscription = refCountSubscription;
+    }
+    GroupedObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var subscription = new _Subscription4['default']();
+      if (this.refCountSubscription && !this.refCountSubscription.isUnsubscribed) {
+        subscription.add(new InnerRefCountSubscription(this.refCountSubscription));
+      }
+      subscription.add(this.groupSubject.subscribe(subscriber));
+      return subscription;
+    };
+    return GroupedObservable;
+  })(_Observable3['default']);
+  exports.GroupedObservable = GroupedObservable;
+  var InnerRefCountSubscription = (function(_Subscription2) {
+    _inherits(InnerRefCountSubscription, _Subscription2);
+    function InnerRefCountSubscription(parent) {
+      _classCallCheck(this, InnerRefCountSubscription);
+      _Subscription2.call(this);
+      this.parent = parent;
+      parent.count++;
+    }
+    InnerRefCountSubscription.prototype.unsubscribe = function unsubscribe() {
+      if (!this.parent.isUnsubscribed && !this.isUnsubscribed) {
+        _Subscription2.prototype.unsubscribe.call(this);
+        this.parent.count--;
+        if (this.parent.count === 0 && this.parent.attemptedToUnsubscribePrimary) {
+          this.parent.unsubscribe();
+          this.parent.primary.unsubscribe();
+        }
+      }
+    };
+    return InnerRefCountSubscription;
+  })(_Subscription4['default']);
+  exports.InnerRefCountSubscription = InnerRefCountSubscription;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/ignoreElements", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = ignoreElements;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function ignoreElements() {
+    return this.lift(new IgnoreElementsOperator());
+  }
+  ;
+  var IgnoreElementsOperator = (function() {
+    function IgnoreElementsOperator() {
+      _classCallCheck(this, IgnoreElementsOperator);
+    }
+    IgnoreElementsOperator.prototype.call = function call(subscriber) {
+      return new IgnoreElementsSubscriber(subscriber);
+    };
+    return IgnoreElementsOperator;
+  })();
+  var IgnoreElementsSubscriber = (function(_Subscriber) {
+    _inherits(IgnoreElementsSubscriber, _Subscriber);
+    function IgnoreElementsSubscriber() {
+      _classCallCheck(this, IgnoreElementsSubscriber);
+      _Subscriber.apply(this, arguments);
+    }
+    IgnoreElementsSubscriber.prototype._next = function _next() {};
+    return IgnoreElementsSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/every", ["@reactivex/rxjs/dist/cjs/observables/ScalarObservable", "@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/observables/ErrorObservable", "@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/bindCallback"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = every;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _observablesScalarObservable = require("@reactivex/rxjs/dist/cjs/observables/ScalarObservable");
+  var _observablesScalarObservable2 = _interopRequireDefault(_observablesScalarObservable);
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _observablesErrorObservable = require("@reactivex/rxjs/dist/cjs/observables/ErrorObservable");
+  var _observablesErrorObservable2 = _interopRequireDefault(_observablesErrorObservable);
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  function every(predicate, thisArg) {
+    var source = this;
+    var result = undefined;
+    if (source._isScalar) {
+      result = _utilTryCatch2['default'](predicate)(source.value, 0, source);
+      if (result === _utilErrorObject.errorObject) {
+        return new _observablesErrorObservable2['default'](_utilErrorObject.errorObject.e, source.scheduler);
+      } else {
+        return new _observablesScalarObservable2['default'](result, source.scheduler);
+      }
+    }
+    if (source instanceof _observablesArrayObservable2['default']) {
+      var array = source.array;
+      var _result = _utilTryCatch2['default'](function(array, predicate) {
+        return array.every(predicate);
+      })(array, predicate);
+      if (_result === _utilErrorObject.errorObject) {
+        return new _observablesErrorObservable2['default'](_utilErrorObject.errorObject.e, source.scheduler);
+      } else {
+        return new _observablesScalarObservable2['default'](_result, source.scheduler);
+      }
+    }
+    return source.lift(new EveryOperator(predicate, thisArg, source));
+  }
+  var EveryOperator = (function() {
+    function EveryOperator(predicate, thisArg, source) {
+      _classCallCheck(this, EveryOperator);
+      this.predicate = predicate;
+      this.thisArg = thisArg;
+      this.source = source;
+    }
+    EveryOperator.prototype.call = function call(observer) {
+      return new EverySubscriber(observer, this.predicate, this.thisArg, this.source);
+    };
+    return EveryOperator;
+  })();
+  var EverySubscriber = (function(_Subscriber) {
+    _inherits(EverySubscriber, _Subscriber);
+    function EverySubscriber(destination, predicate, thisArg, source) {
+      _classCallCheck(this, EverySubscriber);
+      _Subscriber.call(this, destination);
+      this.thisArg = thisArg;
+      this.source = source;
+      this.predicate = undefined;
+      this.index = 0;
+      if (typeof predicate === 'function') {
+        this.predicate = _utilBindCallback2['default'](predicate, thisArg, 3);
+      }
+    }
+    EverySubscriber.prototype.notifyComplete = function notifyComplete(everyValueMatch) {
+      this.destination.next(everyValueMatch);
+      this.destination.complete();
+    };
+    EverySubscriber.prototype._next = function _next(value) {
+      var predicate = this.predicate;
+      if (predicate === undefined) {
+        this.destination.error(new TypeError('predicate must be a function'));
+      }
+      var result = _utilTryCatch2['default'](predicate)(value, this.index++, this.source);
+      if (result === _utilErrorObject.errorObject) {
+        this.destination.error(result.e);
+      } else if (!result) {
+        this.notifyComplete(false);
+      }
+    };
+    EverySubscriber.prototype._complete = function _complete() {
+      this.notifyComplete(true);
+    };
+    return EverySubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/last", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/EmptyError"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = last;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilEmptyError = require("@reactivex/rxjs/dist/cjs/util/EmptyError");
+  var _utilEmptyError2 = _interopRequireDefault(_utilEmptyError);
+  function last(predicate, resultSelector, defaultValue) {
+    return this.lift(new LastOperator(predicate, resultSelector, defaultValue, this));
+  }
+  var LastOperator = (function() {
+    function LastOperator(predicate, resultSelector, defaultValue, source) {
+      _classCallCheck(this, LastOperator);
+      this.predicate = predicate;
+      this.resultSelector = resultSelector;
+      this.defaultValue = defaultValue;
+      this.source = source;
+    }
+    LastOperator.prototype.call = function call(observer) {
+      return new LastSubscriber(observer, this.predicate, this.resultSelector, this.defaultValue, this.source);
+    };
+    return LastOperator;
+  })();
+  var LastSubscriber = (function(_Subscriber) {
+    _inherits(LastSubscriber, _Subscriber);
+    function LastSubscriber(destination, predicate, resultSelector, defaultValue, source) {
+      _classCallCheck(this, LastSubscriber);
+      _Subscriber.call(this, destination);
+      this.predicate = predicate;
+      this.resultSelector = resultSelector;
+      this.defaultValue = defaultValue;
+      this.source = source;
+      this.hasValue = false;
+      this.index = 0;
+      if (typeof defaultValue !== 'undefined') {
+        this.lastValue = defaultValue;
+        this.hasValue = true;
+      }
+    }
+    LastSubscriber.prototype._next = function _next(value) {
+      var predicate = this.predicate;
+      var resultSelector = this.resultSelector;
+      var destination = this.destination;
+      var index = this.index++;
+      if (predicate) {
+        var found = _utilTryCatch2['default'](predicate)(value, index, this.source);
+        if (found === _utilErrorObject.errorObject) {
+          destination.error(_utilErrorObject.errorObject.e);
+          return ;
+        }
+        if (found) {
+          if (resultSelector) {
+            value = _utilTryCatch2['default'](resultSelector)(value, index);
+            if (value === _utilErrorObject.errorObject) {
+              destination.error(_utilErrorObject.errorObject.e);
+              return ;
+            }
+          }
+          this.lastValue = value;
+          this.hasValue = true;
+        }
+      } else {
+        this.lastValue = value;
+        this.hasValue = true;
+      }
+    };
+    LastSubscriber.prototype._complete = function _complete() {
+      var destination = this.destination;
+      if (this.hasValue) {
+        destination.next(this.lastValue);
+        destination.complete();
+      } else {
+        destination.error(new _utilEmptyError2['default']());
+      }
+    };
+    return LastSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/map", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/bindCallback"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = map;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  function map(project, thisArg) {
+    return this.lift(new MapOperator(project, thisArg));
+  }
+  var MapOperator = (function() {
+    function MapOperator(project, thisArg) {
+      _classCallCheck(this, MapOperator);
+      this.project = _utilBindCallback2['default'](project, thisArg, 2);
+    }
+    MapOperator.prototype.call = function call(subscriber) {
+      return new MapSubscriber(subscriber, this.project);
+    };
+    return MapOperator;
+  })();
+  var MapSubscriber = (function(_Subscriber) {
+    _inherits(MapSubscriber, _Subscriber);
+    function MapSubscriber(destination, project) {
+      _classCallCheck(this, MapSubscriber);
+      _Subscriber.call(this, destination);
+      this.count = 0;
+      this.project = project;
+    }
+    MapSubscriber.prototype._next = function _next(x) {
+      var result = _utilTryCatch2['default'](this.project)(x, this.count++);
+      if (result === _utilErrorObject.errorObject) {
+        this.error(_utilErrorObject.errorObject.e);
+      } else {
+        this.destination.next(result);
+      }
+    };
+    return MapSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mapTo", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = mapTo;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function mapTo(value) {
+    return this.lift(new MapToOperator(value));
+  }
+  var MapToOperator = (function() {
+    function MapToOperator(value) {
+      _classCallCheck(this, MapToOperator);
+      this.value = value;
+    }
+    MapToOperator.prototype.call = function call(subscriber) {
+      return new MapToSubscriber(subscriber, this.value);
+    };
+    return MapToOperator;
+  })();
+  var MapToSubscriber = (function(_Subscriber) {
+    _inherits(MapToSubscriber, _Subscriber);
+    function MapToSubscriber(destination, value) {
+      _classCallCheck(this, MapToSubscriber);
+      _Subscriber.call(this, destination);
+      this.value = value;
+    }
+    MapToSubscriber.prototype._next = function _next(x) {
+      this.destination.next(this.value);
+    };
+    return MapToSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/materialize", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Notification"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = materialize;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _Notification = require("@reactivex/rxjs/dist/cjs/Notification");
+  var _Notification2 = _interopRequireDefault(_Notification);
+  function materialize() {
+    return this.lift(new MaterializeOperator());
+  }
+  var MaterializeOperator = (function() {
+    function MaterializeOperator() {
+      _classCallCheck(this, MaterializeOperator);
+    }
+    MaterializeOperator.prototype.call = function call(subscriber) {
+      return new MaterializeSubscriber(subscriber);
+    };
+    return MaterializeOperator;
+  })();
+  var MaterializeSubscriber = (function(_Subscriber) {
+    _inherits(MaterializeSubscriber, _Subscriber);
+    function MaterializeSubscriber(destination) {
+      _classCallCheck(this, MaterializeSubscriber);
+      _Subscriber.call(this, destination);
+    }
+    MaterializeSubscriber.prototype._next = function _next(value) {
+      this.destination.next(_Notification2['default'].createNext(value));
+    };
+    MaterializeSubscriber.prototype._error = function _error(err) {
+      var destination = this.destination;
+      destination.next(_Notification2['default'].createError(err));
+      destination.complete();
+    };
+    MaterializeSubscriber.prototype._complete = function _complete() {
+      var destination = this.destination;
+      destination.next(_Notification2['default'].createComplete());
+      destination.complete();
+    };
+    return MaterializeSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/merge", ["@reactivex/rxjs/dist/cjs/operators/merge-static"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = merge;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _mergeStatic = require("@reactivex/rxjs/dist/cjs/operators/merge-static");
+  var _mergeStatic2 = _interopRequireDefault(_mergeStatic);
+  function merge() {
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    observables.unshift(this);
+    return _mergeStatic2['default'].apply(this, observables);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mergeAll", ["@reactivex/rxjs/dist/cjs/operators/mergeAll-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = mergeAll;
+  var _mergeAllSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeAll-support");
+  function mergeAll() {
+    var concurrent = arguments.length <= 0 || arguments[0] === undefined ? Number.POSITIVE_INFINITY : arguments[0];
+    return this.lift(new _mergeAllSupport.MergeAllOperator(concurrent));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mergeMap", ["@reactivex/rxjs/dist/cjs/operators/mergeMap-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = mergeMap;
+  var _mergeMapSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeMap-support");
+  function mergeMap(project, resultSelector) {
+    var concurrent = arguments.length <= 2 || arguments[2] === undefined ? Number.POSITIVE_INFINITY : arguments[2];
+    return this.lift(new _mergeMapSupport.MergeMapOperator(project, resultSelector, concurrent));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/mergeMapTo", ["@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = mergeMapTo;
+  var _mergeMapToSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support");
+  function mergeMapTo(observable, resultSelector) {
+    var concurrent = arguments.length <= 2 || arguments[2] === undefined ? Number.POSITIVE_INFINITY : arguments[2];
+    return this.lift(new _mergeMapToSupport.MergeMapToOperator(observable, resultSelector, concurrent));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/ConnectableObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/Subscription"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable3 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable4 = _interopRequireDefault(_Observable3);
+  var _Subscription3 = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription4 = _interopRequireDefault(_Subscription3);
+  var ConnectableObservable = (function(_Observable) {
+    _inherits(ConnectableObservable, _Observable);
+    function ConnectableObservable(source, subjectFactory) {
+      _classCallCheck(this, ConnectableObservable);
+      _Observable.call(this);
+      this.source = source;
+      this.subjectFactory = subjectFactory;
+    }
+    ConnectableObservable.prototype._subscribe = function _subscribe(subscriber) {
+      return this._getSubject().subscribe(subscriber);
+    };
+    ConnectableObservable.prototype._getSubject = function _getSubject() {
+      var subject = this.subject;
+      if (subject && !subject.isUnsubscribed) {
+        return subject;
+      }
+      return this.subject = this.subjectFactory();
+    };
+    ConnectableObservable.prototype.connect = function connect() {
+      var source = this.source;
+      var subscription = this.subscription;
+      if (subscription && !subscription.isUnsubscribed) {
+        return subscription;
+      }
+      subscription = source.subscribe(this._getSubject());
+      subscription.add(new ConnectableSubscription(this));
+      return this.subscription = subscription;
+    };
+    ConnectableObservable.prototype.refCount = function refCount() {
+      return new RefCountObservable(this);
+    };
+    return ConnectableObservable;
+  })(_Observable4['default']);
+  exports['default'] = ConnectableObservable;
+  var ConnectableSubscription = (function(_Subscription) {
+    _inherits(ConnectableSubscription, _Subscription);
+    function ConnectableSubscription(connectable) {
+      _classCallCheck(this, ConnectableSubscription);
+      _Subscription.call(this);
+      this.connectable = connectable;
+    }
+    ConnectableSubscription.prototype._unsubscribe = function _unsubscribe() {
+      var connectable = this.connectable;
+      connectable.subject = void 0;
+      connectable.subscription = void 0;
+      this.connectable = void 0;
+    };
+    return ConnectableSubscription;
+  })(_Subscription4['default']);
+  var RefCountObservable = (function(_Observable2) {
+    _inherits(RefCountObservable, _Observable2);
+    function RefCountObservable(connectable) {
+      var refCount = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      _classCallCheck(this, RefCountObservable);
+      _Observable2.call(this);
+      this.connectable = connectable;
+      this.refCount = refCount;
+    }
+    RefCountObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var connectable = this.connectable;
+      var subscription = connectable.subscribe(subscriber);
+      if (++this.refCount === 1) {
+        this.connection = connectable.connect();
+      }
+      subscription.add(new RefCountSubscription(this));
+      return subscription;
+    };
+    return RefCountObservable;
+  })(_Observable4['default']);
+  var RefCountSubscription = (function(_Subscription2) {
+    _inherits(RefCountSubscription, _Subscription2);
+    function RefCountSubscription(refCountObservable) {
+      _classCallCheck(this, RefCountSubscription);
+      _Subscription2.call(this);
+      this.refCountObservable = refCountObservable;
+    }
+    RefCountSubscription.prototype._unsubscribe = function _unsubscribe() {
+      var observable = this.refCountObservable;
+      if (--observable.refCount === 0) {
+        observable.connection.unsubscribe();
+        observable.connection = void 0;
+      }
+    };
+    return RefCountSubscription;
+  })(_Subscription4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/observeOn", ["@reactivex/rxjs/dist/cjs/operators/observeOn-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = observeOn;
+  var _observeOnSupport = require("@reactivex/rxjs/dist/cjs/operators/observeOn-support");
+  function observeOn(scheduler) {
+    var delay = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+    return this.lift(new _observeOnSupport.ObserveOnOperator(scheduler, delay));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/not", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  "use strict";
+  exports.__esModule = true;
+  exports["default"] = not;
+  function not(pred, thisArg) {
+    function notPred() {
+      return !notPred.pred.apply(notPred.thisArg, arguments);
+    }
+    notPred.pred = pred;
+    notPred.thisArg = thisArg;
+    return notPred;
+  }
+  module.exports = exports["default"];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/publish", ["@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/operators/multicast"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = publish;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _multicast = require("@reactivex/rxjs/dist/cjs/operators/multicast");
+  var _multicast2 = _interopRequireDefault(_multicast);
+  function subjectFactory() {
+    return new _Subject2['default']();
+  }
+  function publish() {
+    return _multicast2['default'].call(this, subjectFactory);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/subjects/BehaviorSubject", ["@reactivex/rxjs/dist/cjs/Subject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subject2 = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject3 = _interopRequireDefault(_Subject2);
+  var BehaviorSubject = (function(_Subject) {
+    _inherits(BehaviorSubject, _Subject);
+    function BehaviorSubject(value) {
+      _classCallCheck(this, BehaviorSubject);
+      _Subject.call(this);
+      this.value = value;
+    }
+    BehaviorSubject.prototype._subscribe = function _subscribe(subscriber) {
+      var subscription = _Subject.prototype._subscribe.call(this, subscriber);
+      if (!subscription) {
+        return ;
+      } else if (!subscription.isUnsubscribed) {
+        subscriber.next(this.value);
+      }
+      return subscription;
+    };
+    BehaviorSubject.prototype._next = function _next(value) {
+      _Subject.prototype._next.call(this, this.value = value);
+    };
+    return BehaviorSubject;
+  })(_Subject3['default']);
+  exports['default'] = BehaviorSubject;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/subjects/ReplaySubject", ["@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subject2 = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject3 = _interopRequireDefault(_Subject2);
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  var ReplaySubject = (function(_Subject) {
+    _inherits(ReplaySubject, _Subject);
+    function ReplaySubject(bufferSize, _windowTime, scheduler) {
+      if (bufferSize === undefined)
+        bufferSize = Number.POSITIVE_INFINITY;
+      if (_windowTime === undefined)
+        _windowTime = Number.POSITIVE_INFINITY;
+      _classCallCheck(this, ReplaySubject);
+      _Subject.call(this);
+      this.events = [];
+      this.bufferSize = bufferSize < 1 ? 1 : bufferSize;
+      this._windowTime = _windowTime < 1 ? 1 : _windowTime;
+      this.scheduler = scheduler;
+    }
+    ReplaySubject.prototype._next = function _next(value) {
+      var now = this._getNow();
+      this.events.push(new ReplayEvent(now, value));
+      _Subject.prototype._next.call(this, value);
+    };
+    ReplaySubject.prototype._subscribe = function _subscribe(subscriber) {
+      var events = this._getEvents(this._getNow());
+      var index = -1;
+      var len = events.length;
+      while (!subscriber.isUnsubscribed && ++index < len) {
+        subscriber.next(events[index].value);
+      }
+      return _Subject.prototype._subscribe.call(this, subscriber);
+    };
+    ReplaySubject.prototype._getNow = function _getNow() {
+      return (this.scheduler || _schedulersImmediate2['default']).now();
+    };
+    ReplaySubject.prototype._getEvents = function _getEvents(now) {
+      var bufferSize = this.bufferSize;
+      var _windowTime = this._windowTime;
+      var events = this.events;
+      var eventsCount = events.length;
+      var spliceCount = 0;
+      while (spliceCount < eventsCount) {
+        if (now - events[spliceCount].time < _windowTime) {
+          break;
+        }
+        spliceCount += 1;
+      }
+      if (eventsCount > bufferSize) {
+        spliceCount = Math.max(spliceCount, eventsCount - bufferSize);
+      }
+      if (spliceCount > 0) {
+        events.splice(0, spliceCount);
+      }
+      return events;
+    };
+    return ReplaySubject;
+  })(_Subject3['default']);
+  exports['default'] = ReplaySubject;
+  var ReplayEvent = function ReplayEvent(time, value) {
+    _classCallCheck(this, ReplayEvent);
+    this.time = time;
+    this.value = value;
+  };
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/reduce", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = reduce;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function reduce(project, acc) {
+    return this.lift(new ReduceOperator(project, acc));
+  }
+  var ReduceOperator = (function() {
+    function ReduceOperator(project, acc) {
+      _classCallCheck(this, ReduceOperator);
+      this.acc = acc;
+      this.project = project;
+    }
+    ReduceOperator.prototype.call = function call(subscriber) {
+      return new ReduceSubscriber(subscriber, this.project, this.acc);
+    };
+    return ReduceOperator;
+  })();
+  var ReduceSubscriber = (function(_Subscriber) {
+    _inherits(ReduceSubscriber, _Subscriber);
+    function ReduceSubscriber(destination, project, acc) {
+      _classCallCheck(this, ReduceSubscriber);
+      _Subscriber.call(this, destination);
+      this.hasValue = false;
+      this.acc = acc;
+      this.project = project;
+      this.hasSeed = typeof acc !== 'undefined';
+    }
+    ReduceSubscriber.prototype._next = function _next(x) {
+      if (this.hasValue || (this.hasValue = this.hasSeed)) {
+        var result = _utilTryCatch2['default'](this.project).call(this, this.acc, x);
+        if (result === _utilErrorObject.errorObject) {
+          this.destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          this.acc = result;
+        }
+      } else {
+        this.acc = x;
+        this.hasValue = true;
+      }
+    };
+    ReduceSubscriber.prototype._complete = function _complete() {
+      if (this.hasValue || this.hasSeed) {
+        this.destination.next(this.acc);
+      }
+      this.destination.complete();
+    };
+    return ReduceSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/repeat", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = repeat;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function repeat(count) {
+    return this.lift(new RepeatOperator(count, this));
+  }
+  var RepeatOperator = (function() {
+    function RepeatOperator(count, original) {
+      _classCallCheck(this, RepeatOperator);
+      this.count = count;
+      this.original = original;
+    }
+    RepeatOperator.prototype.call = function call(subscriber) {
+      return new RepeatSubscriber(subscriber, this.count, this.original);
+    };
+    return RepeatOperator;
+  })();
+  var RepeatSubscriber = (function(_Subscriber) {
+    _inherits(RepeatSubscriber, _Subscriber);
+    function RepeatSubscriber(destination, count, original) {
+      _classCallCheck(this, RepeatSubscriber);
+      _Subscriber.call(this, destination);
+      this.count = count;
+      this.original = original;
+      this.repeated = 0;
+    }
+    RepeatSubscriber.prototype._complete = function _complete() {
+      if (this.count === (this.repeated += 1)) {
+        this.destination.complete();
+      } else {
+        this.resubscribe();
+      }
+    };
+    RepeatSubscriber.prototype.resubscribe = function resubscribe() {
+      this.original.subscribe(this);
+    };
+    return RepeatSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/retry", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = retry;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function retry() {
+    var count = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+    return this.lift(new RetryOperator(count, this));
+  }
+  var RetryOperator = (function() {
+    function RetryOperator(count, original) {
+      _classCallCheck(this, RetryOperator);
+      this.count = count;
+      this.original = original;
+    }
+    RetryOperator.prototype.call = function call(subscriber) {
+      return new RetrySubscriber(subscriber, this.count, this.original);
+    };
+    return RetryOperator;
+  })();
+  var RetrySubscriber = (function(_Subscriber) {
+    _inherits(RetrySubscriber, _Subscriber);
+    function RetrySubscriber(destination, count, original) {
+      _classCallCheck(this, RetrySubscriber);
+      _Subscriber.call(this, destination);
+      this.count = count;
+      this.original = original;
+      this.retries = 0;
+    }
+    RetrySubscriber.prototype._error = function _error(err) {
+      var count = this.count;
+      if (count && count === (this.retries += 1)) {
+        this.destination.error(err);
+      } else {
+        this.resubscribe();
+      }
+    };
+    RetrySubscriber.prototype.resubscribe = function resubscribe() {
+      this.original.subscribe(this);
+    };
+    return RetrySubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/retryWhen", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = retryWhen;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function retryWhen(notifier) {
+    return this.lift(new RetryWhenOperator(notifier, this));
+  }
+  var RetryWhenOperator = (function() {
+    function RetryWhenOperator(notifier, original) {
+      _classCallCheck(this, RetryWhenOperator);
+      this.notifier = notifier;
+      this.original = original;
+    }
+    RetryWhenOperator.prototype.call = function call(subscriber) {
+      return new RetryWhenSubscriber(subscriber, this.notifier, this.original);
+    };
+    return RetryWhenOperator;
+  })();
+  var RetryWhenSubscriber = (function(_Subscriber) {
+    _inherits(RetryWhenSubscriber, _Subscriber);
+    function RetryWhenSubscriber(destination, notifier, original) {
+      _classCallCheck(this, RetryWhenSubscriber);
+      _Subscriber.call(this, destination);
+      this.notifier = notifier;
+      this.original = original;
+    }
+    RetryWhenSubscriber.prototype._error = function _error(err) {
+      if (!this.retryNotifications) {
+        this.errors = new _Subject2['default']();
+        var notifications = _utilTryCatch2['default'](this.notifier).call(this, this.errors);
+        if (notifications === _utilErrorObject.errorObject) {
+          this.destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          this.retryNotifications = notifications;
+          this.add(notifications._subscribe(new RetryNotificationSubscriber(this)));
+        }
+      }
+      this.errors.next(err);
+    };
+    RetryWhenSubscriber.prototype.finalError = function finalError(err) {
+      this.destination.error(err);
+    };
+    RetryWhenSubscriber.prototype.resubscribe = function resubscribe() {
+      this.original.subscribe(this);
+    };
+    return RetryWhenSubscriber;
+  })(_Subscriber4['default']);
+  var RetryNotificationSubscriber = (function(_Subscriber2) {
+    _inherits(RetryNotificationSubscriber, _Subscriber2);
+    function RetryNotificationSubscriber(parent) {
+      _classCallCheck(this, RetryNotificationSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+    }
+    RetryNotificationSubscriber.prototype._next = function _next(value) {
+      this.parent.resubscribe();
+    };
+    RetryNotificationSubscriber.prototype._error = function _error(err) {
+      this.parent.finalError(err);
+    };
+    RetryNotificationSubscriber.prototype._complete = function _complete() {
+      this.parent.complete();
+    };
+    return RetryNotificationSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/sample", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = sample;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  function sample(notifier) {
+    return this.lift(new SampleOperator(notifier));
+  }
+  var SampleOperator = (function() {
+    function SampleOperator(notifier) {
+      _classCallCheck(this, SampleOperator);
+      this.notifier = notifier;
+    }
+    SampleOperator.prototype.call = function call(subscriber) {
+      return new SampleSubscriber(subscriber, this.notifier);
+    };
+    return SampleOperator;
+  })();
+  var SampleSubscriber = (function(_Subscriber) {
+    _inherits(SampleSubscriber, _Subscriber);
+    function SampleSubscriber(destination, notifier) {
+      _classCallCheck(this, SampleSubscriber);
+      _Subscriber.call(this, destination);
+      this.notifier = notifier;
+      this.hasValue = false;
+      this.add(notifier._subscribe(new SampleNoficationSubscriber(this)));
+    }
+    SampleSubscriber.prototype._next = function _next(value) {
+      this.lastValue = value;
+      this.hasValue = true;
+    };
+    SampleSubscriber.prototype.notifyNext = function notifyNext() {
+      if (this.hasValue) {
+        this.destination.next(this.lastValue);
+      }
+    };
+    return SampleSubscriber;
+  })(_Subscriber4['default']);
+  var SampleNoficationSubscriber = (function(_Subscriber2) {
+    _inherits(SampleNoficationSubscriber, _Subscriber2);
+    function SampleNoficationSubscriber(parent) {
+      _classCallCheck(this, SampleNoficationSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+    }
+    SampleNoficationSubscriber.prototype._next = function _next() {
+      this.parent.notifyNext();
+    };
+    SampleNoficationSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    SampleNoficationSubscriber.prototype._complete = function _complete() {};
+    return SampleNoficationSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/sampleTime", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = sampleTime;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  function sampleTime(delay) {
+    var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersNextTick2['default'] : arguments[1];
+    return this.lift(new SampleTimeOperator(delay, scheduler));
+  }
+  var SampleTimeOperator = (function() {
+    function SampleTimeOperator(delay, scheduler) {
+      _classCallCheck(this, SampleTimeOperator);
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    SampleTimeOperator.prototype.call = function call(subscriber) {
+      return new SampleTimeSubscriber(subscriber, this.delay, this.scheduler);
+    };
+    return SampleTimeOperator;
+  })();
+  var SampleTimeSubscriber = (function(_Subscriber) {
+    _inherits(SampleTimeSubscriber, _Subscriber);
+    function SampleTimeSubscriber(destination, delay, scheduler) {
+      _classCallCheck(this, SampleTimeSubscriber);
+      _Subscriber.call(this, destination);
+      this.delay = delay;
+      this.scheduler = scheduler;
+      this.hasValue = false;
+      this.add(scheduler.schedule(dispatchNotification, delay, {
+        subscriber: this,
+        delay: delay
+      }));
+    }
+    SampleTimeSubscriber.prototype._next = function _next(value) {
+      this.lastValue = value;
+      this.hasValue = true;
+    };
+    SampleTimeSubscriber.prototype.notifyNext = function notifyNext() {
+      if (this.hasValue) {
+        this.destination.next(this.lastValue);
+      }
+    };
+    return SampleTimeSubscriber;
+  })(_Subscriber3['default']);
+  function dispatchNotification(state) {
+    var subscriber = state.subscriber;
+    var delay = state.delay;
+    subscriber.notifyNext();
+    this.schedule(state, delay);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/scan", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = scan;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function scan(project, acc) {
+    return this.lift(new ScanOperator(project));
+  }
+  var ScanOperator = (function() {
+    function ScanOperator(project, acc) {
+      _classCallCheck(this, ScanOperator);
+      this.acc = acc;
+      this.project = project;
+    }
+    ScanOperator.prototype.call = function call(subscriber) {
+      return new ScanSubscriber(subscriber, this.project, this.acc);
+    };
+    return ScanOperator;
+  })();
+  var ScanSubscriber = (function(_Subscriber) {
+    _inherits(ScanSubscriber, _Subscriber);
+    function ScanSubscriber(destination, project, acc) {
+      _classCallCheck(this, ScanSubscriber);
+      _Subscriber.call(this, destination);
+      this.hasValue = false;
+      this.acc = acc;
+      this.project = project;
+      this.hasSeed = typeof acc !== 'undefined';
+    }
+    ScanSubscriber.prototype._next = function _next(x) {
+      if (this.hasValue || (this.hasValue = this.hasSeed)) {
+        var result = _utilTryCatch2['default'](this.project).call(this, this.acc, x);
+        if (result === _utilErrorObject.errorObject) {
+          this.destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          this.destination.next(this.acc = result);
+        }
+      } else {
+        return this.destination.next((this.hasValue = true) && (this.acc = x));
+      }
+    };
+    ScanSubscriber.prototype._complete = function _complete() {
+      if (!this.hasValue && this.hasSeed) {
+        this.destination.next(this.acc);
+      }
+      this.destination.complete();
+    };
+    return ScanSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/share", ["@reactivex/rxjs/dist/cjs/operators/publish"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = share;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _publish = require("@reactivex/rxjs/dist/cjs/operators/publish");
+  var _publish2 = _interopRequireDefault(_publish);
+  function share() {
+    return _publish2['default'].call(this).refCount();
+  }
+  ;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/shareReplay", ["@reactivex/rxjs/dist/cjs/operators/publishReplay"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = shareReplay;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _publishReplay = require("@reactivex/rxjs/dist/cjs/operators/publishReplay");
+  var _publishReplay2 = _interopRequireDefault(_publishReplay);
+  function shareReplay(bufferSize, windowTime, scheduler) {
+    if (bufferSize === undefined)
+      bufferSize = Number.POSITIVE_INFINITY;
+    if (windowTime === undefined)
+      windowTime = Number.POSITIVE_INFINITY;
+    return _publishReplay2['default'].call(this, bufferSize, windowTime, scheduler).refCount();
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/single", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/bindCallback", "@reactivex/rxjs/dist/cjs/util/EmptyError"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = single;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  var _utilEmptyError = require("@reactivex/rxjs/dist/cjs/util/EmptyError");
+  var _utilEmptyError2 = _interopRequireDefault(_utilEmptyError);
+  function single(predicate, thisArg) {
+    return this.lift(new SingleOperator(predicate, thisArg, this));
+  }
+  var SingleOperator = (function() {
+    function SingleOperator(predicate, thisArg, source) {
+      _classCallCheck(this, SingleOperator);
+      this.predicate = predicate;
+      this.thisArg = thisArg;
+      this.source = source;
+    }
+    SingleOperator.prototype.call = function call(subscriber) {
+      return new SingleSubscriber(subscriber, this.predicate, this.thisArg, this.source);
+    };
+    return SingleOperator;
+  })();
+  var SingleSubscriber = (function(_Subscriber) {
+    _inherits(SingleSubscriber, _Subscriber);
+    function SingleSubscriber(destination, predicate, thisArg, source) {
+      _classCallCheck(this, SingleSubscriber);
+      _Subscriber.call(this, destination);
+      this.thisArg = thisArg;
+      this.source = source;
+      this.seenValue = false;
+      this.index = 0;
+      if (typeof predicate === 'function') {
+        this.predicate = _utilBindCallback2['default'](predicate, thisArg, 3);
+      }
+    }
+    SingleSubscriber.prototype.applySingleValue = function applySingleValue(value) {
+      if (this.seenValue) {
+        this.destination.error('Sequence contains more than one element');
+      } else {
+        this.seenValue = true;
+        this.singleValue = value;
+      }
+    };
+    SingleSubscriber.prototype._next = function _next(value) {
+      var predicate = this.predicate;
+      var currentIndex = this.index++;
+      if (predicate) {
+        var result = _utilTryCatch2['default'](predicate)(value, currentIndex, this.source);
+        if (result === _utilErrorObject.errorObject) {
+          this.destination.error(result.e);
+        } else if (result) {
+          this.applySingleValue(value);
+        }
+      } else {
+        this.applySingleValue(value);
+      }
+    };
+    SingleSubscriber.prototype._complete = function _complete() {
+      var destination = this.destination;
+      if (this.index > 0) {
+        destination.next(this.seenValue ? this.singleValue : undefined);
+        destination.complete();
+      } else {
+        destination.error(new _utilEmptyError2['default']());
+      }
+    };
+    return SingleSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/skip", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = skip;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function skip(total) {
+    return this.lift(new SkipOperator(total));
+  }
+  var SkipOperator = (function() {
+    function SkipOperator(total) {
+      _classCallCheck(this, SkipOperator);
+      this.total = total;
+    }
+    SkipOperator.prototype.call = function call(subscriber) {
+      return new SkipSubscriber(subscriber, this.total);
+    };
+    return SkipOperator;
+  })();
+  var SkipSubscriber = (function(_Subscriber) {
+    _inherits(SkipSubscriber, _Subscriber);
+    function SkipSubscriber(destination, total) {
+      _classCallCheck(this, SkipSubscriber);
+      _Subscriber.call(this, destination);
+      this.count = 0;
+      this.total = total;
+    }
+    SkipSubscriber.prototype._next = function _next(x) {
+      if (++this.count > this.total) {
+        this.destination.next(x);
+      }
+    };
+    return SkipSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/skipUntil", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = skipUntil;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  function skipUntil(total) {
+    return this.lift(new SkipUntilOperator(total));
+  }
+  var SkipUntilOperator = (function() {
+    function SkipUntilOperator(notifier) {
+      _classCallCheck(this, SkipUntilOperator);
+      this.notifier = notifier;
+    }
+    SkipUntilOperator.prototype.call = function call(subscriber) {
+      return new SkipUntilSubscriber(subscriber, this.notifier);
+    };
+    return SkipUntilOperator;
+  })();
+  var SkipUntilSubscriber = (function(_Subscriber) {
+    _inherits(SkipUntilSubscriber, _Subscriber);
+    function SkipUntilSubscriber(destination, notifier) {
+      _classCallCheck(this, SkipUntilSubscriber);
+      _Subscriber.call(this, destination);
+      this.notifier = notifier;
+      this.notificationSubscriber = null;
+      this.notificationSubscriber = new NotificationSubscriber(this);
+      this.add(this.notifier.subscribe(this.notificationSubscriber));
+    }
+    SkipUntilSubscriber.prototype._next = function _next(value) {
+      if (this.notificationSubscriber.hasValue) {
+        this.destination.next(value);
+      }
+    };
+    SkipUntilSubscriber.prototype._complete = function _complete() {
+      if (this.notificationSubscriber.hasCompleted) {
+        this.destination.complete();
+      }
+      this.notificationSubscriber.unsubscribe();
+    };
+    return SkipUntilSubscriber;
+  })(_Subscriber4['default']);
+  var NotificationSubscriber = (function(_Subscriber2) {
+    _inherits(NotificationSubscriber, _Subscriber2);
+    function NotificationSubscriber(parent) {
+      _classCallCheck(this, NotificationSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+      this.hasValue = false;
+      this.hasCompleted = false;
+    }
+    NotificationSubscriber.prototype._next = function _next(unused) {
+      this.hasValue = true;
+    };
+    NotificationSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+      this.hasValue = true;
+    };
+    NotificationSubscriber.prototype._complete = function _complete() {
+      this.hasCompleted = true;
+    };
+    return NotificationSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/startWith", ["@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/observables/ScalarObservable", "@reactivex/rxjs/dist/cjs/observables/EmptyObservable", "@reactivex/rxjs/dist/cjs/operators/concat-static"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = startWith;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _observablesScalarObservable = require("@reactivex/rxjs/dist/cjs/observables/ScalarObservable");
+  var _observablesScalarObservable2 = _interopRequireDefault(_observablesScalarObservable);
+  var _observablesEmptyObservable = require("@reactivex/rxjs/dist/cjs/observables/EmptyObservable");
+  var _observablesEmptyObservable2 = _interopRequireDefault(_observablesEmptyObservable);
+  var _concatStatic = require("@reactivex/rxjs/dist/cjs/operators/concat-static");
+  var _concatStatic2 = _interopRequireDefault(_concatStatic);
+  function startWith() {
+    for (var _len = arguments.length,
+        array = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      array[_key] = arguments[_key];
+    }
+    var scheduler = array[array.length - 1];
+    if (scheduler && typeof scheduler.schedule === 'function') {
+      array.pop();
+    } else {
+      scheduler = void 0;
+    }
+    var len = array.length;
+    if (len === 1) {
+      return _concatStatic2['default'](new _observablesScalarObservable2['default'](array[0], scheduler), this);
+    } else if (len > 1) {
+      return _concatStatic2['default'](new _observablesArrayObservable2['default'](array, scheduler), this);
+    } else {
+      return _concatStatic2['default'](new _observablesEmptyObservable2['default'](scheduler), this);
+    }
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/SubscribeOnObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  var SubscribeOnObservable = (function(_Observable) {
+    _inherits(SubscribeOnObservable, _Observable);
+    function SubscribeOnObservable(source) {
+      var delay = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      var scheduler = arguments.length <= 2 || arguments[2] === undefined ? _schedulersNextTick2['default'] : arguments[2];
+      _classCallCheck(this, SubscribeOnObservable);
+      _Observable.call(this);
+      this.source = source;
+      this.delayTime = delay;
+      this.scheduler = scheduler;
+    }
+    SubscribeOnObservable.create = function create(source) {
+      var delay = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      var scheduler = arguments.length <= 2 || arguments[2] === undefined ? _schedulersNextTick2['default'] : arguments[2];
+      return new SubscribeOnObservable(source, delay, scheduler);
+    };
+    SubscribeOnObservable.dispatch = function dispatch(_ref) {
+      var source = _ref.source;
+      var subscriber = _ref.subscriber;
+      return source.subscribe(subscriber);
+    };
+    SubscribeOnObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var delay = this.delayTime;
+      var source = this.source;
+      var scheduler = this.scheduler;
+      subscriber.add(scheduler.schedule(SubscribeOnObservable.dispatch, delay, {
+        source: source,
+        subscriber: subscriber
+      }));
+    };
+    return SubscribeOnObservable;
+  })(_Observable3['default']);
+  exports['default'] = SubscribeOnObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/switch", ["@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = _switch;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  function _switch() {
+    return this.lift(new SwitchOperator());
+  }
+  var SwitchOperator = (function() {
+    function SwitchOperator() {
+      _classCallCheck(this, SwitchOperator);
+    }
+    SwitchOperator.prototype.call = function call(subscriber) {
+      return new SwitchSubscriber(subscriber);
+    };
+    return SwitchOperator;
+  })();
+  var SwitchSubscriber = (function(_OuterSubscriber) {
+    _inherits(SwitchSubscriber, _OuterSubscriber);
+    function SwitchSubscriber(destination) {
+      _classCallCheck(this, SwitchSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.active = 0;
+      this.hasCompleted = false;
+    }
+    SwitchSubscriber.prototype._next = function _next(value) {
+      this.unsubscribeInner();
+      this.active++;
+      this.add(this.innerSubscription = _utilSubscribeToResult2['default'](this, value));
+    };
+    SwitchSubscriber.prototype._complete = function _complete() {
+      this.hasCompleted = true;
+      if (this.active === 0) {
+        this.destination.complete();
+      }
+    };
+    SwitchSubscriber.prototype.unsubscribeInner = function unsubscribeInner() {
+      this.active = this.active > 0 ? this.active - 1 : 0;
+      var innerSubscription = this.innerSubscription;
+      if (innerSubscription) {
+        innerSubscription.unsubscribe();
+        this.remove(innerSubscription);
+      }
+    };
+    SwitchSubscriber.prototype.notifyNext = function notifyNext(outerValue, innerValue) {
+      this.destination.next(innerValue);
+    };
+    SwitchSubscriber.prototype.notifyError = function notifyError(err) {
+      this.destination.error(err);
+    };
+    SwitchSubscriber.prototype.notifyComplete = function notifyComplete() {
+      this.unsubscribeInner();
+      if (this.hasCompleted && this.active === 0) {
+        this.destination.complete();
+      }
+    };
+    return SwitchSubscriber;
+  })(_OuterSubscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/switchMap", ["@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = switchMap;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  function switchMap(project, resultSelector) {
+    return this.lift(new SwitchMapOperator(project, resultSelector));
+  }
+  var SwitchMapOperator = (function() {
+    function SwitchMapOperator(project, resultSelector) {
+      _classCallCheck(this, SwitchMapOperator);
+      this.project = project;
+      this.resultSelector = resultSelector;
+    }
+    SwitchMapOperator.prototype.call = function call(subscriber) {
+      return new SwitchMapSubscriber(subscriber, this.project, this.resultSelector);
+    };
+    return SwitchMapOperator;
+  })();
+  var SwitchMapSubscriber = (function(_OuterSubscriber) {
+    _inherits(SwitchMapSubscriber, _OuterSubscriber);
+    function SwitchMapSubscriber(destination, project, resultSelector) {
+      _classCallCheck(this, SwitchMapSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.project = project;
+      this.resultSelector = resultSelector;
+      this.hasCompleted = false;
+      this.index = 0;
+    }
+    SwitchMapSubscriber.prototype._next = function _next(value) {
+      var index = this.index++;
+      var destination = this.destination;
+      var result = _utilTryCatch2['default'](this.project)(value, index);
+      if (result === _utilErrorObject.errorObject) {
+        destination.error(result.e);
+      } else {
+        var innerSubscription = this.innerSubscription;
+        if (innerSubscription) {
+          innerSubscription.unsubscribe();
+        }
+        this.add(this.innerSubscription = _utilSubscribeToResult2['default'](this, result, value, index));
+      }
+    };
+    SwitchMapSubscriber.prototype._complete = function _complete() {
+      var innerSubscription = this.innerSubscription;
+      this.hasCompleted = true;
+      if (!innerSubscription || innerSubscription.isUnsubscribed) {
+        this.destination.complete();
+      }
+    };
+    SwitchMapSubscriber.prototype.notifyComplete = function notifyComplete(innerSub) {
+      this.remove(innerSub);
+      var prevSubscription = this.innerSubscription;
+      if (prevSubscription) {
+        prevSubscription.unsubscribe();
+      }
+      this.innerSubscription = null;
+      if (this.hasCompleted) {
+        this.destination.complete();
+      }
+    };
+    SwitchMapSubscriber.prototype.notifyError = function notifyError(err) {
+      this.destination.error(err);
+    };
+    SwitchMapSubscriber.prototype.notifyNext = function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      var resultSelector = this.resultSelector;
+      var destination = this.destination;
+      if (resultSelector) {
+        var result = _utilTryCatch2['default'](resultSelector)(outerValue, innerValue, outerIndex, innerIndex);
+        if (result === _utilErrorObject.errorObject) {
+          destination.error(_utilErrorObject.errorObject.e);
+        } else {
+          destination.next(result);
+        }
+      } else {
+        destination.next(innerValue);
+      }
+    };
+    return SwitchMapSubscriber;
+  })(_OuterSubscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/switchMapTo", ["@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = switchMapTo;
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _mergeMapToSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support");
+  function switchMapTo(observable, projectResult) {
+    return this.lift(new SwitchMapToOperator(observable, projectResult));
+  }
+  var SwitchMapToOperator = (function() {
+    function SwitchMapToOperator(observable, resultSelector) {
+      _classCallCheck(this, SwitchMapToOperator);
+      this.observable = observable;
+      this.resultSelector = resultSelector;
+    }
+    SwitchMapToOperator.prototype.call = function call(subscriber) {
+      return new SwitchMapToSubscriber(subscriber, this.observable, this.resultSelector);
+    };
+    return SwitchMapToOperator;
+  })();
+  var SwitchMapToSubscriber = (function(_MergeMapToSubscriber) {
+    _inherits(SwitchMapToSubscriber, _MergeMapToSubscriber);
+    function SwitchMapToSubscriber(destination, observable, resultSelector) {
+      _classCallCheck(this, SwitchMapToSubscriber);
+      _MergeMapToSubscriber.call(this, destination, observable, resultSelector, 1);
+    }
+    return SwitchMapToSubscriber;
+  })(_mergeMapToSupport.MergeMapToSubscriber);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/take", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = take;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function take(total) {
+    return this.lift(new TakeOperator(total));
+  }
+  var TakeOperator = (function() {
+    function TakeOperator(total) {
+      _classCallCheck(this, TakeOperator);
+      this.total = total;
+    }
+    TakeOperator.prototype.call = function call(subscriber) {
+      return new TakeSubscriber(subscriber, this.total);
+    };
+    return TakeOperator;
+  })();
+  var TakeSubscriber = (function(_Subscriber) {
+    _inherits(TakeSubscriber, _Subscriber);
+    function TakeSubscriber(destination, total) {
+      _classCallCheck(this, TakeSubscriber);
+      _Subscriber.call(this, destination);
+      this.count = 0;
+      this.total = total;
+    }
+    TakeSubscriber.prototype._next = function _next(x) {
+      var total = this.total;
+      if (++this.count <= total) {
+        this.destination.next(x);
+        if (this.count === total) {
+          this.destination.complete();
+        }
+      }
+    };
+    return TakeSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/takeUntil", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = takeUntil;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  function takeUntil(observable) {
+    return this.lift(new TakeUntilOperator(observable));
+  }
+  var TakeUntilOperator = (function() {
+    function TakeUntilOperator(observable) {
+      _classCallCheck(this, TakeUntilOperator);
+      this.observable = observable;
+    }
+    TakeUntilOperator.prototype.call = function call(subscriber) {
+      return new TakeUntilSubscriber(subscriber, this.observable);
+    };
+    return TakeUntilOperator;
+  })();
+  var TakeUntilSubscriber = (function(_Subscriber) {
+    _inherits(TakeUntilSubscriber, _Subscriber);
+    function TakeUntilSubscriber(destination, observable) {
+      _classCallCheck(this, TakeUntilSubscriber);
+      _Subscriber.call(this, destination);
+      this.add(observable._subscribe(new TakeUntilInnerSubscriber(destination)));
+    }
+    return TakeUntilSubscriber;
+  })(_Subscriber4['default']);
+  var TakeUntilInnerSubscriber = (function(_Subscriber2) {
+    _inherits(TakeUntilInnerSubscriber, _Subscriber2);
+    function TakeUntilInnerSubscriber(destination) {
+      _classCallCheck(this, TakeUntilInnerSubscriber);
+      _Subscriber2.call(this, destination);
+    }
+    TakeUntilInnerSubscriber.prototype._next = function _next() {
+      this.destination.complete();
+    };
+    TakeUntilInnerSubscriber.prototype._error = function _error(e) {
+      this.destination.error(e);
+    };
+    TakeUntilInnerSubscriber.prototype._complete = function _complete() {};
+    return TakeUntilInnerSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/throttle", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = throttle;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  function throttle(delay) {
+    var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersNextTick2['default'] : arguments[1];
+    return this.lift(new ThrottleOperator(delay, scheduler));
+  }
+  var ThrottleOperator = (function() {
+    function ThrottleOperator(delay, scheduler) {
+      _classCallCheck(this, ThrottleOperator);
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    ThrottleOperator.prototype.call = function call(subscriber) {
+      return new ThrottleSubscriber(subscriber, this.delay, this.scheduler);
+    };
+    return ThrottleOperator;
+  })();
+  var ThrottleSubscriber = (function(_Subscriber) {
+    _inherits(ThrottleSubscriber, _Subscriber);
+    function ThrottleSubscriber(destination, delay, scheduler) {
+      _classCallCheck(this, ThrottleSubscriber);
+      _Subscriber.call(this, destination);
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    ThrottleSubscriber.prototype._next = function _next(value) {
+      if (!this.throttled) {
+        this.add(this.throttled = this.scheduler.schedule(dispatchNext, this.delay, {
+          value: value,
+          subscriber: this
+        }));
+      }
+    };
+    ThrottleSubscriber.prototype.throttledNext = function throttledNext(value) {
+      this.clearThrottle();
+      this.destination.next(value);
+    };
+    ThrottleSubscriber.prototype.clearThrottle = function clearThrottle() {
+      var throttled = this.throttled;
+      if (throttled) {
+        throttled.unsubscribe();
+        this.remove(throttled);
+      }
+    };
+    return ThrottleSubscriber;
+  })(_Subscriber3['default']);
+  function dispatchNext(_ref) {
+    var value = _ref.value;
+    var subscriber = _ref.subscriber;
+    subscriber.throttledNext(value);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/isDate", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  "use strict";
+  exports.__esModule = true;
+  exports["default"] = isDate;
+  function isDate(value) {
+    return value instanceof Date && !isNaN(+value);
+  }
+  module.exports = exports["default"];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/timeoutWith", ["@reactivex/rxjs/dist/cjs/schedulers/immediate", "@reactivex/rxjs/dist/cjs/util/isDate", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  var _createClass = (function() {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ('value' in descriptor)
+          descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+    return function(Constructor, protoProps, staticProps) {
+      if (protoProps)
+        defineProperties(Constructor.prototype, protoProps);
+      if (staticProps)
+        defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  })();
+  exports['default'] = timeoutWith;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  var _utilIsDate = require("@reactivex/rxjs/dist/cjs/util/isDate");
+  var _utilIsDate2 = _interopRequireDefault(_utilIsDate);
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  function timeoutWith(due, withObservable) {
+    var scheduler = arguments.length <= 2 || arguments[2] === undefined ? _schedulersImmediate2['default'] : arguments[2];
+    var absoluteTimeout = _utilIsDate2['default'](due);
+    var waitFor = absoluteTimeout ? +due - scheduler.now() : due;
+    return this.lift(new TimeoutWithOperator(waitFor, absoluteTimeout, withObservable, scheduler));
+  }
+  var TimeoutWithOperator = (function() {
+    function TimeoutWithOperator(waitFor, absoluteTimeout, withObservable, scheduler) {
+      _classCallCheck(this, TimeoutWithOperator);
+      this.waitFor = waitFor;
+      this.absoluteTimeout = absoluteTimeout;
+      this.withObservable = withObservable;
+      this.scheduler = scheduler;
+    }
+    TimeoutWithOperator.prototype.call = function call(subscriber) {
+      return new TimeoutWithSubscriber(subscriber, this.absoluteTimeout, this.waitFor, this.withObservable, this.scheduler);
+    };
+    return TimeoutWithOperator;
+  })();
+  var TimeoutWithSubscriber = (function(_OuterSubscriber) {
+    _inherits(TimeoutWithSubscriber, _OuterSubscriber);
+    function TimeoutWithSubscriber(destination, absoluteTimeout, waitFor, withObservable, scheduler) {
+      _classCallCheck(this, TimeoutWithSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.absoluteTimeout = absoluteTimeout;
+      this.waitFor = waitFor;
+      this.withObservable = withObservable;
+      this.scheduler = scheduler;
+      this.timeoutSubscription = undefined;
+      this.timedOut = false;
+      this.index = 0;
+      this._previousIndex = 0;
+      this._hasCompleted = false;
+      this.scheduleTimeout();
+    }
+    TimeoutWithSubscriber.dispatchTimeout = function dispatchTimeout(state) {
+      var source = state.subscriber;
+      var currentIndex = state.index;
+      if (!source.hasCompleted && source.previousIndex === currentIndex) {
+        source.handleTimeout();
+      }
+    };
+    TimeoutWithSubscriber.prototype.scheduleTimeout = function scheduleTimeout() {
+      var currentIndex = this.index;
+      var timeoutState = {
+        subscriber: this,
+        index: currentIndex
+      };
+      this.scheduler.schedule(TimeoutWithSubscriber.dispatchTimeout, this.waitFor, timeoutState);
+      this.index++;
+      this._previousIndex = currentIndex;
+    };
+    TimeoutWithSubscriber.prototype._next = function _next(value) {
+      if (!this.timedOut) {
+        this.destination.next(value);
+        if (!this.absoluteTimeout) {
+          this.scheduleTimeout();
+        }
+      }
+    };
+    TimeoutWithSubscriber.prototype._error = function _error(err) {
+      if (!this.timedOut) {
+        this.destination.error(err);
+        this._hasCompleted = true;
+      }
+    };
+    TimeoutWithSubscriber.prototype._complete = function _complete() {
+      if (!this.timedOut) {
+        this.destination.complete();
+        this._hasCompleted = true;
+      }
+    };
+    TimeoutWithSubscriber.prototype.handleTimeout = function handleTimeout() {
+      var withObservable = this.withObservable;
+      this.timedOut = true;
+      this.add(this.timeoutSubscription = _utilSubscribeToResult2['default'](this, withObservable));
+    };
+    _createClass(TimeoutWithSubscriber, [{
+      key: 'previousIndex',
+      get: function get() {
+        return this._previousIndex;
+      }
+    }, {
+      key: 'hasCompleted',
+      get: function get() {
+        return this._hasCompleted;
+      }
+    }]);
+    return TimeoutWithSubscriber;
+  })(_OuterSubscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/toArray", ["@reactivex/rxjs/dist/cjs/Subscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = toArray;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  function toArray() {
+    return this.lift(new ToArrayOperator());
+  }
+  var ToArrayOperator = (function() {
+    function ToArrayOperator() {
+      _classCallCheck(this, ToArrayOperator);
+    }
+    ToArrayOperator.prototype.call = function call(subscriber) {
+      return new ToArraySubscriber(subscriber);
+    };
+    return ToArrayOperator;
+  })();
+  var ToArraySubscriber = (function(_Subscriber) {
+    _inherits(ToArraySubscriber, _Subscriber);
+    function ToArraySubscriber(destination) {
+      _classCallCheck(this, ToArraySubscriber);
+      _Subscriber.call(this, destination);
+      this.array = [];
+    }
+    ToArraySubscriber.prototype._next = function _next(x) {
+      this.array.push(x);
+    };
+    ToArraySubscriber.prototype._complete = function _complete() {
+      this.destination.next(this.array);
+      this.destination.complete();
+    };
+    return ToArraySubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/toPromise", ["@reactivex/rxjs/dist/cjs/util/root"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = toPromise;
+  var _utilRoot = require("@reactivex/rxjs/dist/cjs/util/root");
+  function toPromise(PromiseCtor) {
+    var _this = this;
+    if (!PromiseCtor) {
+      if (_utilRoot.root.Rx && _utilRoot.root.Rx.config && _utilRoot.root.Rx.config.Promise) {
+        PromiseCtor = _utilRoot.root.Rx.config.Promise;
+      } else if (_utilRoot.root.Promise) {
+        PromiseCtor = _utilRoot.root.Promise;
+      }
+    }
+    if (!PromiseCtor) {
+      throw new Error('no Promise impl found');
+    }
+    return new PromiseCtor(function(resolve, reject) {
+      var value = undefined;
+      _this.subscribe(function(x) {
+        return value = x;
+      }, function(err) {
+        return reject(err);
+      }, function() {
+        return resolve(value);
+      });
+    });
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/window", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = window;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  function window(closingNotifier) {
+    return this.lift(new WindowOperator(closingNotifier));
+  }
+  var WindowOperator = (function() {
+    function WindowOperator(closingNotifier) {
+      _classCallCheck(this, WindowOperator);
+      this.closingNotifier = closingNotifier;
+    }
+    WindowOperator.prototype.call = function call(subscriber) {
+      return new WindowSubscriber(subscriber, this.closingNotifier);
+    };
+    return WindowOperator;
+  })();
+  var WindowSubscriber = (function(_Subscriber) {
+    _inherits(WindowSubscriber, _Subscriber);
+    function WindowSubscriber(destination, closingNotifier) {
+      _classCallCheck(this, WindowSubscriber);
+      _Subscriber.call(this, destination);
+      this.closingNotifier = closingNotifier;
+      this.window = new _Subject2['default']();
+      this.add(closingNotifier._subscribe(new WindowClosingNotifierSubscriber(this)));
+      this.openWindow();
+    }
+    WindowSubscriber.prototype._next = function _next(value) {
+      this.window.next(value);
+    };
+    WindowSubscriber.prototype._error = function _error(err) {
+      this.window.error(err);
+      this.destination.error(err);
+    };
+    WindowSubscriber.prototype._complete = function _complete() {
+      this.window.complete();
+      this.destination.complete();
+    };
+    WindowSubscriber.prototype.openWindow = function openWindow() {
+      var prevWindow = this.window;
+      if (prevWindow) {
+        prevWindow.complete();
+      }
+      this.destination.next(this.window = new _Subject2['default']());
+    };
+    return WindowSubscriber;
+  })(_Subscriber4['default']);
+  var WindowClosingNotifierSubscriber = (function(_Subscriber2) {
+    _inherits(WindowClosingNotifierSubscriber, _Subscriber2);
+    function WindowClosingNotifierSubscriber(parent) {
+      _classCallCheck(this, WindowClosingNotifierSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+    }
+    WindowClosingNotifierSubscriber.prototype._next = function _next() {
+      this.parent.openWindow();
+    };
+    WindowClosingNotifierSubscriber.prototype._error = function _error(err) {
+      this.parent._error(err);
+    };
+    WindowClosingNotifierSubscriber.prototype._complete = function _complete() {
+      this.parent._complete();
+    };
+    return WindowClosingNotifierSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/windowCount", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = windowCount;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  function windowCount(windowSize) {
+    var startWindowEvery = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+    return this.lift(new WindowCountOperator(windowSize, startWindowEvery));
+  }
+  var WindowCountOperator = (function() {
+    function WindowCountOperator(windowSize, startWindowEvery) {
+      _classCallCheck(this, WindowCountOperator);
+      this.windowSize = windowSize;
+      this.startWindowEvery = startWindowEvery;
+    }
+    WindowCountOperator.prototype.call = function call(subscriber) {
+      return new WindowCountSubscriber(subscriber, this.windowSize, this.startWindowEvery);
+    };
+    return WindowCountOperator;
+  })();
+  var WindowCountSubscriber = (function(_Subscriber) {
+    _inherits(WindowCountSubscriber, _Subscriber);
+    function WindowCountSubscriber(destination, windowSize, startWindowEvery) {
+      _classCallCheck(this, WindowCountSubscriber);
+      _Subscriber.call(this, destination);
+      this.windowSize = windowSize;
+      this.startWindowEvery = startWindowEvery;
+      this.windows = [new _Subject2['default']()];
+      this.count = 0;
+      destination.next(this.windows[0]);
+    }
+    WindowCountSubscriber.prototype._next = function _next(value) {
+      var startWindowEvery = this.startWindowEvery > 0 ? this.startWindowEvery : this.windowSize;
+      var windowSize = this.windowSize;
+      var windows = this.windows;
+      var len = windows.length;
+      for (var i = 0; i < len; i++) {
+        windows[i].next(value);
+      }
+      var c = this.count - windowSize + 1;
+      if (c >= 0 && c % startWindowEvery === 0) {
+        windows.shift().complete();
+      }
+      if (++this.count % startWindowEvery === 0) {
+        var _window = new _Subject2['default']();
+        windows.push(_window);
+        this.destination.next(_window);
+      }
+    };
+    WindowCountSubscriber.prototype._error = function _error(err) {
+      var windows = this.windows;
+      while (windows.length > 0) {
+        windows.shift().error(err);
+      }
+      this.destination.error(err);
+    };
+    WindowCountSubscriber.prototype._complete = function _complete() {
+      var windows = this.windows;
+      while (windows.length > 0) {
+        windows.shift().complete();
+      }
+      this.destination.complete();
+    };
+    return WindowCountSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/windowTime", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = windowTime;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  function windowTime(windowTimeSpan) {
+    var windowCreationInterval = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+    var scheduler = arguments.length <= 2 || arguments[2] === undefined ? _schedulersNextTick2['default'] : arguments[2];
+    return this.lift(new WindowTimeOperator(windowTimeSpan, windowCreationInterval, scheduler));
+  }
+  var WindowTimeOperator = (function() {
+    function WindowTimeOperator(windowTimeSpan, windowCreationInterval, scheduler) {
+      _classCallCheck(this, WindowTimeOperator);
+      this.windowTimeSpan = windowTimeSpan;
+      this.windowCreationInterval = windowCreationInterval;
+      this.scheduler = scheduler;
+    }
+    WindowTimeOperator.prototype.call = function call(subscriber) {
+      return new WindowTimeSubscriber(subscriber, this.windowTimeSpan, this.windowCreationInterval, this.scheduler);
+    };
+    return WindowTimeOperator;
+  })();
+  var WindowTimeSubscriber = (function(_Subscriber) {
+    _inherits(WindowTimeSubscriber, _Subscriber);
+    function WindowTimeSubscriber(destination, windowTimeSpan, windowCreationInterval, scheduler) {
+      _classCallCheck(this, WindowTimeSubscriber);
+      _Subscriber.call(this, destination);
+      this.windowTimeSpan = windowTimeSpan;
+      this.windowCreationInterval = windowCreationInterval;
+      this.scheduler = scheduler;
+      this.windows = [];
+      if (windowCreationInterval !== null && windowCreationInterval >= 0) {
+        var _window = this.openWindow();
+        var closeState = {
+          subscriber: this,
+          window: _window,
+          context: null
+        };
+        var creationState = {
+          windowTimeSpan: windowTimeSpan,
+          windowCreationInterval: windowCreationInterval,
+          subscriber: this,
+          scheduler: scheduler
+        };
+        this.add(scheduler.schedule(dispatchWindowClose, windowTimeSpan, closeState));
+        this.add(scheduler.schedule(dispatchWindowCreation, windowCreationInterval, creationState));
+      } else {
+        var _window2 = this.openWindow();
+        var timeSpanOnlyState = {
+          subscriber: this,
+          window: _window2,
+          windowTimeSpan: windowTimeSpan
+        };
+        this.add(scheduler.schedule(dispatchWindowTimeSpanOnly, windowTimeSpan, timeSpanOnlyState));
+      }
+    }
+    WindowTimeSubscriber.prototype._next = function _next(value) {
+      var windows = this.windows;
+      var len = windows.length;
+      for (var i = 0; i < len; i++) {
+        windows[i].next(value);
+      }
+    };
+    WindowTimeSubscriber.prototype._error = function _error(err) {
+      var windows = this.windows;
+      while (windows.length > 0) {
+        windows.shift().error(err);
+      }
+      this.destination.error(err);
+    };
+    WindowTimeSubscriber.prototype._complete = function _complete() {
+      var windows = this.windows;
+      while (windows.length > 0) {
+        windows.shift().complete();
+      }
+      this.destination.complete();
+    };
+    WindowTimeSubscriber.prototype.openWindow = function openWindow() {
+      var window = new _Subject2['default']();
+      this.windows.push(window);
+      this.destination.next(window);
+      return window;
+    };
+    WindowTimeSubscriber.prototype.closeWindow = function closeWindow(window) {
+      window.complete();
+      var windows = this.windows;
+      windows.splice(windows.indexOf(window), 1);
+    };
+    return WindowTimeSubscriber;
+  })(_Subscriber3['default']);
+  function dispatchWindowTimeSpanOnly(state) {
+    var subscriber = state.subscriber;
+    var windowTimeSpan = state.windowTimeSpan;
+    var window = state.window;
+    if (window) {
+      window.complete();
+    }
+    state.window = subscriber.openWindow();
+    this.schedule(state, windowTimeSpan);
+  }
+  function dispatchWindowCreation(state) {
+    var windowTimeSpan = state.windowTimeSpan;
+    var subscriber = state.subscriber;
+    var scheduler = state.scheduler;
+    var windowCreationInterval = state.windowCreationInterval;
+    var window = subscriber.openWindow();
+    var action = this;
+    var context = {
+      action: action,
+      subscription: null
+    };
+    var timeSpanState = {
+      subscriber: subscriber,
+      window: window,
+      context: context
+    };
+    context.subscription = scheduler.schedule(dispatchWindowClose, windowTimeSpan, timeSpanState);
+    action.add(context.subscription);
+    action.schedule(state, windowCreationInterval);
+  }
+  function dispatchWindowClose(_ref) {
+    var subscriber = _ref.subscriber;
+    var window = _ref.window;
+    var context = _ref.context;
+    if (context && context.action && context.subscription) {
+      context.action.remove(context.subscription);
+    }
+    subscriber.closeWindow(window);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/windowToggle", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = windowToggle;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber4 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber5 = _interopRequireDefault(_Subscriber4);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function windowToggle(openings, closingSelector) {
+    return this.lift(new WindowToggleOperator(openings, closingSelector));
+  }
+  var WindowToggleOperator = (function() {
+    function WindowToggleOperator(openings, closingSelector) {
+      _classCallCheck(this, WindowToggleOperator);
+      this.openings = openings;
+      this.closingSelector = closingSelector;
+    }
+    WindowToggleOperator.prototype.call = function call(subscriber) {
+      return new WindowToggleSubscriber(subscriber, this.openings, this.closingSelector);
+    };
+    return WindowToggleOperator;
+  })();
+  var WindowToggleSubscriber = (function(_Subscriber) {
+    _inherits(WindowToggleSubscriber, _Subscriber);
+    function WindowToggleSubscriber(destination, openings, closingSelector) {
+      _classCallCheck(this, WindowToggleSubscriber);
+      _Subscriber.call(this, destination);
+      this.openings = openings;
+      this.closingSelector = closingSelector;
+      this.windows = [];
+      this.add(this.openings._subscribe(new WindowToggleOpeningsSubscriber(this)));
+    }
+    WindowToggleSubscriber.prototype._next = function _next(value) {
+      var windows = this.windows;
+      var len = windows.length;
+      for (var i = 0; i < len; i++) {
+        windows[i].next(value);
+      }
+    };
+    WindowToggleSubscriber.prototype._error = function _error(err) {
+      var windows = this.windows;
+      while (windows.length > 0) {
+        windows.shift().error(err);
+      }
+      this.destination.error(err);
+    };
+    WindowToggleSubscriber.prototype._complete = function _complete() {
+      var windows = this.windows;
+      while (windows.length > 0) {
+        windows.shift().complete();
+      }
+      this.destination.complete();
+    };
+    WindowToggleSubscriber.prototype.openWindow = function openWindow(value) {
+      var window = new _Subject2['default']();
+      this.windows.push(window);
+      this.destination.next(window);
+      var windowContext = {
+        window: window,
+        subscription: new _Subscription2['default']()
+      };
+      var closingSelector = this.closingSelector;
+      var closingNotifier = _utilTryCatch2['default'](closingSelector)(value);
+      if (closingNotifier === _utilErrorObject.errorObject) {
+        this.error(closingNotifier.e);
+      } else {
+        var subscriber = new WindowClosingNotifierSubscriber(this, windowContext);
+        var subscription = closingNotifier._subscribe(subscriber);
+        this.add(windowContext.subscription.add(subscription));
+      }
+    };
+    WindowToggleSubscriber.prototype.closeWindow = function closeWindow(windowContext) {
+      var window = windowContext.window;
+      var subscription = windowContext.subscription;
+      var windows = this.windows;
+      windows.splice(windows.indexOf(window), 1);
+      window.complete();
+      this.remove(subscription);
+    };
+    return WindowToggleSubscriber;
+  })(_Subscriber5['default']);
+  var WindowClosingNotifierSubscriber = (function(_Subscriber2) {
+    _inherits(WindowClosingNotifierSubscriber, _Subscriber2);
+    function WindowClosingNotifierSubscriber(parent, windowContext) {
+      _classCallCheck(this, WindowClosingNotifierSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+      this.windowContext = windowContext;
+    }
+    WindowClosingNotifierSubscriber.prototype._next = function _next() {
+      this.parent.closeWindow(this.windowContext);
+    };
+    WindowClosingNotifierSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    WindowClosingNotifierSubscriber.prototype._complete = function _complete() {};
+    return WindowClosingNotifierSubscriber;
+  })(_Subscriber5['default']);
+  var WindowToggleOpeningsSubscriber = (function(_Subscriber3) {
+    _inherits(WindowToggleOpeningsSubscriber, _Subscriber3);
+    function WindowToggleOpeningsSubscriber(parent) {
+      _classCallCheck(this, WindowToggleOpeningsSubscriber);
+      _Subscriber3.call(this);
+      this.parent = parent;
+    }
+    WindowToggleOpeningsSubscriber.prototype._next = function _next(value) {
+      this.parent.openWindow(value);
+    };
+    WindowToggleOpeningsSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    WindowToggleOpeningsSubscriber.prototype._complete = function _complete() {};
+    return WindowToggleOpeningsSubscriber;
+  })(_Subscriber5['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/windowWhen", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = window;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function window(closingSelector) {
+    return this.lift(new WindowOperator(closingSelector));
+  }
+  var WindowOperator = (function() {
+    function WindowOperator(closingSelector) {
+      _classCallCheck(this, WindowOperator);
+      this.closingSelector = closingSelector;
+    }
+    WindowOperator.prototype.call = function call(subscriber) {
+      return new WindowSubscriber(subscriber, this.closingSelector);
+    };
+    return WindowOperator;
+  })();
+  var WindowSubscriber = (function(_Subscriber) {
+    _inherits(WindowSubscriber, _Subscriber);
+    function WindowSubscriber(destination, closingSelector) {
+      _classCallCheck(this, WindowSubscriber);
+      _Subscriber.call(this, destination);
+      this.closingSelector = closingSelector;
+      this.window = new _Subject2['default']();
+      this.openWindow();
+    }
+    WindowSubscriber.prototype._next = function _next(value) {
+      this.window.next(value);
+    };
+    WindowSubscriber.prototype._error = function _error(err) {
+      this.window.error(err);
+      this.destination.error(err);
+    };
+    WindowSubscriber.prototype._complete = function _complete() {
+      this.window.complete();
+      this.destination.complete();
+    };
+    WindowSubscriber.prototype.openWindow = function openWindow() {
+      var prevClosingNotification = this.closingNotification;
+      if (prevClosingNotification) {
+        this.remove(prevClosingNotification);
+        prevClosingNotification.unsubscribe();
+      }
+      var prevWindow = this.window;
+      if (prevWindow) {
+        prevWindow.complete();
+      }
+      this.destination.next(this.window = new _Subject2['default']());
+      var closingNotifier = _utilTryCatch2['default'](this.closingSelector)();
+      if (closingNotifier === _utilErrorObject.errorObject) {
+        var err = closingNotifier.e;
+        this.destination.error(err);
+        this.window.error(err);
+      } else {
+        var closingNotification = this.closingNotification = new _Subscription2['default']();
+        this.add(closingNotification.add(closingNotifier._subscribe(new WindowClosingNotifierSubscriber(this))));
+      }
+    };
+    return WindowSubscriber;
+  })(_Subscriber4['default']);
+  var WindowClosingNotifierSubscriber = (function(_Subscriber2) {
+    _inherits(WindowClosingNotifierSubscriber, _Subscriber2);
+    function WindowClosingNotifierSubscriber(parent) {
+      _classCallCheck(this, WindowClosingNotifierSubscriber);
+      _Subscriber2.call(this, null);
+      this.parent = parent;
+    }
+    WindowClosingNotifierSubscriber.prototype._next = function _next() {
+      this.parent.openWindow();
+    };
+    WindowClosingNotifierSubscriber.prototype._error = function _error(err) {
+      this.parent.error(err);
+    };
+    WindowClosingNotifierSubscriber.prototype._complete = function _complete() {};
+    return WindowClosingNotifierSubscriber;
+  })(_Subscriber4['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/withLatestFrom", ["@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = withLatestFrom;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  function withLatestFrom() {
+    var project = undefined;
+    for (var _len = arguments.length,
+        args = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+    if (typeof args[args.length - 1] === 'function') {
+      project = args.pop();
+    }
+    var observables = args;
+    return this.lift(new WithLatestFromOperator(observables, project));
+  }
+  var WithLatestFromOperator = (function() {
+    function WithLatestFromOperator(observables, project) {
+      _classCallCheck(this, WithLatestFromOperator);
+      this.observables = observables;
+      this.project = project;
+    }
+    WithLatestFromOperator.prototype.call = function call(subscriber) {
+      return new WithLatestFromSubscriber(subscriber, this.observables, this.project);
+    };
+    return WithLatestFromOperator;
+  })();
+  var WithLatestFromSubscriber = (function(_OuterSubscriber) {
+    _inherits(WithLatestFromSubscriber, _OuterSubscriber);
+    function WithLatestFromSubscriber(destination, observables, project) {
+      _classCallCheck(this, WithLatestFromSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.observables = observables;
+      this.project = project;
+      this.toRespond = [];
+      var len = observables.length;
+      this.values = new Array(len);
+      for (var i = 0; i < len; i++) {
+        this.toRespond.push(i);
+      }
+      for (var i = 0; i < len; i++) {
+        var observable = observables[i];
+        this.add(_utilSubscribeToResult2['default'](this, observable, observable, i));
+      }
+    }
+    WithLatestFromSubscriber.prototype.notifyNext = function notifyNext(observable, value, observableIndex, index) {
+      this.values[observableIndex] = value;
+      var toRespond = this.toRespond;
+      if (toRespond.length > 0) {
+        var found = toRespond.indexOf(observableIndex);
+        if (found !== -1) {
+          toRespond.splice(found, 1);
+        }
+      }
+    };
+    WithLatestFromSubscriber.prototype.notifyComplete = function notifyComplete() {};
+    WithLatestFromSubscriber.prototype._next = function _next(value) {
+      if (this.toRespond.length === 0) {
+        var values = this.values;
+        var destination = this.destination;
+        var project = this.project;
+        var args = [value].concat(values);
+        if (project) {
+          var result = _utilTryCatch2['default'](this.project).apply(this, args);
+          if (result === _utilErrorObject.errorObject) {
+            destination.error(result.e);
+          } else {
+            destination.next(result);
+          }
+        } else {
+          destination.next(args);
+        }
+      }
+    };
+    return WithLatestFromSubscriber;
+  })(_OuterSubscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/zip", ["@reactivex/rxjs/dist/cjs/operators/zip-static"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = zipProto;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _zipStatic = require("@reactivex/rxjs/dist/cjs/operators/zip-static");
+  var _zipStatic2 = _interopRequireDefault(_zipStatic);
+  function zipProto() {
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    observables.unshift(this);
+    return _zipStatic2['default'].apply(this, observables);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/zipAll", ["@reactivex/rxjs/dist/cjs/operators/zip-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = zipAll;
+  var _zipSupport = require("@reactivex/rxjs/dist/cjs/operators/zip-support");
+  function zipAll(project) {
+    return this.lift(new _zipSupport.ZipOperator(project));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/ArgumentOutOfRangeError", [], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var ArgumentOutOfRangeError = function ArgumentOutOfRangeError() {
+    _classCallCheck(this, ArgumentOutOfRangeError);
+    this.name = 'ArgumentOutOfRangeError';
+    this.message = 'argument out of range';
+  };
+  exports['default'] = ArgumentOutOfRangeError;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/backends/browser_jsonp", ["angular2/angular2", "angular2/src/core/facade/lang"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
+    }
+  };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var angular2_1 = require("angular2/angular2");
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var _nextRequestId = 0;
+  exports.JSONP_HOME = '__ng_jsonp__';
+  var _jsonpConnections = null;
   function _getJsonpConnections() {
     if (_jsonpConnections === null) {
-      _jsonpConnections = global[JSONP_HOME] = {};
+      _jsonpConnections = lang_1.global[exports.JSONP_HOME] = {};
     }
     return _jsonpConnections;
   }
-  return {
-    setters: [function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      global = $__m.global;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      _nextRequestId = 0;
-      JSONP_HOME = '__ng_jsonp__';
-      $__export("JSONP_HOME", JSONP_HOME);
-      _jsonpConnections = null;
-      BrowserJsonp = (($traceurRuntime.createClass)(function() {}, {
-        build: function(url) {
-          var node = document.createElement('script');
-          node.src = url;
-          return node;
-        },
-        nextRequestID: function() {
-          return ("__req" + _nextRequestId++);
-        },
-        requestCallback: function(id) {
-          return (JSONP_HOME + "." + id + ".finished");
-        },
-        exposeConnection: function(id, connection) {
-          var connections = _getJsonpConnections();
-          connections[id] = connection;
-        },
-        removeConnection: function(id) {
-          var connections = _getJsonpConnections();
-          connections[id] = null;
-        },
-        send: function(node) {
-          document.body.appendChild((node));
-        },
-        cleanup: function(node) {
-          if (node.parentNode) {
-            node.parentNode.removeChild((node));
-          }
-        }
-      }, {}));
-      $__export("BrowserJsonp", BrowserJsonp);
-      $__export("BrowserJsonp", BrowserJsonp = __decorate([Injectable(), __metadata('design:paramtypes', [])], BrowserJsonp));
-    }
-  };
+  var BrowserJsonp = (function() {
+    function BrowserJsonp() {}
+    BrowserJsonp.prototype.build = function(url) {
+      var node = document.createElement('script');
+      node.src = url;
+      return node;
+    };
+    BrowserJsonp.prototype.nextRequestID = function() {
+      return "__req" + _nextRequestId++;
+    };
+    BrowserJsonp.prototype.requestCallback = function(id) {
+      return exports.JSONP_HOME + "." + id + ".finished";
+    };
+    BrowserJsonp.prototype.exposeConnection = function(id, connection) {
+      var connections = _getJsonpConnections();
+      connections[id] = connection;
+    };
+    BrowserJsonp.prototype.removeConnection = function(id) {
+      var connections = _getJsonpConnections();
+      connections[id] = null;
+    };
+    BrowserJsonp.prototype.send = function(node) {
+      document.body.appendChild((node));
+    };
+    BrowserJsonp.prototype.cleanup = function(node) {
+      if (node.parentNode) {
+        node.parentNode.removeChild((node));
+      }
+    };
+    BrowserJsonp = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [])], BrowserJsonp);
+    return BrowserJsonp;
+  })();
+  exports.BrowserJsonp = BrowserJsonp;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/backends/mock_backend", ["angular2/di", "angular2/src/http/static_request", "angular2/src/http/enums", "angular2/src/core/facade/async", "angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/backends/mock_backend";
-  var __decorate,
-      __metadata,
-      Injectable,
-      Request,
-      ReadyStates,
-      ObservableWrapper,
-      EventEmitter,
-      isPresent,
-      BaseException,
-      MockConnection,
-      MockBackend;
-  return {
-    setters: [function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      Request = $__m.Request;
-    }, function($__m) {
-      ReadyStates = $__m.ReadyStates;
-    }, function($__m) {
-      ObservableWrapper = $__m.ObservableWrapper;
-      EventEmitter = $__m.EventEmitter;
-    }, function($__m) {
-      isPresent = $__m.isPresent;
-      BaseException = $__m.BaseException;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      MockConnection = (function() {
-        function MockConnection(req) {
-          this.response = new EventEmitter();
-          this.readyState = ReadyStates.Open;
-          this.request = req;
-        }
-        return ($traceurRuntime.createClass)(MockConnection, {
-          dispose: function() {
-            if (this.readyState !== ReadyStates.Done) {
-              this.readyState = ReadyStates.Cancelled;
-            }
-          },
-          mockRespond: function(res) {
-            if (this.readyState === ReadyStates.Done || this.readyState === ReadyStates.Cancelled) {
-              throw new BaseException('Connection has already been resolved');
-            }
-            this.readyState = ReadyStates.Done;
-            ObservableWrapper.callNext(this.response, res);
-            ObservableWrapper.callReturn(this.response);
-          },
-          mockDownload: function(res) {},
-          mockError: function(err) {
-            this.readyState = ReadyStates.Done;
-            ObservableWrapper.callThrow(this.response, err);
-            ObservableWrapper.callReturn(this.response);
-          }
-        }, {});
-      }());
-      $__export("MockConnection", MockConnection);
-      MockBackend = (($traceurRuntime.createClass)(function() {
-        var $__0 = this;
-        this.connectionsArray = [];
-        this.connections = new EventEmitter();
-        ObservableWrapper.subscribe(this.connections, (function(connection) {
-          return $__0.connectionsArray.push(connection);
-        }));
-        this.pendingConnections = new EventEmitter();
-      }, {
-        verifyNoPendingRequests: function() {
-          var pending = 0;
-          ObservableWrapper.subscribe(this.pendingConnections, (function(c) {
-            return pending++;
-          }));
-          if (pending > 0)
-            throw new BaseException((pending + " pending connections to be resolved"));
-        },
-        resolveAllConnections: function() {
-          ObservableWrapper.subscribe(this.connections, (function(c) {
-            return c.readyState = 4;
-          }));
-        },
-        createConnection: function(req) {
-          if (!isPresent(req) || !(req instanceof Request)) {
-            throw new BaseException(("createConnection requires an instance of Request, got " + req));
-          }
-          var connection = new MockConnection(req);
-          ObservableWrapper.callNext(this.connections, connection);
-          return connection;
-        }
-      }, {}));
-      $__export("MockBackend", MockBackend);
-      $__export("MockBackend", MockBackend = __decorate([Injectable(), __metadata('design:paramtypes', [])], MockBackend));
+System.register("angular2/src/http/backends/mock_backend", ["angular2/angular2", "angular2/src/http/static_request", "angular2/src/http/enums", "angular2/src/core/facade/lang", "angular2/src/core/facade/exceptions", "@reactivex/rxjs/dist/cjs/Rx"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
     }
   };
-});
-
-System.register("angular2/src/core/di/metadata", ["angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/metadata";
-  var __decorate,
-      __metadata,
-      CONST,
-      stringify,
-      InjectMetadata,
-      OptionalMetadata,
-      DependencyMetadata,
-      InjectableMetadata,
-      SelfMetadata,
-      SkipSelfMetadata,
-      HostMetadata;
-  return {
-    setters: [function($__m) {
-      CONST = $__m.CONST;
-      stringify = $__m.stringify;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      InjectMetadata = (($traceurRuntime.createClass)(function(token) {
-        this.token = token;
-      }, {toString: function() {
-          return ("@Inject(" + stringify(this.token) + ")");
-        }}, {}));
-      $__export("InjectMetadata", InjectMetadata);
-      $__export("InjectMetadata", InjectMetadata = __decorate([CONST(), __metadata('design:paramtypes', [Object])], InjectMetadata));
-      OptionalMetadata = (($traceurRuntime.createClass)(function() {}, {toString: function() {
-          return "@Optional()";
-        }}, {}));
-      $__export("OptionalMetadata", OptionalMetadata);
-      $__export("OptionalMetadata", OptionalMetadata = __decorate([CONST(), __metadata('design:paramtypes', [])], OptionalMetadata));
-      DependencyMetadata = (($traceurRuntime.createClass)(function() {}, {get token() {
-          return null;
-        }}, {}));
-      $__export("DependencyMetadata", DependencyMetadata);
-      $__export("DependencyMetadata", DependencyMetadata = __decorate([CONST(), __metadata('design:paramtypes', [])], DependencyMetadata));
-      InjectableMetadata = (($traceurRuntime.createClass)(function() {}, {}, {}));
-      $__export("InjectableMetadata", InjectableMetadata);
-      $__export("InjectableMetadata", InjectableMetadata = __decorate([CONST(), __metadata('design:paramtypes', [])], InjectableMetadata));
-      SelfMetadata = (($traceurRuntime.createClass)(function() {}, {toString: function() {
-          return "@Self()";
-        }}, {}));
-      $__export("SelfMetadata", SelfMetadata);
-      $__export("SelfMetadata", SelfMetadata = __decorate([CONST(), __metadata('design:paramtypes', [])], SelfMetadata));
-      SkipSelfMetadata = (($traceurRuntime.createClass)(function() {}, {toString: function() {
-          return "@SkipSelf()";
-        }}, {}));
-      $__export("SkipSelfMetadata", SkipSelfMetadata);
-      $__export("SkipSelfMetadata", SkipSelfMetadata = __decorate([CONST(), __metadata('design:paramtypes', [])], SkipSelfMetadata));
-      HostMetadata = (($traceurRuntime.createClass)(function() {}, {toString: function() {
-          return "@Host()";
-        }}, {}));
-      $__export("HostMetadata", HostMetadata);
-      $__export("HostMetadata", HostMetadata = __decorate([CONST(), __metadata('design:paramtypes', [])], HostMetadata));
-    }
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
   };
-});
-
-System.register("angular2/src/core/di/decorators", ["angular2/src/core/di/metadata", "angular2/src/core/util/decorators"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/decorators";
-  var InjectMetadata,
-      OptionalMetadata,
-      InjectableMetadata,
-      SelfMetadata,
-      HostMetadata,
-      SkipSelfMetadata,
-      makeDecorator,
-      makeParamDecorator,
-      Inject,
-      Optional,
-      Injectable,
-      Self,
-      Host,
-      SkipSelf;
-  return {
-    setters: [function($__m) {
-      InjectMetadata = $__m.InjectMetadata;
-      OptionalMetadata = $__m.OptionalMetadata;
-      InjectableMetadata = $__m.InjectableMetadata;
-      SelfMetadata = $__m.SelfMetadata;
-      HostMetadata = $__m.HostMetadata;
-      SkipSelfMetadata = $__m.SkipSelfMetadata;
-    }, function($__m) {
-      makeDecorator = $__m.makeDecorator;
-      makeParamDecorator = $__m.makeParamDecorator;
-    }],
-    execute: function() {
-      Inject = makeParamDecorator(InjectMetadata);
-      $__export("Inject", Inject);
-      Optional = makeParamDecorator(OptionalMetadata);
-      $__export("Optional", Optional);
-      Injectable = makeDecorator(InjectableMetadata);
-      $__export("Injectable", Injectable);
-      Self = makeParamDecorator(SelfMetadata);
-      $__export("Self", Self);
-      Host = makeParamDecorator(HostMetadata);
-      $__export("Host", Host);
-      SkipSelf = makeParamDecorator(SkipSelfMetadata);
-      $__export("SkipSelf", SkipSelf);
+  var angular2_1 = require("angular2/angular2");
+  var static_request_1 = require("angular2/src/http/static_request");
+  var enums_1 = require("angular2/src/http/enums");
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var exceptions_1 = require("angular2/src/core/facade/exceptions");
+  var Rx = require("@reactivex/rxjs/dist/cjs/Rx");
+  var Subject = Rx.Subject,
+      ReplaySubject = Rx.ReplaySubject;
+  var MockConnection = (function() {
+    function MockConnection(req) {
+      this.response = new ReplaySubject(1).take(1);
+      this.readyState = enums_1.ReadyStates.Open;
+      this.request = req;
     }
-  };
-});
-
-System.register("angular2/src/core/reflection/reflection", ["angular2/src/core/reflection/reflector", "angular2/src/core/reflection/reflection_capabilities"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/reflection/reflection";
-  var Reflector,
-      ReflectionCapabilities,
-      reflector;
-  return {
-    setters: [function($__m) {
-      Reflector = $__m.Reflector;
-      $__export("Reflector", $__m.Reflector);
-      $__export("ReflectionInfo", $__m.ReflectionInfo);
-    }, function($__m) {
-      ReflectionCapabilities = $__m.ReflectionCapabilities;
-    }],
-    execute: function() {
-      reflector = new Reflector(new ReflectionCapabilities());
-      $__export("reflector", reflector);
+    MockConnection.prototype.mockRespond = function(res) {
+      if (this.readyState === enums_1.ReadyStates.Done || this.readyState === enums_1.ReadyStates.Cancelled) {
+        throw new exceptions_1.BaseException('Connection has already been resolved');
+      }
+      this.readyState = enums_1.ReadyStates.Done;
+      this.response.next(res);
+      this.response.complete();
+    };
+    MockConnection.prototype.mockDownload = function(res) {};
+    MockConnection.prototype.mockError = function(err) {
+      this.readyState = enums_1.ReadyStates.Done;
+      this.response.error(err);
+    };
+    return MockConnection;
+  })();
+  exports.MockConnection = MockConnection;
+  var MockBackend = (function() {
+    function MockBackend() {
+      var _this = this;
+      this.connectionsArray = [];
+      this.connections = new Subject();
+      this.connections.subscribe(function(connection) {
+        return _this.connectionsArray.push(connection);
+      });
+      this.pendingConnections = new Subject();
     }
-  };
+    MockBackend.prototype.verifyNoPendingRequests = function() {
+      var pending = 0;
+      this.pendingConnections.subscribe(function(c) {
+        return pending++;
+      });
+      if (pending > 0)
+        throw new exceptions_1.BaseException(pending + " pending connections to be resolved");
+    };
+    MockBackend.prototype.resolveAllConnections = function() {
+      this.connections.subscribe(function(c) {
+        return c.readyState = 4;
+      });
+    };
+    MockBackend.prototype.createConnection = function(req) {
+      if (!lang_1.isPresent(req) || !(req instanceof static_request_1.Request)) {
+        throw new exceptions_1.BaseException("createConnection requires an instance of Request, got " + req);
+      }
+      var connection = new MockConnection(req);
+      this.connections.next(connection);
+      return connection;
+    };
+    MockBackend = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [])], MockBackend);
+    return MockBackend;
+  })();
+  exports.MockBackend = MockBackend;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/core/di/key", ["angular2/src/core/facade/collection", "angular2/src/core/facade/lang", "angular2/src/core/di/type_literal", "angular2/src/core/di/forward_ref"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/key";
-  var MapWrapper,
-      stringify,
-      isBlank,
-      BaseException,
-      TypeLiteral,
-      resolveForwardRef,
-      Key,
-      KeyRegistry,
-      _globalKeyRegistry;
-  return {
-    setters: [function($__m) {
-      MapWrapper = $__m.MapWrapper;
-    }, function($__m) {
-      stringify = $__m.stringify;
-      isBlank = $__m.isBlank;
-      BaseException = $__m.BaseException;
-    }, function($__m) {
-      TypeLiteral = $__m.TypeLiteral;
-      $__export("TypeLiteral", $__m.TypeLiteral);
-    }, function($__m) {
-      resolveForwardRef = $__m.resolveForwardRef;
-    }],
-    execute: function() {
-      Key = (function() {
-        function Key(token, id) {
-          this.token = token;
-          this.id = id;
-          if (isBlank(token)) {
-            throw new BaseException('Token must be defined!');
-          }
-        }
-        return ($traceurRuntime.createClass)(Key, {get displayName() {
-            return stringify(this.token);
-          }}, {
-          get: function(token) {
-            return _globalKeyRegistry.get(resolveForwardRef(token));
-          },
-          get numberOfKeys() {
-            return _globalKeyRegistry.numberOfKeys;
-          }
-        });
-      }());
-      $__export("Key", Key);
-      KeyRegistry = (function() {
-        function KeyRegistry() {
-          this._allKeys = new Map();
-        }
-        return ($traceurRuntime.createClass)(KeyRegistry, {
-          get: function(token) {
-            if (token instanceof Key)
-              return token;
-            var theToken = token;
-            if (token instanceof TypeLiteral) {
-              theToken = token.type;
-            }
-            token = theToken;
-            if (this._allKeys.has(token)) {
-              return this._allKeys.get(token);
-            }
-            var newKey = new Key(token, Key.numberOfKeys);
-            this._allKeys.set(token, newKey);
-            return newKey;
-          },
-          get numberOfKeys() {
-            return MapWrapper.size(this._allKeys);
-          }
-        }, {});
-      }());
-      $__export("KeyRegistry", KeyRegistry);
-      _globalKeyRegistry = new KeyRegistry();
+System.register("angular2/src/http/http_utils", ["angular2/src/core/facade/lang", "angular2/src/http/enums", "angular2/src/core/facade/exceptions", "angular2/src/core/facade/lang"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var enums_1 = require("angular2/src/http/enums");
+  var exceptions_1 = require("angular2/src/core/facade/exceptions");
+  function normalizeMethodName(method) {
+    if (lang_1.isString(method)) {
+      var originalMethod = method;
+      method = method.replace(/(\w)(\w*)/g, function(g0, g1, g2) {
+        return g1.toUpperCase() + g2.toLowerCase();
+      });
+      method = enums_1.RequestMethods[method];
+      if (typeof method !== 'number')
+        throw exceptions_1.makeTypeError("Invalid request method. The method \"" + originalMethod + "\" is not supported.");
     }
-  };
-});
-
-System.register("angular2/src/http/interfaces", ["angular2/src/core/facade/lang", "angular2/src/http/url_search_params"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/interfaces";
-  var BaseException,
-      URLSearchParamsUnionFixer,
-      URLSearchParams_UnionFixer,
-      ConnectionBackend,
-      Connection;
-  return {
-    setters: [function($__m) {
-      BaseException = $__m.BaseException;
-    }, function($__m) {
-      URLSearchParamsUnionFixer = $__m.URLSearchParamsUnionFixer;
-    }],
-    execute: function() {
-      URLSearchParams_UnionFixer = URLSearchParamsUnionFixer;
-      ConnectionBackend = (function() {
-        function ConnectionBackend() {}
-        return ($traceurRuntime.createClass)(ConnectionBackend, {createConnection: function(request) {
-            throw new BaseException('Abstract!');
-          }}, {});
-      }());
-      $__export("ConnectionBackend", ConnectionBackend);
-      Connection = (function() {
-        function Connection() {}
-        return ($traceurRuntime.createClass)(Connection, {dispose: function() {
-            throw new BaseException('Abstract!');
-          }}, {});
-      }());
-      $__export("Connection", Connection);
-    }
-  };
-});
-
-System.register("angular2/src/http/static_request", ["angular2/src/http/headers", "angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/static_request";
-  var Headers,
-      isPresent,
-      StringWrapper,
-      Request;
-  return {
-    setters: [function($__m) {
-      Headers = $__m.Headers;
-    }, function($__m) {
-      isPresent = $__m.isPresent;
-      StringWrapper = $__m.StringWrapper;
-    }],
-    execute: function() {
-      Request = (function() {
-        function Request(requestOptions) {
-          var url = requestOptions.url;
-          this.url = requestOptions.url;
-          if (isPresent(requestOptions.search)) {
-            var search = requestOptions.search.toString();
-            if (search.length > 0) {
-              var prefix = '?';
-              if (StringWrapper.contains(this.url, '?')) {
-                prefix = (this.url[this.url.length - 1] == '&') ? '' : '&';
-              }
-              this.url = url + prefix + search;
-            }
-          }
-          this._body = requestOptions.body;
-          this.method = requestOptions.method;
-          this.mode = requestOptions.mode;
-          this.credentials = requestOptions.credentials;
-          this.headers = new Headers(requestOptions.headers);
-          this.cache = requestOptions.cache;
-        }
-        return ($traceurRuntime.createClass)(Request, {text: function() {
-            return isPresent(this._body) ? this._body.toString() : '';
-          }}, {});
-      }());
-      $__export("Request", Request);
-    }
-  };
-});
-
-System.register("angular2/src/http/base_request_options", ["angular2/src/core/facade/lang", "angular2/src/http/headers", "angular2/src/http/enums", "angular2/di", "angular2/src/http/url_search_params"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/base_request_options";
-  var __decorate,
-      __metadata,
-      isPresent,
-      isString,
-      Headers,
-      RequestModesOpts,
-      RequestMethods,
-      Injectable,
-      URLSearchParams,
-      RequestOptions,
-      BaseRequestOptions;
-  return {
-    setters: [function($__m) {
-      isPresent = $__m.isPresent;
-      isString = $__m.isString;
-    }, function($__m) {
-      Headers = $__m.Headers;
-    }, function($__m) {
-      RequestModesOpts = $__m.RequestModesOpts;
-      RequestMethods = $__m.RequestMethods;
-    }, function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      URLSearchParams = $__m.URLSearchParams;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      RequestOptions = (function() {
-        function RequestOptions() {
-          var $__2 = arguments[0] !== (void 0) ? arguments[0] : {},
-              method = $__2.method,
-              headers = $__2.headers,
-              body = $__2.body,
-              mode = $__2.mode,
-              credentials = $__2.credentials,
-              cache = $__2.cache,
-              url = $__2.url,
-              search = $__2.search;
-          this.method = isPresent(method) ? method : null;
-          this.headers = isPresent(headers) ? headers : null;
-          this.body = isPresent(body) ? body : null;
-          this.mode = isPresent(mode) ? mode : null;
-          this.credentials = isPresent(credentials) ? credentials : null;
-          this.cache = isPresent(cache) ? cache : null;
-          this.url = isPresent(url) ? url : null;
-          this.search = isPresent(search) ? (isString(search) ? new URLSearchParams((search)) : (search)) : null;
-        }
-        return ($traceurRuntime.createClass)(RequestOptions, {merge: function(options) {
-            return new RequestOptions({
-              method: isPresent(options) && isPresent(options.method) ? options.method : this.method,
-              headers: isPresent(options) && isPresent(options.headers) ? options.headers : this.headers,
-              body: isPresent(options) && isPresent(options.body) ? options.body : this.body,
-              mode: isPresent(options) && isPresent(options.mode) ? options.mode : this.mode,
-              credentials: isPresent(options) && isPresent(options.credentials) ? options.credentials : this.credentials,
-              cache: isPresent(options) && isPresent(options.cache) ? options.cache : this.cache,
-              url: isPresent(options) && isPresent(options.url) ? options.url : this.url,
-              search: isPresent(options) && isPresent(options.search) ? (isString(options.search) ? new URLSearchParams((options.search)) : (options.search).clone()) : this.search
-            });
-          }}, {});
-      }());
-      $__export("RequestOptions", RequestOptions);
-      BaseRequestOptions = (function($__super) {
-        function $__0() {
-          $traceurRuntime.superConstructor($__0).call(this, {
-            method: RequestMethods.Get,
-            headers: new Headers(),
-            mode: RequestModesOpts.Cors
-          });
-        }
-        return ($traceurRuntime.createClass)($__0, {}, {}, $__super);
-      }(RequestOptions));
-      $__export("BaseRequestOptions", BaseRequestOptions);
-      $__export("BaseRequestOptions", BaseRequestOptions = __decorate([Injectable(), __metadata('design:paramtypes', [])], BaseRequestOptions));
-    }
-  };
-});
-
-System.register("angular2/src/http/static_response", ["angular2/src/core/facade/lang", "angular2/src/http/http_utils"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/static_response";
-  var BaseException,
-      isString,
-      Json,
-      isJsObject,
-      Response;
-  return {
-    setters: [function($__m) {
-      BaseException = $__m.BaseException;
-      isString = $__m.isString;
-      Json = $__m.Json;
-    }, function($__m) {
-      isJsObject = $__m.isJsObject;
-    }],
-    execute: function() {
-      Response = (function() {
-        function Response(responseOptions) {
-          this._body = responseOptions.body;
-          this.status = responseOptions.status;
-          this.statusText = responseOptions.statusText;
-          this.headers = responseOptions.headers;
-          this.type = responseOptions.type;
-          this.url = responseOptions.url;
-        }
-        return ($traceurRuntime.createClass)(Response, {
-          blob: function() {
-            throw new BaseException('"blob()" method not implemented on Response superclass');
-          },
-          json: function() {
-            var jsonResponse;
-            if (isJsObject(this._body)) {
-              jsonResponse = this._body;
-            } else if (isString(this._body)) {
-              jsonResponse = Json.parse(this._body);
-            }
-            return jsonResponse;
-          },
-          text: function() {
-            return this._body.toString();
-          },
-          arrayBuffer: function() {
-            throw new BaseException('"arrayBuffer()" method not implemented on Response superclass');
-          }
-        }, {});
-      }());
-      $__export("Response", Response);
-    }
-  };
-});
-
-System.register("angular2/src/core/facade/async", ["angular2/src/core/facade/lang", "rx"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/facade/async";
-  var global,
-      Rx,
-      PromiseWrapper,
-      TimerWrapper,
-      ObservableWrapper,
-      Observable,
-      EventEmitter;
-  return {
-    setters: [function($__m) {
-      global = $__m.global;
-    }, function($__m) {
-      Rx = $__m;
-    }],
-    execute: function() {
-      $__export("Promise", Promise);
-      PromiseWrapper = (function() {
-        function PromiseWrapper() {}
-        return ($traceurRuntime.createClass)(PromiseWrapper, {}, {
-          resolve: function(obj) {
-            return Promise.resolve(obj);
-          },
-          reject: function(obj, _) {
-            return Promise.reject(obj);
-          },
-          catchError: function(promise, onError) {
-            return promise.catch(onError);
-          },
-          all: function(promises) {
-            if (promises.length == 0)
-              return Promise.resolve([]);
-            return Promise.all(promises);
-          },
-          then: function(promise, success, rejection) {
-            return promise.then(success, rejection);
-          },
-          wrap: function(computation) {
-            return new Promise((function(res, rej) {
-              try {
-                res(computation());
-              } catch (e) {
-                rej(e);
-              }
-            }));
-          },
-          completer: function() {
-            var resolve;
-            var reject;
-            var p = new Promise(function(res, rej) {
-              resolve = res;
-              reject = rej;
-            });
-            return {
-              promise: p,
-              resolve: resolve,
-              reject: reject
-            };
-          }
-        });
-      }());
-      $__export("PromiseWrapper", PromiseWrapper);
-      TimerWrapper = (function() {
-        function TimerWrapper() {}
-        return ($traceurRuntime.createClass)(TimerWrapper, {}, {
-          setTimeout: function(fn, millis) {
-            return global.setTimeout(fn, millis);
-          },
-          clearTimeout: function(id) {
-            global.clearTimeout(id);
-          },
-          setInterval: function(fn, millis) {
-            return global.setInterval(fn, millis);
-          },
-          clearInterval: function(id) {
-            global.clearInterval(id);
-          }
-        });
-      }());
-      $__export("TimerWrapper", TimerWrapper);
-      ObservableWrapper = (function() {
-        function ObservableWrapper() {}
-        return ($traceurRuntime.createClass)(ObservableWrapper, {}, {
-          subscribe: function(emitter, onNext) {
-            var onThrow = arguments[2] !== (void 0) ? arguments[2] : null;
-            var onReturn = arguments[3] !== (void 0) ? arguments[3] : null;
-            return emitter.observer({
-              next: onNext,
-              throw: onThrow,
-              return: onReturn
-            });
-          },
-          isObservable: function(obs) {
-            return obs instanceof Observable;
-          },
-          dispose: function(subscription) {
-            subscription.dispose();
-          },
-          callNext: function(emitter, value) {
-            emitter.next(value);
-          },
-          callThrow: function(emitter, error) {
-            emitter.throw(error);
-          },
-          callReturn: function(emitter) {
-            emitter.return(null);
-          }
-        });
-      }());
-      $__export("ObservableWrapper", ObservableWrapper);
-      Observable = (function() {
-        function Observable() {}
-        return ($traceurRuntime.createClass)(Observable, {observer: function(generator) {
-            return null;
-          }}, {});
-      }());
-      $__export("Observable", Observable);
-      EventEmitter = (function($__super) {
-        function EventEmitter() {
-          $traceurRuntime.superConstructor(EventEmitter).call(this);
-          this._subject = new Rx.Subject();
-          this._immediateScheduler = Rx.Scheduler.immediate;
-        }
-        return ($traceurRuntime.createClass)(EventEmitter, {
-          observer: function(generator) {
-            return this._subject.observeOn(this._immediateScheduler).subscribe((function(value) {
-              setTimeout((function() {
-                return generator.next(value);
-              }));
-            }), (function(error) {
-              return generator.throw ? generator.throw(error) : null;
-            }), (function() {
-              return generator.return ? generator.return() : null;
-            }));
-          },
-          toRx: function() {
-            return this._subject;
-          },
-          next: function(value) {
-            this._subject.onNext(value);
-          },
-          throw: function(error) {
-            this._subject.onError(error);
-          },
-          return: function(value) {
-            this._subject.onCompleted();
-          }
-        }, {}, $__super);
-      }(Observable));
-      $__export("EventEmitter", EventEmitter);
-    }
-  };
-});
-
-System.register("angular2/src/http/backends/jsonp_backend", ["angular2/src/http/enums", "angular2/src/http/static_response", "angular2/src/http/base_response_options", "angular2/di", "angular2/src/http/backends/browser_jsonp", "angular2/src/core/facade/async", "angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/backends/jsonp_backend";
-  var __decorate,
-      __metadata,
-      ReadyStates,
-      RequestMethods,
-      Response,
-      ResponseOptions,
-      Injectable,
-      BrowserJsonp,
-      EventEmitter,
-      ObservableWrapper,
-      StringWrapper,
-      isPresent,
-      makeTypeError,
-      JSONPConnection,
-      JSONPBackend;
-  return {
-    setters: [function($__m) {
-      ReadyStates = $__m.ReadyStates;
-      RequestMethods = $__m.RequestMethods;
-    }, function($__m) {
-      Response = $__m.Response;
-    }, function($__m) {
-      ResponseOptions = $__m.ResponseOptions;
-    }, function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      BrowserJsonp = $__m.BrowserJsonp;
-    }, function($__m) {
-      EventEmitter = $__m.EventEmitter;
-      ObservableWrapper = $__m.ObservableWrapper;
-    }, function($__m) {
-      StringWrapper = $__m.StringWrapper;
-      isPresent = $__m.isPresent;
-      makeTypeError = $__m.makeTypeError;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      JSONPConnection = (function() {
-        function JSONPConnection(req, _dom, baseResponseOptions) {
-          var $__0 = this;
-          this._dom = _dom;
-          this.baseResponseOptions = baseResponseOptions;
-          this._finished = false;
-          if (req.method !== RequestMethods.Get) {
-            throw makeTypeError("JSONP requests must use GET request method.");
-          }
-          this.request = req;
-          this.response = new EventEmitter();
-          this.readyState = ReadyStates.Loading;
-          this._id = _dom.nextRequestID();
-          _dom.exposeConnection(this._id, this);
-          var callback = _dom.requestCallback(this._id);
-          var url = req.url;
-          if (url.indexOf('=JSONP_CALLBACK&') > -1) {
-            url = StringWrapper.replace(url, '=JSONP_CALLBACK&', ("=" + callback + "&"));
-          } else if (url.lastIndexOf('=JSONP_CALLBACK') === url.length - '=JSONP_CALLBACK'.length) {
-            url = StringWrapper.substring(url, 0, url.length - '=JSONP_CALLBACK'.length) + ("=" + callback);
-          }
-          var script = this._script = _dom.build(url);
-          script.addEventListener('load', (function(event) {
-            if ($__0.readyState === ReadyStates.Cancelled)
-              return ;
-            $__0.readyState = ReadyStates.Done;
-            _dom.cleanup(script);
-            if (!$__0._finished) {
-              ObservableWrapper.callThrow($__0.response, makeTypeError('JSONP injected script did not invoke callback.'));
-              return ;
-            }
-            var responseOptions = new ResponseOptions({body: $__0._responseData});
-            if (isPresent($__0.baseResponseOptions)) {
-              responseOptions = $__0.baseResponseOptions.merge(responseOptions);
-            }
-            ObservableWrapper.callNext($__0.response, new Response(responseOptions));
-          }));
-          script.addEventListener('error', (function(error) {
-            if ($__0.readyState === ReadyStates.Cancelled)
-              return ;
-            $__0.readyState = ReadyStates.Done;
-            _dom.cleanup(script);
-            ObservableWrapper.callThrow($__0.response, error);
-          }));
-          _dom.send(script);
-        }
-        return ($traceurRuntime.createClass)(JSONPConnection, {
-          finished: function(data) {
-            this._finished = true;
-            this._dom.removeConnection(this._id);
-            if (this.readyState === ReadyStates.Cancelled)
-              return ;
-            this._responseData = data;
-          },
-          dispose: function() {
-            this.readyState = ReadyStates.Cancelled;
-            var script = this._script;
-            this._script = null;
-            if (isPresent(script)) {
-              this._dom.cleanup(script);
-            }
-            ObservableWrapper.callReturn(this.response);
-          }
-        }, {});
-      }());
-      $__export("JSONPConnection", JSONPConnection);
-      JSONPBackend = (($traceurRuntime.createClass)(function(_browserJSONP, _baseResponseOptions) {
-        this._browserJSONP = _browserJSONP;
-        this._baseResponseOptions = _baseResponseOptions;
-      }, {createConnection: function(request) {
-          return new JSONPConnection(request, this._browserJSONP, this._baseResponseOptions);
-        }}, {}));
-      $__export("JSONPBackend", JSONPBackend);
-      $__export("JSONPBackend", JSONPBackend = __decorate([Injectable(), __metadata('design:paramtypes', [BrowserJsonp, ResponseOptions])], JSONPBackend));
-    }
-  };
-});
-
-System.register("angular2/src/core/di/binding", ["angular2/src/core/facade/lang", "angular2/src/core/facade/collection", "angular2/src/core/reflection/reflection", "angular2/src/core/di/key", "angular2/src/core/di/metadata", "angular2/src/core/di/exceptions", "angular2/src/core/di/forward_ref"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/binding";
-  var __decorate,
-      __metadata,
-      Type,
-      isBlank,
-      isPresent,
-      CONST,
-      CONST_EXPR,
-      BaseException,
-      stringify,
-      isArray,
-      ListWrapper,
-      reflector,
-      Key,
-      InjectMetadata,
-      OptionalMetadata,
-      SelfMetadata,
-      HostMetadata,
-      SkipSelfMetadata,
-      DependencyMetadata,
-      NoAnnotationError,
-      resolveForwardRef,
-      Dependency,
-      _EMPTY_LIST,
-      Binding,
-      ResolvedBinding,
-      BindingBuilder;
-  function bind(token) {
-    return new BindingBuilder(token);
+    return method;
   }
-  function _constructDependencies(factoryFunction, dependencies) {
-    if (isBlank(dependencies)) {
-      return _dependenciesFor(factoryFunction);
-    } else {
-      var params = ListWrapper.map(dependencies, (function(t) {
-        return [t];
-      }));
-      return ListWrapper.map(dependencies, (function(t) {
-        return _extractToken(factoryFunction, t, params);
-      }));
+  exports.normalizeMethodName = normalizeMethodName;
+  var lang_2 = require("angular2/src/core/facade/lang");
+  exports.isJsObject = lang_2.isJsObject;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/base_request_options", ["angular2/src/core/facade/lang", "angular2/src/http/headers", "angular2/src/http/enums", "angular2/angular2", "angular2/src/http/url_search_params", "angular2/src/http/http_utils"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __extends = (this && this.__extends) || function(d, b) {
+    for (var p in b)
+      if (b.hasOwnProperty(p))
+        d[p] = b[p];
+    function __() {
+      this.constructor = d;
+    }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
+    }
+  };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var headers_1 = require("angular2/src/http/headers");
+  var enums_1 = require("angular2/src/http/enums");
+  var angular2_1 = require("angular2/angular2");
+  var url_search_params_1 = require("angular2/src/http/url_search_params");
+  var http_utils_1 = require("angular2/src/http/http_utils");
+  var RequestOptions = (function() {
+    function RequestOptions(_a) {
+      var _b = _a === void 0 ? {} : _a,
+          method = _b.method,
+          headers = _b.headers,
+          body = _b.body,
+          url = _b.url,
+          search = _b.search;
+      this.method = lang_1.isPresent(method) ? http_utils_1.normalizeMethodName(method) : null;
+      this.headers = lang_1.isPresent(headers) ? headers : null;
+      this.body = lang_1.isPresent(body) ? body : null;
+      this.url = lang_1.isPresent(url) ? url : null;
+      this.search = lang_1.isPresent(search) ? (lang_1.isString(search) ? new url_search_params_1.URLSearchParams((search)) : (search)) : null;
+    }
+    RequestOptions.prototype.merge = function(options) {
+      return new RequestOptions({
+        method: lang_1.isPresent(options) && lang_1.isPresent(options.method) ? options.method : this.method,
+        headers: lang_1.isPresent(options) && lang_1.isPresent(options.headers) ? options.headers : this.headers,
+        body: lang_1.isPresent(options) && lang_1.isPresent(options.body) ? options.body : this.body,
+        url: lang_1.isPresent(options) && lang_1.isPresent(options.url) ? options.url : this.url,
+        search: lang_1.isPresent(options) && lang_1.isPresent(options.search) ? (lang_1.isString(options.search) ? new url_search_params_1.URLSearchParams((options.search)) : (options.search).clone()) : this.search
+      });
+    };
+    return RequestOptions;
+  })();
+  exports.RequestOptions = RequestOptions;
+  var BaseRequestOptions = (function(_super) {
+    __extends(BaseRequestOptions, _super);
+    function BaseRequestOptions() {
+      _super.call(this, {
+        method: enums_1.RequestMethods.Get,
+        headers: new headers_1.Headers()
+      });
+    }
+    BaseRequestOptions = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [])], BaseRequestOptions);
+    return BaseRequestOptions;
+  })(RequestOptions);
+  exports.BaseRequestOptions = BaseRequestOptions;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/tryCatch", ["@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = tryCatch;
+  var _errorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var tryCatchTarget = undefined;
+  function tryCatcher() {
+    try {
+      return tryCatchTarget.apply(this, arguments);
+    } catch (e) {
+      _errorObject.errorObject.e = e;
+      return _errorObject.errorObject;
     }
   }
-  function _dependenciesFor(typeOrFunc) {
-    var params = reflector.parameters(typeOrFunc);
-    if (isBlank(params))
-      return [];
-    if (ListWrapper.any(params, (function(p) {
-      return isBlank(p);
-    }))) {
-      throw new NoAnnotationError(typeOrFunc, params);
-    }
-    return ListWrapper.map(params, (function(p) {
-      return _extractToken(typeOrFunc, p, params);
-    }));
+  function tryCatch(fn) {
+    tryCatchTarget = fn;
+    return tryCatcher;
   }
-  function _extractToken(typeOrFunc, metadata, params) {
-    var depProps = [];
-    var token = null;
-    var optional = false;
-    if (!isArray(metadata)) {
-      return _createDependency(metadata, optional, null, null, depProps);
+  ;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/util/subscribeToResult", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/util/Symbol_iterator", "@reactivex/rxjs/dist/cjs/util/Symbol_observable", "@reactivex/rxjs/dist/cjs/InnerSubscriber"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = subscribeToResult;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _Observable = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable2 = _interopRequireDefault(_Observable);
+  var _utilSymbol_iterator = require("@reactivex/rxjs/dist/cjs/util/Symbol_iterator");
+  var _utilSymbol_iterator2 = _interopRequireDefault(_utilSymbol_iterator);
+  var _utilSymbol_observable = require("@reactivex/rxjs/dist/cjs/util/Symbol_observable");
+  var _utilSymbol_observable2 = _interopRequireDefault(_utilSymbol_observable);
+  var _InnerSubscriber = require("@reactivex/rxjs/dist/cjs/InnerSubscriber");
+  var _InnerSubscriber2 = _interopRequireDefault(_InnerSubscriber);
+  var isArray = Array.isArray;
+  function subscribeToResult(outerSubscriber, result, outerValue, outerIndex) {
+    var destination = new _InnerSubscriber2['default'](outerSubscriber, outerValue, outerIndex);
+    if (destination.isUnsubscribed) {
+      return ;
     }
-    var lowerBoundVisibility = null;
-    var upperBoundVisibility = null;
-    for (var i = 0; i < metadata.length; ++i) {
-      var paramMetadata = metadata[i];
-      if (paramMetadata instanceof Type) {
-        token = paramMetadata;
-      } else if (paramMetadata instanceof InjectMetadata) {
-        token = paramMetadata.token;
-      } else if (paramMetadata instanceof OptionalMetadata) {
-        optional = true;
-      } else if (paramMetadata instanceof SelfMetadata) {
-        upperBoundVisibility = paramMetadata;
-      } else if (paramMetadata instanceof HostMetadata) {
-        upperBoundVisibility = paramMetadata;
-      } else if (paramMetadata instanceof SkipSelfMetadata) {
-        lowerBoundVisibility = paramMetadata;
-      } else if (paramMetadata instanceof DependencyMetadata) {
-        if (isPresent(paramMetadata.token)) {
-          token = paramMetadata.token;
-        }
-        depProps.push(paramMetadata);
+    if (result instanceof _Observable2['default']) {
+      if (result._isScalar) {
+        destination.next(result.value);
+        destination.complete();
+        return ;
+      } else {
+        return result.subscribe(destination);
       }
     }
-    token = resolveForwardRef(token);
-    if (isPresent(token)) {
-      return _createDependency(token, optional, lowerBoundVisibility, upperBoundVisibility, depProps);
+    if (isArray(result)) {
+      for (var i = 0,
+          len = result.length; i < len && !destination.isUnsubscribed; i++) {
+        destination.next(result[i]);
+      }
+      if (!destination.isUnsubscribed) {
+        destination.complete();
+      }
+    } else if (typeof result.then === 'function') {
+      result.then(function(x) {
+        if (!destination.isUnsubscribed) {
+          destination.next(x);
+          destination.complete();
+        }
+      }, function(err) {
+        return destination.error(err);
+      }).then(null, function(err) {
+        setTimeout(function() {
+          throw err;
+        });
+      });
+      return destination;
+    } else if (typeof result[_utilSymbol_iterator2['default']] === 'function') {
+      for (var _iterator = result,
+          _isArray = Array.isArray(_iterator),
+          _i = 0,
+          _iterator = _isArray ? _iterator : _iterator[Symbol.iterator](); ; ) {
+        var _ref;
+        if (_isArray) {
+          if (_i >= _iterator.length)
+            break;
+          _ref = _iterator[_i++];
+        } else {
+          _i = _iterator.next();
+          if (_i.done)
+            break;
+          _ref = _i.value;
+        }
+        var item = _ref;
+        destination.next(item);
+        if (destination.isUnsubscribed) {
+          break;
+        }
+      }
+      if (!destination.isUnsubscribed) {
+        destination.complete();
+      }
+    } else if (typeof result[_utilSymbol_observable2['default']] === 'function') {
+      var obs = result[_utilSymbol_observable2['default']]();
+      if (typeof obs.subscribe !== 'function') {
+        destination.error('invalid observable');
+      } else {
+        return obs.subscribe(new _InnerSubscriber2['default'](outerSubscriber, outerValue, outerIndex));
+      }
     } else {
-      throw new NoAnnotationError(typeOrFunc, params);
+      destination.error(new TypeError('unknown type returned'));
     }
   }
-  function _createDependency(token, optional, lowerBoundVisibility, upperBoundVisibility, depProps) {
-    return new Dependency(Key.get(token), optional, lowerBoundVisibility, upperBoundVisibility, depProps);
-  }
-  $__export("bind", bind);
-  return {
-    setters: [function($__m) {
-      Type = $__m.Type;
-      isBlank = $__m.isBlank;
-      isPresent = $__m.isPresent;
-      CONST = $__m.CONST;
-      CONST_EXPR = $__m.CONST_EXPR;
-      BaseException = $__m.BaseException;
-      stringify = $__m.stringify;
-      isArray = $__m.isArray;
-    }, function($__m) {
-      ListWrapper = $__m.ListWrapper;
-    }, function($__m) {
-      reflector = $__m.reflector;
-    }, function($__m) {
-      Key = $__m.Key;
-    }, function($__m) {
-      InjectMetadata = $__m.InjectMetadata;
-      OptionalMetadata = $__m.OptionalMetadata;
-      SelfMetadata = $__m.SelfMetadata;
-      HostMetadata = $__m.HostMetadata;
-      SkipSelfMetadata = $__m.SkipSelfMetadata;
-      DependencyMetadata = $__m.DependencyMetadata;
-    }, function($__m) {
-      NoAnnotationError = $__m.NoAnnotationError;
-    }, function($__m) {
-      resolveForwardRef = $__m.resolveForwardRef;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      Dependency = (function() {
-        function Dependency(key, optional, lowerBoundVisibility, upperBoundVisibility, properties) {
-          this.key = key;
-          this.optional = optional;
-          this.lowerBoundVisibility = lowerBoundVisibility;
-          this.upperBoundVisibility = upperBoundVisibility;
-          this.properties = properties;
-        }
-        return ($traceurRuntime.createClass)(Dependency, {}, {fromKey: function(key) {
-            return new Dependency(key, false, null, null, []);
-          }});
-      }());
-      $__export("Dependency", Dependency);
-      _EMPTY_LIST = CONST_EXPR([]);
-      Binding = (($traceurRuntime.createClass)(function(token, $__3) {
-        var $__4 = $__3,
-            toClass = $__4.toClass,
-            toValue = $__4.toValue,
-            toAlias = $__4.toAlias,
-            toFactory = $__4.toFactory,
-            deps = $__4.deps;
-        this.token = token;
-        this.toClass = toClass;
-        this.toValue = toValue;
-        this.toAlias = toAlias;
-        this.toFactory = toFactory;
-        this.dependencies = deps;
-      }, {resolve: function() {
-          var $__0 = this;
-          var factoryFn;
-          var resolvedDeps;
-          if (isPresent(this.toClass)) {
-            var toClass = resolveForwardRef(this.toClass);
-            factoryFn = reflector.factory(toClass);
-            resolvedDeps = _dependenciesFor(toClass);
-          } else if (isPresent(this.toAlias)) {
-            factoryFn = (function(aliasInstance) {
-              return aliasInstance;
-            });
-            resolvedDeps = [Dependency.fromKey(Key.get(this.toAlias))];
-          } else if (isPresent(this.toFactory)) {
-            factoryFn = this.toFactory;
-            resolvedDeps = _constructDependencies(this.toFactory, this.dependencies);
-          } else {
-            factoryFn = (function() {
-              return $__0.toValue;
-            });
-            resolvedDeps = _EMPTY_LIST;
-          }
-          return new ResolvedBinding(Key.get(this.token), factoryFn, resolvedDeps);
-        }}, {}));
-      $__export("Binding", Binding);
-      $__export("Binding", Binding = __decorate([CONST(), __metadata('design:paramtypes', [Object, Object])], Binding));
-      ResolvedBinding = (function() {
-        function ResolvedBinding(key, factory, dependencies) {
-          this.key = key;
-          this.factory = factory;
-          this.dependencies = dependencies;
-        }
-        return ($traceurRuntime.createClass)(ResolvedBinding, {}, {});
-      }());
-      $__export("ResolvedBinding", ResolvedBinding);
-      BindingBuilder = (function() {
-        function BindingBuilder(token) {
-          this.token = token;
-        }
-        return ($traceurRuntime.createClass)(BindingBuilder, {
-          toClass: function(type) {
-            return new Binding(this.token, {toClass: type});
-          },
-          toValue: function(value) {
-            return new Binding(this.token, {toValue: value});
-          },
-          toAlias: function(aliasToken) {
-            if (isBlank(aliasToken)) {
-              throw new BaseException(("Can not alias " + stringify(this.token) + " to a blank value!"));
-            }
-            return new Binding(this.token, {toAlias: aliasToken});
-          },
-          toFactory: function(factoryFunction, dependencies) {
-            return new Binding(this.token, {
-              toFactory: factoryFunction,
-              deps: dependencies
-            });
-          }
-        }, {});
-      }());
-      $__export("BindingBuilder", BindingBuilder);
-    }
-  };
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/src/http/http", ["angular2/src/core/facade/lang", "angular2/src/core/di/decorators", "angular2/src/http/interfaces", "angular2/src/http/static_request", "angular2/src/http/base_request_options", "angular2/src/http/enums"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/http";
-  var __decorate,
-      __metadata,
-      isString,
-      isPresent,
-      makeTypeError,
-      Injectable,
-      ConnectionBackend,
-      Request,
-      RequestOptions,
-      RequestMethods,
-      Http,
-      Jsonp;
+System.register("@reactivex/rxjs/dist/cjs/schedulers/ImmediateScheduler", ["@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction", "@reactivex/rxjs/dist/cjs/schedulers/FutureAction"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _ImmediateAction = require("@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction");
+  var _ImmediateAction2 = _interopRequireDefault(_ImmediateAction);
+  var _FutureAction = require("@reactivex/rxjs/dist/cjs/schedulers/FutureAction");
+  var _FutureAction2 = _interopRequireDefault(_FutureAction);
+  var ImmediateScheduler = (function() {
+    function ImmediateScheduler() {
+      _classCallCheck(this, ImmediateScheduler);
+      this.actions = [];
+      this.active = false;
+      this.scheduled = false;
+    }
+    ImmediateScheduler.prototype.now = function now() {
+      return Date.now();
+    };
+    ImmediateScheduler.prototype.flush = function flush() {
+      if (this.active || this.scheduled) {
+        return ;
+      }
+      this.active = true;
+      var actions = this.actions;
+      for (var action = undefined; action = actions.shift(); ) {
+        action.execute();
+      }
+      this.active = false;
+    };
+    ImmediateScheduler.prototype.schedule = function schedule(work, delay, state) {
+      if (delay === undefined)
+        delay = 0;
+      return delay <= 0 ? this.scheduleNow(work, state) : this.scheduleLater(work, delay, state);
+    };
+    ImmediateScheduler.prototype.scheduleNow = function scheduleNow(work, state) {
+      return new _ImmediateAction2['default'](this, work).schedule(state);
+    };
+    ImmediateScheduler.prototype.scheduleLater = function scheduleLater(work, delay, state) {
+      return new _FutureAction2['default'](this, work).schedule(state, delay);
+    };
+    return ImmediateScheduler;
+  })();
+  exports['default'] = ImmediateScheduler;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/observeOn-support", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Notification"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _Notification = require("@reactivex/rxjs/dist/cjs/Notification");
+  var _Notification2 = _interopRequireDefault(_Notification);
+  var ObserveOnOperator = (function() {
+    function ObserveOnOperator(scheduler) {
+      var delay = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+      _classCallCheck(this, ObserveOnOperator);
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    ObserveOnOperator.prototype.call = function call(subscriber) {
+      return new ObserveOnSubscriber(subscriber, this.scheduler, this.delay);
+    };
+    return ObserveOnOperator;
+  })();
+  exports.ObserveOnOperator = ObserveOnOperator;
+  var ObserveOnSubscriber = (function(_Subscriber) {
+    _inherits(ObserveOnSubscriber, _Subscriber);
+    function ObserveOnSubscriber(destination, scheduler) {
+      var delay = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+      _classCallCheck(this, ObserveOnSubscriber);
+      _Subscriber.call(this, destination);
+      this.delay = delay;
+      this.scheduler = scheduler;
+    }
+    ObserveOnSubscriber.dispatch = function dispatch(_ref) {
+      var notification = _ref.notification;
+      var destination = _ref.destination;
+      notification.observe(destination);
+    };
+    ObserveOnSubscriber.prototype._next = function _next(x) {
+      this.add(this.scheduler.schedule(ObserveOnSubscriber.dispatch, this.delay, new ObserveOnMessage(_Notification2['default'].createNext(x), this.destination)));
+    };
+    ObserveOnSubscriber.prototype._error = function _error(e) {
+      this.add(this.scheduler.schedule(ObserveOnSubscriber.dispatch, this.delay, new ObserveOnMessage(_Notification2['default'].createError(e), this.destination)));
+    };
+    ObserveOnSubscriber.prototype._complete = function _complete() {
+      this.add(this.scheduler.schedule(ObserveOnSubscriber.dispatch, this.delay, new ObserveOnMessage(_Notification2['default'].createComplete(), this.destination)));
+    };
+    return ObserveOnSubscriber;
+  })(_Subscriber3['default']);
+  exports.ObserveOnSubscriber = ObserveOnSubscriber;
+  var ObserveOnMessage = function ObserveOnMessage(notification, destination) {
+    _classCallCheck(this, ObserveOnMessage);
+    this.notification = notification;
+    this.destination = destination;
+  };
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/schedulers/NextTickAction", ["@reactivex/rxjs/dist/cjs/util/Immediate", "@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _utilImmediate = require("@reactivex/rxjs/dist/cjs/util/Immediate");
+  var _ImmediateAction2 = require("@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction");
+  var _ImmediateAction3 = _interopRequireDefault(_ImmediateAction2);
+  var NextTickAction = (function(_ImmediateAction) {
+    _inherits(NextTickAction, _ImmediateAction);
+    function NextTickAction() {
+      _classCallCheck(this, NextTickAction);
+      _ImmediateAction.apply(this, arguments);
+    }
+    NextTickAction.prototype.schedule = function schedule(state) {
+      var _this = this;
+      if (this.isUnsubscribed) {
+        return this;
+      }
+      this.state = state;
+      var scheduler = this.scheduler;
+      scheduler.actions.push(this);
+      if (!scheduler.scheduled) {
+        scheduler.scheduled = true;
+        this.id = _utilImmediate.Immediate.setImmediate(function() {
+          _this.id = void 0;
+          _this.scheduler.scheduled = false;
+          _this.scheduler.flush();
+        });
+      }
+      return this;
+    };
+    NextTickAction.prototype.unsubscribe = function unsubscribe() {
+      var id = this.id;
+      var scheduler = this.scheduler;
+      _ImmediateAction.prototype.unsubscribe.call(this);
+      if (scheduler.actions.length === 0) {
+        scheduler.active = false;
+        scheduler.scheduled = false;
+        if (id) {
+          this.id = void 0;
+          _utilImmediate.Immediate.clearImmediate(id);
+        }
+      }
+    };
+    return NextTickAction;
+  })(_ImmediateAction3['default']);
+  exports['default'] = NextTickAction;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/merge-static", ["@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/operators/mergeAll-support", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = merge;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _mergeAllSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeAll-support");
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  function merge() {
+    var concurrent = Number.POSITIVE_INFINITY;
+    var scheduler = _schedulersImmediate2['default'];
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    var last = observables[observables.length - 1];
+    if (typeof last.schedule === 'function') {
+      scheduler = observables.pop();
+      if (observables.length > 1 && typeof observables[observables.length - 1] === 'number') {
+        concurrent = observables.pop();
+      }
+    } else if (typeof last === 'number') {
+      concurrent = observables.pop();
+    }
+    if (observables.length === 1) {
+      return observables[0];
+    }
+    return new _observablesArrayObservable2['default'](observables, scheduler).lift(new _mergeAllSupport.MergeAllOperator(concurrent));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/zip-static", ["@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/operators/zip-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = zip;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _zipSupport = require("@reactivex/rxjs/dist/cjs/operators/zip-support");
+  function zip() {
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    var project = observables[observables.length - 1];
+    if (typeof project === 'function') {
+      observables.pop();
+    }
+    return new _observablesArrayObservable2['default'](observables).lift(new _zipSupport.ZipOperator(project));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/concatMap", ["@reactivex/rxjs/dist/cjs/operators/mergeMap-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = concatMap;
+  var _mergeMapSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeMap-support");
+  function concatMap(project, projectResult) {
+    return this.lift(new _mergeMapSupport.MergeMapOperator(project, projectResult, 1));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/concatMapTo", ["@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = concatMapTo;
+  var _mergeMapToSupport = require("@reactivex/rxjs/dist/cjs/operators/mergeMapTo-support");
+  function concatMapTo(observable, projectResult) {
+    return this.lift(new _mergeMapToSupport.MergeMapToOperator(observable, projectResult, 1));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/count", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/bindCallback"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = count;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilBindCallback = require("@reactivex/rxjs/dist/cjs/util/bindCallback");
+  var _utilBindCallback2 = _interopRequireDefault(_utilBindCallback);
+  function count(predicate, thisArg) {
+    return this.lift(new CountOperator(predicate, thisArg, this));
+  }
+  var CountOperator = (function() {
+    function CountOperator(predicate, thisArg, source) {
+      _classCallCheck(this, CountOperator);
+      this.predicate = predicate;
+      this.thisArg = thisArg;
+      this.source = source;
+    }
+    CountOperator.prototype.call = function call(subscriber) {
+      return new CountSubscriber(subscriber, this.predicate, this.thisArg, this.source);
+    };
+    return CountOperator;
+  })();
+  var CountSubscriber = (function(_Subscriber) {
+    _inherits(CountSubscriber, _Subscriber);
+    function CountSubscriber(destination, predicate, thisArg, source) {
+      _classCallCheck(this, CountSubscriber);
+      _Subscriber.call(this, destination);
+      this.thisArg = thisArg;
+      this.source = source;
+      this.count = 0;
+      this.index = 0;
+      if (typeof predicate === 'function') {
+        this.predicate = _utilBindCallback2['default'](predicate, thisArg, 3);
+      }
+    }
+    CountSubscriber.prototype._next = function _next(value) {
+      var predicate = this.predicate;
+      var passed = true;
+      if (predicate) {
+        passed = _utilTryCatch2['default'](predicate)(value, this.index++, this.source);
+        if (passed === _utilErrorObject.errorObject) {
+          this.destination.error(passed.e);
+          return ;
+        }
+      }
+      if (passed) {
+        this.count += 1;
+      }
+    };
+    CountSubscriber.prototype._complete = function _complete() {
+      this.destination.next(this.count);
+      this.destination.complete();
+    };
+    return CountSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/expand", ["@reactivex/rxjs/dist/cjs/operators/expand-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = expand;
+  var _expandSupport = require("@reactivex/rxjs/dist/cjs/operators/expand-support");
+  function expand(project) {
+    var concurrent = arguments.length <= 1 || arguments[1] === undefined ? Number.POSITIVE_INFINITY : arguments[1];
+    return this.lift(new _expandSupport.ExpandOperator(project, concurrent));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/first", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/util/EmptyError"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = first;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _utilEmptyError = require("@reactivex/rxjs/dist/cjs/util/EmptyError");
+  var _utilEmptyError2 = _interopRequireDefault(_utilEmptyError);
+  function first(predicate, resultSelector, defaultValue) {
+    return this.lift(new FirstOperator(predicate, resultSelector, defaultValue, this));
+  }
+  var FirstOperator = (function() {
+    function FirstOperator(predicate, resultSelector, defaultValue, source) {
+      _classCallCheck(this, FirstOperator);
+      this.predicate = predicate;
+      this.resultSelector = resultSelector;
+      this.defaultValue = defaultValue;
+      this.source = source;
+    }
+    FirstOperator.prototype.call = function call(observer) {
+      return new FirstSubscriber(observer, this.predicate, this.resultSelector, this.defaultValue, this.source);
+    };
+    return FirstOperator;
+  })();
+  var FirstSubscriber = (function(_Subscriber) {
+    _inherits(FirstSubscriber, _Subscriber);
+    function FirstSubscriber(destination, predicate, resultSelector, defaultValue, source) {
+      _classCallCheck(this, FirstSubscriber);
+      _Subscriber.call(this, destination);
+      this.predicate = predicate;
+      this.resultSelector = resultSelector;
+      this.defaultValue = defaultValue;
+      this.source = source;
+      this.index = 0;
+      this.hasCompleted = false;
+    }
+    FirstSubscriber.prototype._next = function _next(value) {
+      var destination = this.destination;
+      var predicate = this.predicate;
+      var resultSelector = this.resultSelector;
+      var index = this.index++;
+      var passed = true;
+      if (predicate) {
+        passed = _utilTryCatch2['default'](predicate)(value, index, this.source);
+        if (passed === _utilErrorObject.errorObject) {
+          destination.error(_utilErrorObject.errorObject.e);
+          return ;
+        }
+      }
+      if (passed) {
+        if (resultSelector) {
+          value = _utilTryCatch2['default'](resultSelector)(value, index);
+          if (value === _utilErrorObject.errorObject) {
+            destination.error(_utilErrorObject.errorObject.e);
+            return ;
+          }
+        }
+        destination.next(value);
+        destination.complete();
+        this.hasCompleted = true;
+      }
+    };
+    FirstSubscriber.prototype._complete = function _complete() {
+      var destination = this.destination;
+      if (!this.hasCompleted && typeof this.defaultValue !== 'undefined') {
+        destination.next(this.defaultValue);
+        destination.complete();
+      } else if (!this.hasCompleted) {
+        destination.error(new _utilEmptyError2['default']());
+      }
+    };
+    return FirstSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/groupBy", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/util/Map", "@reactivex/rxjs/dist/cjs/util/FastMap", "@reactivex/rxjs/dist/cjs/operators/groupBy-support", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports.groupBy = groupBy;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Subscriber3 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber4 = _interopRequireDefault(_Subscriber3);
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _utilMap = require("@reactivex/rxjs/dist/cjs/util/Map");
+  var _utilMap2 = _interopRequireDefault(_utilMap);
+  var _utilFastMap = require("@reactivex/rxjs/dist/cjs/util/FastMap");
+  var _utilFastMap2 = _interopRequireDefault(_utilFastMap);
+  var _groupBySupport = require("@reactivex/rxjs/dist/cjs/operators/groupBy-support");
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  function groupBy(keySelector, elementSelector, durationSelector) {
+    return new GroupByObservable(this, keySelector, elementSelector, durationSelector);
+  }
+  var GroupByObservable = (function(_Observable) {
+    _inherits(GroupByObservable, _Observable);
+    function GroupByObservable(source, keySelector, elementSelector, durationSelector) {
+      _classCallCheck(this, GroupByObservable);
+      _Observable.call(this);
+      this.source = source;
+      this.keySelector = keySelector;
+      this.elementSelector = elementSelector;
+      this.durationSelector = durationSelector;
+    }
+    GroupByObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var refCountSubscription = new _groupBySupport.RefCountSubscription();
+      var groupBySubscriber = new GroupBySubscriber(subscriber, refCountSubscription, this.keySelector, this.elementSelector, this.durationSelector);
+      refCountSubscription.setPrimary(this.source.subscribe(groupBySubscriber));
+      return refCountSubscription;
+    };
+    return GroupByObservable;
+  })(_Observable3['default']);
+  exports.GroupByObservable = GroupByObservable;
+  var GroupBySubscriber = (function(_Subscriber) {
+    _inherits(GroupBySubscriber, _Subscriber);
+    function GroupBySubscriber(destination, refCountSubscription, keySelector, elementSelector, durationSelector) {
+      _classCallCheck(this, GroupBySubscriber);
+      _Subscriber.call(this);
+      this.refCountSubscription = refCountSubscription;
+      this.keySelector = keySelector;
+      this.elementSelector = elementSelector;
+      this.durationSelector = durationSelector;
+      this.groups = null;
+      this.destination = destination;
+      this.add(destination);
+    }
+    GroupBySubscriber.prototype._next = function _next(x) {
+      var key = _utilTryCatch2['default'](this.keySelector)(x);
+      if (key === _utilErrorObject.errorObject) {
+        this.error(key.e);
+      } else {
+        var groups = this.groups;
+        var elementSelector = this.elementSelector;
+        var durationSelector = this.durationSelector;
+        if (!groups) {
+          groups = this.groups = typeof key === 'string' ? new _utilFastMap2['default']() : new _utilMap2['default']();
+        }
+        var group = groups.get(key);
+        if (!group) {
+          groups.set(key, group = new _Subject2['default']());
+          var groupedObservable = new _groupBySupport.GroupedObservable(key, group, this.refCountSubscription);
+          if (durationSelector) {
+            var duration = _utilTryCatch2['default'](durationSelector)(new _groupBySupport.GroupedObservable(key, group));
+            if (duration === _utilErrorObject.errorObject) {
+              this.error(duration.e);
+            } else {
+              this.add(duration._subscribe(new GroupDurationSubscriber(key, group, this)));
+            }
+          }
+          this.destination.next(groupedObservable);
+        }
+        if (elementSelector) {
+          var value = _utilTryCatch2['default'](elementSelector)(x);
+          if (value === _utilErrorObject.errorObject) {
+            this.error(value.e);
+          } else {
+            group.next(value);
+          }
+        } else {
+          group.next(x);
+        }
+      }
+    };
+    GroupBySubscriber.prototype._error = function _error(err) {
+      var _this = this;
+      var groups = this.groups;
+      if (groups) {
+        groups.forEach(function(group, key) {
+          group.error(err);
+          _this.removeGroup(key);
+        });
+      }
+      this.destination.error(err);
+    };
+    GroupBySubscriber.prototype._complete = function _complete() {
+      var _this2 = this;
+      var groups = this.groups;
+      if (groups) {
+        groups.forEach(function(group, key) {
+          group.complete();
+          _this2.removeGroup(group);
+        });
+      }
+      this.destination.complete();
+    };
+    GroupBySubscriber.prototype.removeGroup = function removeGroup(key) {
+      this.groups['delete'](key);
+    };
+    return GroupBySubscriber;
+  })(_Subscriber4['default']);
+  var GroupDurationSubscriber = (function(_Subscriber2) {
+    _inherits(GroupDurationSubscriber, _Subscriber2);
+    function GroupDurationSubscriber(key, group, parent) {
+      _classCallCheck(this, GroupDurationSubscriber);
+      _Subscriber2.call(this, null);
+      this.key = key;
+      this.group = group;
+      this.parent = parent;
+    }
+    GroupDurationSubscriber.prototype._next = function _next(value) {
+      this.group.complete();
+      this.parent.removeGroup(this.key);
+    };
+    GroupDurationSubscriber.prototype._error = function _error(err) {
+      this.group.error(err);
+      this.parent.removeGroup(this.key);
+    };
+    GroupDurationSubscriber.prototype._complete = function _complete() {
+      this.group.complete();
+      this.parent.removeGroup(this.key);
+    };
+    return GroupDurationSubscriber;
+  })(_Subscriber4['default']);
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/multicast", ["@reactivex/rxjs/dist/cjs/observables/ConnectableObservable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = multicast;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesConnectableObservable = require("@reactivex/rxjs/dist/cjs/observables/ConnectableObservable");
+  var _observablesConnectableObservable2 = _interopRequireDefault(_observablesConnectableObservable);
+  function multicast(subjectFactory) {
+    return new _observablesConnectableObservable2['default'](this, subjectFactory);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/partition", ["@reactivex/rxjs/dist/cjs/util/not", "@reactivex/rxjs/dist/cjs/operators/filter"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = partition;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _utilNot = require("@reactivex/rxjs/dist/cjs/util/not");
+  var _utilNot2 = _interopRequireDefault(_utilNot);
+  var _filter = require("@reactivex/rxjs/dist/cjs/operators/filter");
+  var _filter2 = _interopRequireDefault(_filter);
+  function partition(predicate, thisArg) {
+    return [_filter2['default'].call(this, predicate), _filter2['default'].call(this, _utilNot2['default'](predicate, thisArg))];
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/publishBehavior", ["@reactivex/rxjs/dist/cjs/subjects/BehaviorSubject", "@reactivex/rxjs/dist/cjs/operators/multicast"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = publishBehavior;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _subjectsBehaviorSubject = require("@reactivex/rxjs/dist/cjs/subjects/BehaviorSubject");
+  var _subjectsBehaviorSubject2 = _interopRequireDefault(_subjectsBehaviorSubject);
+  var _multicast = require("@reactivex/rxjs/dist/cjs/operators/multicast");
+  var _multicast2 = _interopRequireDefault(_multicast);
+  function publishBehavior(value) {
+    return _multicast2['default'].call(this, function() {
+      return new _subjectsBehaviorSubject2['default'](value);
+    });
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/publishReplay", ["@reactivex/rxjs/dist/cjs/subjects/ReplaySubject", "@reactivex/rxjs/dist/cjs/operators/multicast"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = publishReplay;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _subjectsReplaySubject = require("@reactivex/rxjs/dist/cjs/subjects/ReplaySubject");
+  var _subjectsReplaySubject2 = _interopRequireDefault(_subjectsReplaySubject);
+  var _multicast = require("@reactivex/rxjs/dist/cjs/operators/multicast");
+  var _multicast2 = _interopRequireDefault(_multicast);
+  function publishReplay(bufferSize, windowTime, scheduler) {
+    if (bufferSize === undefined)
+      bufferSize = Number.POSITIVE_INFINITY;
+    if (windowTime === undefined)
+      windowTime = Number.POSITIVE_INFINITY;
+    return _multicast2['default'].call(this, function() {
+      return new _subjectsReplaySubject2['default'](bufferSize, windowTime, scheduler);
+    });
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/subscribeOn", ["@reactivex/rxjs/dist/cjs/observables/SubscribeOnObservable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = subscribeOn;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesSubscribeOnObservable = require("@reactivex/rxjs/dist/cjs/observables/SubscribeOnObservable");
+  var _observablesSubscribeOnObservable2 = _interopRequireDefault(_observablesSubscribeOnObservable);
+  function subscribeOn(scheduler) {
+    var delay = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+    return new _observablesSubscribeOnObservable2['default'](this, delay, scheduler);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/timeout", ["@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/schedulers/immediate", "@reactivex/rxjs/dist/cjs/util/isDate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  var _createClass = (function() {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ('value' in descriptor)
+          descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+    return function(Constructor, protoProps, staticProps) {
+      if (protoProps)
+        defineProperties(Constructor.prototype, protoProps);
+      if (staticProps)
+        defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  })();
+  exports['default'] = timeout;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _Subscriber2 = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber3 = _interopRequireDefault(_Subscriber2);
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  var _utilIsDate = require("@reactivex/rxjs/dist/cjs/util/isDate");
+  var _utilIsDate2 = _interopRequireDefault(_utilIsDate);
+  function timeout(due) {
+    var errorToSend = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+    var scheduler = arguments.length <= 2 || arguments[2] === undefined ? _schedulersImmediate2['default'] : arguments[2];
+    var absoluteTimeout = _utilIsDate2['default'](due);
+    var waitFor = absoluteTimeout ? +due - scheduler.now() : due;
+    return this.lift(new TimeoutOperator(waitFor, absoluteTimeout, errorToSend, scheduler));
+  }
+  var TimeoutOperator = (function() {
+    function TimeoutOperator(waitFor, absoluteTimeout, errorToSend, scheduler) {
+      _classCallCheck(this, TimeoutOperator);
+      this.waitFor = waitFor;
+      this.absoluteTimeout = absoluteTimeout;
+      this.errorToSend = errorToSend;
+      this.scheduler = scheduler;
+    }
+    TimeoutOperator.prototype.call = function call(subscriber) {
+      return new TimeoutSubscriber(subscriber, this.absoluteTimeout, this.waitFor, this.errorToSend, this.scheduler);
+    };
+    return TimeoutOperator;
+  })();
+  var TimeoutSubscriber = (function(_Subscriber) {
+    _inherits(TimeoutSubscriber, _Subscriber);
+    function TimeoutSubscriber(destination, absoluteTimeout, waitFor, errorToSend, scheduler) {
+      _classCallCheck(this, TimeoutSubscriber);
+      _Subscriber.call(this, destination);
+      this.absoluteTimeout = absoluteTimeout;
+      this.waitFor = waitFor;
+      this.errorToSend = errorToSend;
+      this.scheduler = scheduler;
+      this.index = 0;
+      this._previousIndex = 0;
+      this._hasCompleted = false;
+      this.scheduleTimeout();
+    }
+    TimeoutSubscriber.dispatchTimeout = function dispatchTimeout(state) {
+      var source = state.subscriber;
+      var currentIndex = state.index;
+      if (!source.hasCompleted && source.previousIndex === currentIndex) {
+        source.notifyTimeout();
+      }
+    };
+    TimeoutSubscriber.prototype.scheduleTimeout = function scheduleTimeout() {
+      var currentIndex = this.index;
+      this.scheduler.schedule(TimeoutSubscriber.dispatchTimeout, this.waitFor, {
+        subscriber: this,
+        index: currentIndex
+      });
+      this.index++;
+      this._previousIndex = currentIndex;
+    };
+    TimeoutSubscriber.prototype._next = function _next(value) {
+      this.destination.next(value);
+      if (!this.absoluteTimeout) {
+        this.scheduleTimeout();
+      }
+    };
+    TimeoutSubscriber.prototype._error = function _error(err) {
+      this.destination.error(err);
+      this._hasCompleted = true;
+    };
+    TimeoutSubscriber.prototype._complete = function _complete() {
+      this.destination.complete();
+      this._hasCompleted = true;
+    };
+    TimeoutSubscriber.prototype.notifyTimeout = function notifyTimeout() {
+      this.error(this.errorToSend || new Error('timeout'));
+    };
+    _createClass(TimeoutSubscriber, [{
+      key: 'previousIndex',
+      get: function get() {
+        return this._previousIndex;
+      }
+    }, {
+      key: 'hasCompleted',
+      get: function get() {
+        return this._hasCompleted;
+      }
+    }]);
+    return TimeoutSubscriber;
+  })(_Subscriber3['default']);
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/backends/jsonp_backend", ["angular2/src/http/interfaces", "angular2/src/http/enums", "angular2/src/http/static_response", "angular2/src/http/base_response_options", "angular2/angular2", "angular2/src/http/backends/browser_jsonp", "angular2/src/core/facade/exceptions", "angular2/src/core/facade/lang", "@reactivex/rxjs/dist/cjs/Rx"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __extends = (this && this.__extends) || function(d, b) {
+    for (var p in b)
+      if (b.hasOwnProperty(p))
+        d[p] = b[p];
+    function __() {
+      this.constructor = d;
+    }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
+    }
+  };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var interfaces_1 = require("angular2/src/http/interfaces");
+  var enums_1 = require("angular2/src/http/enums");
+  var static_response_1 = require("angular2/src/http/static_response");
+  var base_response_options_1 = require("angular2/src/http/base_response_options");
+  var angular2_1 = require("angular2/angular2");
+  var browser_jsonp_1 = require("angular2/src/http/backends/browser_jsonp");
+  var exceptions_1 = require("angular2/src/core/facade/exceptions");
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var Rx = require("@reactivex/rxjs/dist/cjs/Rx");
+  var Observable = Rx.Observable;
+  var JSONPConnection = (function() {
+    function JSONPConnection() {}
+    return JSONPConnection;
+  })();
+  exports.JSONPConnection = JSONPConnection;
+  var JSONPConnection_ = (function(_super) {
+    __extends(JSONPConnection_, _super);
+    function JSONPConnection_(req, _dom, baseResponseOptions) {
+      var _this = this;
+      _super.call(this);
+      this._dom = _dom;
+      this.baseResponseOptions = baseResponseOptions;
+      this._finished = false;
+      if (req.method !== enums_1.RequestMethods.Get) {
+        throw exceptions_1.makeTypeError("JSONP requests must use GET request method.");
+      }
+      this.request = req;
+      this.response = new Observable(function(responseObserver) {
+        _this.readyState = enums_1.ReadyStates.Loading;
+        var id = _this._id = _dom.nextRequestID();
+        _dom.exposeConnection(id, _this);
+        var callback = _dom.requestCallback(_this._id);
+        var url = req.url;
+        if (url.indexOf('=JSONP_CALLBACK&') > -1) {
+          url = lang_1.StringWrapper.replace(url, '=JSONP_CALLBACK&', "=" + callback + "&");
+        } else if (url.lastIndexOf('=JSONP_CALLBACK') === url.length - '=JSONP_CALLBACK'.length) {
+          url = lang_1.StringWrapper.substring(url, 0, url.length - '=JSONP_CALLBACK'.length) + ("=" + callback);
+        }
+        var script = _this._script = _dom.build(url);
+        var onLoad = function(event) {
+          if (_this.readyState === enums_1.ReadyStates.Cancelled)
+            return ;
+          _this.readyState = enums_1.ReadyStates.Done;
+          _dom.cleanup(script);
+          if (!_this._finished) {
+            responseObserver.error(exceptions_1.makeTypeError('JSONP injected script did not invoke callback.'));
+            return ;
+          }
+          var responseOptions = new base_response_options_1.ResponseOptions({body: _this._responseData});
+          if (lang_1.isPresent(_this.baseResponseOptions)) {
+            responseOptions = _this.baseResponseOptions.merge(responseOptions);
+          }
+          responseObserver.next(new static_response_1.Response(responseOptions));
+          responseObserver.complete();
+        };
+        var onError = function(error) {
+          if (_this.readyState === enums_1.ReadyStates.Cancelled)
+            return ;
+          _this.readyState = enums_1.ReadyStates.Done;
+          _dom.cleanup(script);
+          responseObserver.error(error);
+        };
+        script.addEventListener('load', onLoad);
+        script.addEventListener('error', onError);
+        _dom.send(script);
+        return function() {
+          _this.readyState = enums_1.ReadyStates.Cancelled;
+          script.removeEventListener('load', onLoad);
+          script.removeEventListener('error', onError);
+          if (lang_1.isPresent(script)) {
+            _this._dom.cleanup(script);
+          }
+        };
+      });
+    }
+    JSONPConnection_.prototype.finished = function(data) {
+      this._finished = true;
+      this._dom.removeConnection(this._id);
+      if (this.readyState === enums_1.ReadyStates.Cancelled)
+        return ;
+      this._responseData = data;
+    };
+    return JSONPConnection_;
+  })(JSONPConnection);
+  exports.JSONPConnection_ = JSONPConnection_;
+  var JSONPBackend = (function(_super) {
+    __extends(JSONPBackend, _super);
+    function JSONPBackend() {
+      _super.apply(this, arguments);
+    }
+    return JSONPBackend;
+  })(interfaces_1.ConnectionBackend);
+  exports.JSONPBackend = JSONPBackend;
+  var JSONPBackend_ = (function(_super) {
+    __extends(JSONPBackend_, _super);
+    function JSONPBackend_(_browserJSONP, _baseResponseOptions) {
+      _super.call(this);
+      this._browserJSONP = _browserJSONP;
+      this._baseResponseOptions = _baseResponseOptions;
+    }
+    JSONPBackend_.prototype.createConnection = function(request) {
+      return new JSONPConnection_(request, this._browserJSONP, this._baseResponseOptions);
+    };
+    JSONPBackend_ = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [browser_jsonp_1.BrowserJsonp, base_response_options_1.ResponseOptions])], JSONPBackend_);
+    return JSONPBackend_;
+  })(JSONPBackend);
+  exports.JSONPBackend_ = JSONPBackend_;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/static_request", ["angular2/src/http/headers", "angular2/src/http/http_utils", "angular2/src/core/facade/lang"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var headers_1 = require("angular2/src/http/headers");
+  var http_utils_1 = require("angular2/src/http/http_utils");
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var Request = (function() {
+    function Request(requestOptions) {
+      var url = requestOptions.url;
+      this.url = requestOptions.url;
+      if (lang_1.isPresent(requestOptions.search)) {
+        var search = requestOptions.search.toString();
+        if (search.length > 0) {
+          var prefix = '?';
+          if (lang_1.StringWrapper.contains(this.url, '?')) {
+            prefix = (this.url[this.url.length - 1] == '&') ? '' : '&';
+          }
+          this.url = url + prefix + search;
+        }
+      }
+      this._body = requestOptions.body;
+      this.method = http_utils_1.normalizeMethodName(requestOptions.method);
+      this.headers = new headers_1.Headers(requestOptions.headers);
+    }
+    Request.prototype.text = function() {
+      return lang_1.isPresent(this._body) ? this._body.toString() : '';
+    };
+    return Request;
+  })();
+  exports.Request = Request;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/ScalarObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/observables/ErrorObservable", "@reactivex/rxjs/dist/cjs/observables/EmptyObservable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _ErrorObservable = require("@reactivex/rxjs/dist/cjs/observables/ErrorObservable");
+  var _ErrorObservable2 = _interopRequireDefault(_ErrorObservable);
+  var _EmptyObservable = require("@reactivex/rxjs/dist/cjs/observables/EmptyObservable");
+  var _EmptyObservable2 = _interopRequireDefault(_EmptyObservable);
+  var ScalarObservable = (function(_Observable) {
+    _inherits(ScalarObservable, _Observable);
+    function ScalarObservable(value, scheduler) {
+      _classCallCheck(this, ScalarObservable);
+      _Observable.call(this);
+      this.value = value;
+      this.scheduler = scheduler;
+      this._isScalar = true;
+    }
+    ScalarObservable.create = function create(value, scheduler) {
+      return new ScalarObservable(value, scheduler);
+    };
+    ScalarObservable.dispatch = function dispatch(state) {
+      var done = state.done;
+      var value = state.value;
+      var subscriber = state.subscriber;
+      if (done) {
+        subscriber.complete();
+        return ;
+      }
+      subscriber.next(value);
+      if (subscriber.isUnsubscribed) {
+        return ;
+      }
+      state.done = true;
+      this.schedule(state);
+    };
+    ScalarObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var value = this.value;
+      var scheduler = this.scheduler;
+      if (scheduler) {
+        subscriber.add(scheduler.schedule(ScalarObservable.dispatch, 0, {
+          done: false,
+          value: value,
+          subscriber: subscriber
+        }));
+      } else {
+        subscriber.next(value);
+        if (!subscriber.isUnsubscribed) {
+          subscriber.complete();
+        }
+      }
+    };
+    return ScalarObservable;
+  })(_Observable3['default']);
+  exports['default'] = ScalarObservable;
+  var proto = ScalarObservable.prototype;
+  proto.map = function(project, thisArg) {
+    var result = _utilTryCatch2['default'](project).call(thisArg || this, this.value, 0);
+    if (result === _utilErrorObject.errorObject) {
+      return new _ErrorObservable2['default'](_utilErrorObject.errorObject.e);
+    } else {
+      return new ScalarObservable(project.call(thisArg || this, this.value, 0));
+    }
+  };
+  proto.filter = function(select, thisArg) {
+    var result = _utilTryCatch2['default'](select).call(thisArg || this, this.value, 0);
+    if (result === _utilErrorObject.errorObject) {
+      return new _ErrorObservable2['default'](_utilErrorObject.errorObject.e);
+    } else if (result) {
+      return this;
+    } else {
+      return new _EmptyObservable2['default']();
+    }
+  };
+  proto.reduce = function(project, acc) {
+    if (typeof acc === 'undefined') {
+      return this;
+    }
+    var result = _utilTryCatch2['default'](project)(acc, this.value);
+    if (result === _utilErrorObject.errorObject) {
+      return new _ErrorObservable2['default'](_utilErrorObject.errorObject.e);
+    } else {
+      return new ScalarObservable(result);
+    }
+  };
+  proto.scan = function(project, acc) {
+    return this.reduce(project, acc);
+  };
+  proto.count = function(predicate, thisArg) {
+    if (!predicate) {
+      return new ScalarObservable(1);
+    } else {
+      var result = _utilTryCatch2['default'](predicate).call(thisArg || this, this.value, 0, this);
+      if (result === _utilErrorObject.errorObject) {
+        return new _ErrorObservable2['default'](_utilErrorObject.errorObject.e);
+      } else {
+        return new ScalarObservable(result ? 1 : 0);
+      }
+    }
+  };
+  proto.skip = function(count) {
+    if (count > 0) {
+      return new _EmptyObservable2['default']();
+    }
+    return this;
+  };
+  proto.take = function(count) {
+    if (count > 0) {
+      return this;
+    }
+    return new _EmptyObservable2['default']();
+  };
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/combineLatest-support", ["@reactivex/rxjs/dist/cjs/util/tryCatch", "@reactivex/rxjs/dist/cjs/util/errorObject", "@reactivex/rxjs/dist/cjs/OuterSubscriber", "@reactivex/rxjs/dist/cjs/util/subscribeToResult"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  var _utilTryCatch = require("@reactivex/rxjs/dist/cjs/util/tryCatch");
+  var _utilTryCatch2 = _interopRequireDefault(_utilTryCatch);
+  var _utilErrorObject = require("@reactivex/rxjs/dist/cjs/util/errorObject");
+  var _OuterSubscriber2 = require("@reactivex/rxjs/dist/cjs/OuterSubscriber");
+  var _OuterSubscriber3 = _interopRequireDefault(_OuterSubscriber2);
+  var _utilSubscribeToResult = require("@reactivex/rxjs/dist/cjs/util/subscribeToResult");
+  var _utilSubscribeToResult2 = _interopRequireDefault(_utilSubscribeToResult);
+  var CombineLatestOperator = (function() {
+    function CombineLatestOperator(project) {
+      _classCallCheck(this, CombineLatestOperator);
+      this.project = project;
+    }
+    CombineLatestOperator.prototype.call = function call(subscriber) {
+      return new CombineLatestSubscriber(subscriber, this.project);
+    };
+    return CombineLatestOperator;
+  })();
+  exports.CombineLatestOperator = CombineLatestOperator;
+  var CombineLatestSubscriber = (function(_OuterSubscriber) {
+    _inherits(CombineLatestSubscriber, _OuterSubscriber);
+    function CombineLatestSubscriber(destination, project) {
+      _classCallCheck(this, CombineLatestSubscriber);
+      _OuterSubscriber.call(this, destination);
+      this.project = project;
+      this.active = 0;
+      this.values = [];
+      this.observables = [];
+      this.toRespond = [];
+    }
+    CombineLatestSubscriber.prototype._next = function _next(observable) {
+      var toRespond = this.toRespond;
+      toRespond.push(toRespond.length);
+      this.observables.push(observable);
+    };
+    CombineLatestSubscriber.prototype._complete = function _complete() {
+      var observables = this.observables;
+      var len = observables.length;
+      if (len === 0) {
+        this.destination.complete();
+      } else {
+        this.active = len;
+        for (var i = 0; i < len; i++) {
+          var observable = observables[i];
+          this.add(_utilSubscribeToResult2['default'](this, observable, observable, i));
+        }
+      }
+    };
+    CombineLatestSubscriber.prototype.notifyComplete = function notifyComplete(innerSubscriber) {
+      if ((this.active -= 1) === 0) {
+        this.destination.complete();
+      }
+    };
+    CombineLatestSubscriber.prototype.notifyNext = function notifyNext(observable, value, outerIndex, innerIndex) {
+      var values = this.values;
+      values[outerIndex] = value;
+      var toRespond = this.toRespond;
+      if (toRespond.length > 0) {
+        var found = toRespond.indexOf(outerIndex);
+        if (found !== -1) {
+          toRespond.splice(found, 1);
+        }
+      }
+      if (toRespond.length === 0) {
+        var project = this.project;
+        var destination = this.destination;
+        if (project) {
+          var result = _utilTryCatch2['default'](project).apply(this, values);
+          if (result === _utilErrorObject.errorObject) {
+            destination.error(_utilErrorObject.errorObject.e);
+          } else {
+            destination.next(result);
+          }
+        } else {
+          destination.next(values);
+        }
+      }
+    };
+    return CombineLatestSubscriber;
+  })(_OuterSubscriber3['default']);
+  exports.CombineLatestSubscriber = CombineLatestSubscriber;
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/schedulers/immediate", ["@reactivex/rxjs/dist/cjs/schedulers/ImmediateScheduler"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _ImmediateScheduler = require("@reactivex/rxjs/dist/cjs/schedulers/ImmediateScheduler");
+  var _ImmediateScheduler2 = _interopRequireDefault(_ImmediateScheduler);
+  exports['default'] = new _ImmediateScheduler2['default']();
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/FromObservable", ["@reactivex/rxjs/dist/cjs/observables/PromiseObservable", "@reactivex/rxjs/dist/cjs/observables/IteratorObservable", "@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/util/Symbol_observable", "@reactivex/rxjs/dist/cjs/util/Symbol_iterator", "@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/operators/observeOn-support", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _PromiseObservable = require("@reactivex/rxjs/dist/cjs/observables/PromiseObservable");
+  var _PromiseObservable2 = _interopRequireDefault(_PromiseObservable);
+  var _IteratorObservable = require("@reactivex/rxjs/dist/cjs/observables/IteratorObservable");
+  var _IteratorObservable2 = _interopRequireDefault(_IteratorObservable);
+  var _ArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _ArrayObservable2 = _interopRequireDefault(_ArrayObservable);
+  var _utilSymbol_observable = require("@reactivex/rxjs/dist/cjs/util/Symbol_observable");
+  var _utilSymbol_observable2 = _interopRequireDefault(_utilSymbol_observable);
+  var _utilSymbol_iterator = require("@reactivex/rxjs/dist/cjs/util/Symbol_iterator");
+  var _utilSymbol_iterator2 = _interopRequireDefault(_utilSymbol_iterator);
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _operatorsObserveOnSupport = require("@reactivex/rxjs/dist/cjs/operators/observeOn-support");
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  var isArray = Array.isArray;
+  var FromObservable = (function(_Observable) {
+    _inherits(FromObservable, _Observable);
+    function FromObservable(ish, scheduler) {
+      _classCallCheck(this, FromObservable);
+      _Observable.call(this, null);
+      this.ish = ish;
+      this.scheduler = scheduler;
+    }
+    FromObservable.create = function create(ish) {
+      var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersImmediate2['default'] : arguments[1];
+      if (ish) {
+        if (isArray(ish)) {
+          return new _ArrayObservable2['default'](ish, scheduler);
+        } else if (typeof ish.then === 'function') {
+          return new _PromiseObservable2['default'](ish, scheduler);
+        } else if (typeof ish[_utilSymbol_observable2['default']] === 'function') {
+          if (ish instanceof _Observable3['default']) {
+            return ish;
+          }
+          return new FromObservable(ish, scheduler);
+        } else if (typeof ish[_utilSymbol_iterator2['default']] === 'function') {
+          return new _IteratorObservable2['default'](ish, null, null, scheduler);
+        }
+      }
+      throw new TypeError(typeof ish + ' is not observable');
+    };
+    FromObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var ish = this.ish;
+      var scheduler = this.scheduler;
+      if (scheduler === _schedulersImmediate2['default']) {
+        return this.ish[_utilSymbol_observable2['default']]().subscribe(subscriber);
+      } else {
+        return this.ish[_utilSymbol_observable2['default']]().subscribe(new _operatorsObserveOnSupport.ObserveOnSubscriber(subscriber, scheduler, 0));
+      }
+    };
+    return FromObservable;
+  })(_Observable3['default']);
+  exports['default'] = FromObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/schedulers/NextTickScheduler", ["@reactivex/rxjs/dist/cjs/schedulers/ImmediateScheduler", "@reactivex/rxjs/dist/cjs/schedulers/NextTickAction", "@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _ImmediateScheduler2 = require("@reactivex/rxjs/dist/cjs/schedulers/ImmediateScheduler");
+  var _ImmediateScheduler3 = _interopRequireDefault(_ImmediateScheduler2);
+  var _NextTickAction = require("@reactivex/rxjs/dist/cjs/schedulers/NextTickAction");
+  var _NextTickAction2 = _interopRequireDefault(_NextTickAction);
+  var _ImmediateAction = require("@reactivex/rxjs/dist/cjs/schedulers/ImmediateAction");
+  var _ImmediateAction2 = _interopRequireDefault(_ImmediateAction);
+  var NextTickScheduler = (function(_ImmediateScheduler) {
+    _inherits(NextTickScheduler, _ImmediateScheduler);
+    function NextTickScheduler() {
+      _classCallCheck(this, NextTickScheduler);
+      _ImmediateScheduler.apply(this, arguments);
+    }
+    NextTickScheduler.prototype.scheduleNow = function scheduleNow(work, state) {
+      return (this.scheduled ? new _ImmediateAction2['default'](this, work) : new _NextTickAction2['default'](this, work)).schedule(state);
+    };
+    return NextTickScheduler;
+  })(_ImmediateScheduler3['default']);
+  exports['default'] = NextTickScheduler;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/http", ["angular2/src/core/facade/lang", "angular2/src/core/facade/exceptions", "angular2/angular2", "angular2/src/http/interfaces", "angular2/src/http/static_request", "angular2/src/http/base_request_options", "angular2/src/http/enums"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __extends = (this && this.__extends) || function(d, b) {
+    for (var p in b)
+      if (b.hasOwnProperty(p))
+        d[p] = b[p];
+    function __() {
+      this.constructor = d;
+    }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
+    }
+  };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var exceptions_1 = require("angular2/src/core/facade/exceptions");
+  var angular2_1 = require("angular2/angular2");
+  var interfaces_1 = require("angular2/src/http/interfaces");
+  var static_request_1 = require("angular2/src/http/static_request");
+  var base_request_options_1 = require("angular2/src/http/base_request_options");
+  var enums_1 = require("angular2/src/http/enums");
   function httpRequest(backend, request) {
     return backend.createConnection(request).response;
   }
   function mergeOptions(defaultOpts, providedOpts, method, url) {
     var newOptions = defaultOpts;
-    if (isPresent(providedOpts)) {
-      newOptions = newOptions.merge(new RequestOptions({
+    if (lang_1.isPresent(providedOpts)) {
+      newOptions = newOptions.merge(new base_request_options_1.RequestOptions({
         method: providedOpts.method,
         url: providedOpts.url,
         search: providedOpts.search,
         headers: providedOpts.headers,
-        body: providedOpts.body,
-        mode: providedOpts.mode,
-        credentials: providedOpts.credentials,
-        cache: providedOpts.cache
+        body: providedOpts.body
       }));
     }
-    if (isPresent(method)) {
-      return newOptions.merge(new RequestOptions({
+    if (lang_1.isPresent(method)) {
+      return newOptions.merge(new base_request_options_1.RequestOptions({
         method: method,
         url: url
       }));
     } else {
-      return newOptions.merge(new RequestOptions({url: url}));
+      return newOptions.merge(new base_request_options_1.RequestOptions({url: url}));
     }
   }
-  return {
-    setters: [function($__m) {
-      isString = $__m.isString;
-      isPresent = $__m.isPresent;
-      makeTypeError = $__m.makeTypeError;
-    }, function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      ConnectionBackend = $__m.ConnectionBackend;
-    }, function($__m) {
-      Request = $__m.Request;
-    }, function($__m) {
-      RequestOptions = $__m.RequestOptions;
-    }, function($__m) {
-      RequestMethods = $__m.RequestMethods;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      Http = (($traceurRuntime.createClass)(function(_backend, _defaultOptions) {
-        this._backend = _backend;
-        this._defaultOptions = _defaultOptions;
-      }, {
-        request: function(url, options) {
-          var responseObservable;
-          if (isString(url)) {
-            responseObservable = httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions, options, RequestMethods.Get, url)));
-          } else if (url instanceof Request) {
-            responseObservable = httpRequest(this._backend, url);
-          }
-          return responseObservable;
-        },
-        get: function(url, options) {
-          return httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions, options, RequestMethods.Get, url)));
-        },
-        post: function(url, body, options) {
-          return httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions.merge(new RequestOptions({body: body})), options, RequestMethods.Post, url)));
-        },
-        put: function(url, body, options) {
-          return httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions.merge(new RequestOptions({body: body})), options, RequestMethods.Put, url)));
-        },
-        delete: function(url, options) {
-          return httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions, options, RequestMethods.Delete, url)));
-        },
-        patch: function(url, body, options) {
-          return httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions.merge(new RequestOptions({body: body})), options, RequestMethods.Patch, url)));
-        },
-        head: function(url, options) {
-          return httpRequest(this._backend, new Request(mergeOptions(this._defaultOptions, options, RequestMethods.Head, url)));
-        }
-      }, {}));
-      $__export("Http", Http);
-      $__export("Http", Http = __decorate([Injectable(), __metadata('design:paramtypes', [ConnectionBackend, RequestOptions])], Http));
-      Jsonp = (function($__super) {
-        function $__0(backend, defaultOptions) {
-          $traceurRuntime.superConstructor($__0).call(this, backend, defaultOptions);
-        }
-        return ($traceurRuntime.createClass)($__0, {request: function(url, options) {
-            var responseObservable;
-            if (isString(url)) {
-              url = new Request(mergeOptions(this._defaultOptions, options, RequestMethods.Get, url));
-            }
-            if (url instanceof Request) {
-              if (url.method !== RequestMethods.Get) {
-                makeTypeError('JSONP requests must use GET request method.');
-              }
-              responseObservable = httpRequest(this._backend, url);
-            }
-            return responseObservable;
-          }}, {}, $__super);
-      }(Http));
-      $__export("Jsonp", Jsonp);
-      $__export("Jsonp", Jsonp = __decorate([Injectable(), __metadata('design:paramtypes', [ConnectionBackend, RequestOptions])], Jsonp));
+  var Http = (function() {
+    function Http(_backend, _defaultOptions) {
+      this._backend = _backend;
+      this._defaultOptions = _defaultOptions;
     }
-  };
-});
-
-System.register("angular2/src/http/backends/xhr_backend", ["angular2/src/http/enums", "angular2/src/http/static_response", "angular2/src/http/base_response_options", "angular2/di", "angular2/src/http/backends/browser_xhr", "angular2/src/core/facade/async", "angular2/src/core/facade/lang"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/http/backends/xhr_backend";
-  var __decorate,
-      __metadata,
-      RequestMethods,
-      ResponseTypes,
-      Response,
-      ResponseOptions,
-      Injectable,
-      BrowserXhr,
-      EventEmitter,
-      ObservableWrapper,
-      isPresent,
-      XHRConnection,
-      XHRBackend;
-  return {
-    setters: [function($__m) {
-      RequestMethods = $__m.RequestMethods;
-      ResponseTypes = $__m.ResponseTypes;
-    }, function($__m) {
-      Response = $__m.Response;
-    }, function($__m) {
-      ResponseOptions = $__m.ResponseOptions;
-    }, function($__m) {
-      Injectable = $__m.Injectable;
-    }, function($__m) {
-      BrowserXhr = $__m.BrowserXhr;
-    }, function($__m) {
-      EventEmitter = $__m.EventEmitter;
-      ObservableWrapper = $__m.ObservableWrapper;
-    }, function($__m) {
-      isPresent = $__m.isPresent;
-    }],
-    execute: function() {
-      __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          return Reflect.decorate(decorators, target, key, desc);
-        switch (arguments.length) {
-          case 2:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(o)) || o;
-            }, target);
-          case 3:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key)), void 0;
-            }, void 0);
-          case 4:
-            return decorators.reduceRight(function(o, d) {
-              return (d && d(target, key, o)) || o;
-            }, desc);
-        }
-      };
-      __metadata = (this && this.__metadata) || function(k, v) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(k, v);
-      };
-      XHRConnection = (function() {
-        function XHRConnection(req, browserXHR, baseResponseOptions) {
-          var $__0 = this;
-          this.request = req;
-          this.response = new EventEmitter();
-          this._xhr = browserXHR.build();
-          this._xhr.open(RequestMethods[req.method].toUpperCase(), req.url);
-          this._xhr.addEventListener('load', (function(_) {
-            var response = isPresent($__0._xhr.response) ? $__0._xhr.response : $__0._xhr.responseText;
-            var status = $__0._xhr.status === 1223 ? 204 : $__0._xhr.status;
-            if (status === 0) {
-              status = response ? 200 : 0;
-            }
-            var responseOptions = new ResponseOptions({
-              body: response,
-              status: status
-            });
-            if (isPresent(baseResponseOptions)) {
-              responseOptions = baseResponseOptions.merge(responseOptions);
-            }
-            ObservableWrapper.callNext($__0.response, new Response(responseOptions));
-            ObservableWrapper.callReturn($__0.response);
-          }));
-          this._xhr.addEventListener('error', (function(err) {
-            var responseOptions = new ResponseOptions({
-              body: err,
-              type: ResponseTypes.Error
-            });
-            if (isPresent(baseResponseOptions)) {
-              responseOptions = baseResponseOptions.merge(responseOptions);
-            }
-            ObservableWrapper.callThrow($__0.response, new Response(responseOptions));
-          }));
-          if (isPresent(req.headers)) {
-            req.headers.forEach((function(value, name) {
-              $__0._xhr.setRequestHeader(name, value);
-            }));
-          }
-          this._xhr.send(this.request.text());
-        }
-        return ($traceurRuntime.createClass)(XHRConnection, {dispose: function() {
-            this._xhr.abort();
-          }}, {});
-      }());
-      $__export("XHRConnection", XHRConnection);
-      XHRBackend = (($traceurRuntime.createClass)(function(_browserXHR, _baseResponseOptions) {
-        this._browserXHR = _browserXHR;
-        this._baseResponseOptions = _baseResponseOptions;
-      }, {createConnection: function(request) {
-          return new XHRConnection(request, this._browserXHR, this._baseResponseOptions);
-        }}, {}));
-      $__export("XHRBackend", XHRBackend);
-      $__export("XHRBackend", XHRBackend = __decorate([Injectable(), __metadata('design:paramtypes', [BrowserXhr, ResponseOptions])], XHRBackend));
-    }
-  };
-});
-
-System.register("angular2/src/core/di/injector", ["angular2/src/core/facade/collection", "angular2/src/core/di/binding", "angular2/src/core/di/exceptions", "angular2/src/core/facade/lang", "angular2/src/core/di/key", "angular2/src/core/di/forward_ref", "angular2/src/core/di/metadata"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/src/core/di/injector";
-  var Map,
-      MapWrapper,
-      ListWrapper,
-      ResolvedBinding,
-      Binding,
-      BindingBuilder,
-      bind,
-      AbstractBindingError,
-      NoBindingError,
-      CyclicDependencyError,
-      InstantiationError,
-      InvalidBindingError,
-      OutOfBoundsError,
-      Type,
-      isPresent,
-      CONST_EXPR,
-      Key,
-      resolveForwardRef,
-      SelfMetadata,
-      HostMetadata,
-      SkipSelfMetadata,
-      _MAX_CONSTRUCTION_COUNTER,
-      UNDEFINED,
-      Visibility,
-      ProtoInjectorInlineStrategy,
-      ProtoInjectorDynamicStrategy,
-      ProtoInjector,
-      InjectorInlineStrategy,
-      InjectorDynamicStrategy,
-      BindingWithVisibility,
-      Injector,
-      INJECTOR_KEY;
-  function canSee(src, dst) {
-    return (src === dst) || (dst === Visibility.PublicAndPrivate || src === Visibility.PublicAndPrivate);
-  }
-  function _resolveBindings(bindings) {
-    var resolvedList = ListWrapper.createFixedSize(bindings.length);
-    for (var i = 0; i < bindings.length; i++) {
-      var unresolved = resolveForwardRef(bindings[i]);
-      var resolved = void 0;
-      if (unresolved instanceof ResolvedBinding) {
-        resolved = unresolved;
-      } else if (unresolved instanceof Type) {
-        resolved = bind(unresolved).toClass(unresolved).resolve();
-      } else if (unresolved instanceof Binding) {
-        resolved = unresolved.resolve();
-      } else if (unresolved instanceof Array) {
-        resolved = _resolveBindings(unresolved);
-      } else if (unresolved instanceof BindingBuilder) {
-        throw new InvalidBindingError(unresolved.token);
+    Http.prototype.request = function(url, options) {
+      var responseObservable;
+      if (lang_1.isString(url)) {
+        responseObservable = httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions, options, enums_1.RequestMethods.Get, url)));
+      } else if (url instanceof static_request_1.Request) {
+        responseObservable = httpRequest(this._backend, url);
       } else {
-        throw new InvalidBindingError(unresolved);
+        throw exceptions_1.makeTypeError('First argument must be a url string or Request instance.');
       }
-      resolvedList[i] = resolved;
+      return responseObservable;
+    };
+    Http.prototype.get = function(url, options) {
+      return httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions, options, enums_1.RequestMethods.Get, url)));
+    };
+    Http.prototype.post = function(url, body, options) {
+      return httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions.merge(new base_request_options_1.RequestOptions({body: body})), options, enums_1.RequestMethods.Post, url)));
+    };
+    Http.prototype.put = function(url, body, options) {
+      return httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions.merge(new base_request_options_1.RequestOptions({body: body})), options, enums_1.RequestMethods.Put, url)));
+    };
+    Http.prototype.delete = function(url, options) {
+      return httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions, options, enums_1.RequestMethods.Delete, url)));
+    };
+    Http.prototype.patch = function(url, body, options) {
+      return httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions.merge(new base_request_options_1.RequestOptions({body: body})), options, enums_1.RequestMethods.Patch, url)));
+    };
+    Http.prototype.head = function(url, options) {
+      return httpRequest(this._backend, new static_request_1.Request(mergeOptions(this._defaultOptions, options, enums_1.RequestMethods.Head, url)));
+    };
+    Http = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [interfaces_1.ConnectionBackend, base_request_options_1.RequestOptions])], Http);
+    return Http;
+  })();
+  exports.Http = Http;
+  var Jsonp = (function(_super) {
+    __extends(Jsonp, _super);
+    function Jsonp(backend, defaultOptions) {
+      _super.call(this, backend, defaultOptions);
     }
-    return resolvedList;
-  }
-  function _createListOfBindings(flattenedBindings) {
-    return MapWrapper.values(flattenedBindings);
-  }
-  function _flattenBindings(bindings, res) {
-    ListWrapper.forEach(bindings, function(b) {
-      if (b instanceof ResolvedBinding) {
-        res.set(b.key.id, b);
-      } else if (b instanceof Array) {
-        _flattenBindings(b, res);
+    Jsonp.prototype.request = function(url, options) {
+      var responseObservable;
+      if (lang_1.isString(url)) {
+        url = new static_request_1.Request(mergeOptions(this._defaultOptions, options, enums_1.RequestMethods.Get, url));
       }
-    });
-    return res;
-  }
-  function _mapBindings(injector, fn) {
-    var res = [];
-    for (var i = 0; i < injector._proto.numberOfBindings; ++i) {
-      res.push(fn(injector._proto.getBindingAtIndex(i)));
-    }
-    return res;
-  }
-  return {
-    setters: [function($__m) {
-      Map = $__m.Map;
-      MapWrapper = $__m.MapWrapper;
-      ListWrapper = $__m.ListWrapper;
-    }, function($__m) {
-      ResolvedBinding = $__m.ResolvedBinding;
-      Binding = $__m.Binding;
-      BindingBuilder = $__m.BindingBuilder;
-      bind = $__m.bind;
-    }, function($__m) {
-      AbstractBindingError = $__m.AbstractBindingError;
-      NoBindingError = $__m.NoBindingError;
-      CyclicDependencyError = $__m.CyclicDependencyError;
-      InstantiationError = $__m.InstantiationError;
-      InvalidBindingError = $__m.InvalidBindingError;
-      OutOfBoundsError = $__m.OutOfBoundsError;
-    }, function($__m) {
-      Type = $__m.Type;
-      isPresent = $__m.isPresent;
-      CONST_EXPR = $__m.CONST_EXPR;
-    }, function($__m) {
-      Key = $__m.Key;
-    }, function($__m) {
-      resolveForwardRef = $__m.resolveForwardRef;
-    }, function($__m) {
-      SelfMetadata = $__m.SelfMetadata;
-      HostMetadata = $__m.HostMetadata;
-      SkipSelfMetadata = $__m.SkipSelfMetadata;
-    }],
-    execute: function() {
-      _MAX_CONSTRUCTION_COUNTER = 10;
-      UNDEFINED = CONST_EXPR(new Object());
-      $__export("UNDEFINED", UNDEFINED);
-      $__export("Visibility", Visibility);
-      (function(Visibility) {
-        Visibility[Visibility["Public"] = 0] = "Public";
-        Visibility[Visibility["Private"] = 1] = "Private";
-        Visibility[Visibility["PublicAndPrivate"] = 2] = "PublicAndPrivate";
-      })(Visibility || ($__export("Visibility", Visibility = {})));
-      ProtoInjectorInlineStrategy = (function() {
-        function ProtoInjectorInlineStrategy(protoEI, bwv) {
-          this.binding0 = null;
-          this.binding1 = null;
-          this.binding2 = null;
-          this.binding3 = null;
-          this.binding4 = null;
-          this.binding5 = null;
-          this.binding6 = null;
-          this.binding7 = null;
-          this.binding8 = null;
-          this.binding9 = null;
-          this.keyId0 = null;
-          this.keyId1 = null;
-          this.keyId2 = null;
-          this.keyId3 = null;
-          this.keyId4 = null;
-          this.keyId5 = null;
-          this.keyId6 = null;
-          this.keyId7 = null;
-          this.keyId8 = null;
-          this.keyId9 = null;
-          this.visibility0 = null;
-          this.visibility1 = null;
-          this.visibility2 = null;
-          this.visibility3 = null;
-          this.visibility4 = null;
-          this.visibility5 = null;
-          this.visibility6 = null;
-          this.visibility7 = null;
-          this.visibility8 = null;
-          this.visibility9 = null;
-          var length = bwv.length;
-          if (length > 0) {
-            this.binding0 = bwv[0].binding;
-            this.keyId0 = bwv[0].getKeyId();
-            this.visibility0 = bwv[0].visibility;
-          }
-          if (length > 1) {
-            this.binding1 = bwv[1].binding;
-            this.keyId1 = bwv[1].getKeyId();
-            this.visibility1 = bwv[1].visibility;
-          }
-          if (length > 2) {
-            this.binding2 = bwv[2].binding;
-            this.keyId2 = bwv[2].getKeyId();
-            this.visibility2 = bwv[2].visibility;
-          }
-          if (length > 3) {
-            this.binding3 = bwv[3].binding;
-            this.keyId3 = bwv[3].getKeyId();
-            this.visibility3 = bwv[3].visibility;
-          }
-          if (length > 4) {
-            this.binding4 = bwv[4].binding;
-            this.keyId4 = bwv[4].getKeyId();
-            this.visibility4 = bwv[4].visibility;
-          }
-          if (length > 5) {
-            this.binding5 = bwv[5].binding;
-            this.keyId5 = bwv[5].getKeyId();
-            this.visibility5 = bwv[5].visibility;
-          }
-          if (length > 6) {
-            this.binding6 = bwv[6].binding;
-            this.keyId6 = bwv[6].getKeyId();
-            this.visibility6 = bwv[6].visibility;
-          }
-          if (length > 7) {
-            this.binding7 = bwv[7].binding;
-            this.keyId7 = bwv[7].getKeyId();
-            this.visibility7 = bwv[7].visibility;
-          }
-          if (length > 8) {
-            this.binding8 = bwv[8].binding;
-            this.keyId8 = bwv[8].getKeyId();
-            this.visibility8 = bwv[8].visibility;
-          }
-          if (length > 9) {
-            this.binding9 = bwv[9].binding;
-            this.keyId9 = bwv[9].getKeyId();
-            this.visibility9 = bwv[9].visibility;
-          }
+      if (url instanceof static_request_1.Request) {
+        if (url.method !== enums_1.RequestMethods.Get) {
+          exceptions_1.makeTypeError('JSONP requests must use GET request method.');
         }
-        return ($traceurRuntime.createClass)(ProtoInjectorInlineStrategy, {
-          getBindingAtIndex: function(index) {
-            if (index == 0)
-              return this.binding0;
-            if (index == 1)
-              return this.binding1;
-            if (index == 2)
-              return this.binding2;
-            if (index == 3)
-              return this.binding3;
-            if (index == 4)
-              return this.binding4;
-            if (index == 5)
-              return this.binding5;
-            if (index == 6)
-              return this.binding6;
-            if (index == 7)
-              return this.binding7;
-            if (index == 8)
-              return this.binding8;
-            if (index == 9)
-              return this.binding9;
-            throw new OutOfBoundsError(index);
-          },
-          createInjectorStrategy: function(injector) {
-            return new InjectorInlineStrategy(injector, this);
-          }
-        }, {});
-      }());
-      $__export("ProtoInjectorInlineStrategy", ProtoInjectorInlineStrategy);
-      ProtoInjectorDynamicStrategy = (function() {
-        function ProtoInjectorDynamicStrategy(protoInj, bwv) {
-          var len = bwv.length;
-          this.bindings = ListWrapper.createFixedSize(len);
-          this.keyIds = ListWrapper.createFixedSize(len);
-          this.visibilities = ListWrapper.createFixedSize(len);
-          for (var i = 0; i < len; i++) {
-            this.bindings[i] = bwv[i].binding;
-            this.keyIds[i] = bwv[i].getKeyId();
-            this.visibilities[i] = bwv[i].visibility;
-          }
-        }
-        return ($traceurRuntime.createClass)(ProtoInjectorDynamicStrategy, {
-          getBindingAtIndex: function(index) {
-            if (index < 0 || index >= this.bindings.length) {
-              throw new OutOfBoundsError(index);
-            }
-            return this.bindings[index];
-          },
-          createInjectorStrategy: function(ei) {
-            return new InjectorDynamicStrategy(this, ei);
-          }
-        }, {});
-      }());
-      $__export("ProtoInjectorDynamicStrategy", ProtoInjectorDynamicStrategy);
-      ProtoInjector = (function() {
-        function ProtoInjector(bwv) {
-          this.numberOfBindings = bwv.length;
-          this._strategy = bwv.length > _MAX_CONSTRUCTION_COUNTER ? new ProtoInjectorDynamicStrategy(this, bwv) : new ProtoInjectorInlineStrategy(this, bwv);
-        }
-        return ($traceurRuntime.createClass)(ProtoInjector, {getBindingAtIndex: function(index) {
-            return this._strategy.getBindingAtIndex(index);
-          }}, {});
-      }());
-      $__export("ProtoInjector", ProtoInjector);
-      InjectorInlineStrategy = (function() {
-        function InjectorInlineStrategy(injector, protoStrategy) {
-          this.injector = injector;
-          this.protoStrategy = protoStrategy;
-          this.obj0 = UNDEFINED;
-          this.obj1 = UNDEFINED;
-          this.obj2 = UNDEFINED;
-          this.obj3 = UNDEFINED;
-          this.obj4 = UNDEFINED;
-          this.obj5 = UNDEFINED;
-          this.obj6 = UNDEFINED;
-          this.obj7 = UNDEFINED;
-          this.obj8 = UNDEFINED;
-          this.obj9 = UNDEFINED;
-        }
-        return ($traceurRuntime.createClass)(InjectorInlineStrategy, {
-          resetConstructionCounter: function() {
-            this.injector._constructionCounter = 0;
-          },
-          instantiateBinding: function(binding, visibility) {
-            return this.injector._new(binding, visibility);
-          },
-          attach: function(parent, isHost) {
-            var inj = this.injector;
-            inj._parent = parent;
-            inj._isHost = isHost;
-          },
-          getObjByKeyId: function(keyId, visibility) {
-            var p = this.protoStrategy;
-            var inj = this.injector;
-            if (p.keyId0 === keyId && canSee(p.visibility0, visibility)) {
-              if (this.obj0 === UNDEFINED) {
-                this.obj0 = inj._new(p.binding0, p.visibility0);
-              }
-              return this.obj0;
-            }
-            if (p.keyId1 === keyId && canSee(p.visibility1, visibility)) {
-              if (this.obj1 === UNDEFINED) {
-                this.obj1 = inj._new(p.binding1, p.visibility1);
-              }
-              return this.obj1;
-            }
-            if (p.keyId2 === keyId && canSee(p.visibility2, visibility)) {
-              if (this.obj2 === UNDEFINED) {
-                this.obj2 = inj._new(p.binding2, p.visibility2);
-              }
-              return this.obj2;
-            }
-            if (p.keyId3 === keyId && canSee(p.visibility3, visibility)) {
-              if (this.obj3 === UNDEFINED) {
-                this.obj3 = inj._new(p.binding3, p.visibility3);
-              }
-              return this.obj3;
-            }
-            if (p.keyId4 === keyId && canSee(p.visibility4, visibility)) {
-              if (this.obj4 === UNDEFINED) {
-                this.obj4 = inj._new(p.binding4, p.visibility4);
-              }
-              return this.obj4;
-            }
-            if (p.keyId5 === keyId && canSee(p.visibility5, visibility)) {
-              if (this.obj5 === UNDEFINED) {
-                this.obj5 = inj._new(p.binding5, p.visibility5);
-              }
-              return this.obj5;
-            }
-            if (p.keyId6 === keyId && canSee(p.visibility6, visibility)) {
-              if (this.obj6 === UNDEFINED) {
-                this.obj6 = inj._new(p.binding6, p.visibility6);
-              }
-              return this.obj6;
-            }
-            if (p.keyId7 === keyId && canSee(p.visibility7, visibility)) {
-              if (this.obj7 === UNDEFINED) {
-                this.obj7 = inj._new(p.binding7, p.visibility7);
-              }
-              return this.obj7;
-            }
-            if (p.keyId8 === keyId && canSee(p.visibility8, visibility)) {
-              if (this.obj8 === UNDEFINED) {
-                this.obj8 = inj._new(p.binding8, p.visibility8);
-              }
-              return this.obj8;
-            }
-            if (p.keyId9 === keyId && canSee(p.visibility9, visibility)) {
-              if (this.obj9 === UNDEFINED) {
-                this.obj9 = inj._new(p.binding9, p.visibility9);
-              }
-              return this.obj9;
-            }
-            return UNDEFINED;
-          },
-          getObjAtIndex: function(index) {
-            if (index == 0)
-              return this.obj0;
-            if (index == 1)
-              return this.obj1;
-            if (index == 2)
-              return this.obj2;
-            if (index == 3)
-              return this.obj3;
-            if (index == 4)
-              return this.obj4;
-            if (index == 5)
-              return this.obj5;
-            if (index == 6)
-              return this.obj6;
-            if (index == 7)
-              return this.obj7;
-            if (index == 8)
-              return this.obj8;
-            if (index == 9)
-              return this.obj9;
-            throw new OutOfBoundsError(index);
-          },
-          getMaxNumberOfObjects: function() {
-            return _MAX_CONSTRUCTION_COUNTER;
-          }
-        }, {});
-      }());
-      $__export("InjectorInlineStrategy", InjectorInlineStrategy);
-      InjectorDynamicStrategy = (function() {
-        function InjectorDynamicStrategy(protoStrategy, injector) {
-          this.protoStrategy = protoStrategy;
-          this.injector = injector;
-          this.objs = ListWrapper.createFixedSize(protoStrategy.bindings.length);
-          ListWrapper.fill(this.objs, UNDEFINED);
-        }
-        return ($traceurRuntime.createClass)(InjectorDynamicStrategy, {
-          resetConstructionCounter: function() {
-            this.injector._constructionCounter = 0;
-          },
-          instantiateBinding: function(binding, visibility) {
-            return this.injector._new(binding, visibility);
-          },
-          attach: function(parent, isHost) {
-            var inj = this.injector;
-            inj._parent = parent;
-            inj._isHost = isHost;
-          },
-          getObjByKeyId: function(keyId, visibility) {
-            var p = this.protoStrategy;
-            for (var i = 0; i < p.keyIds.length; i++) {
-              if (p.keyIds[i] === keyId && canSee(p.visibilities[i], visibility)) {
-                if (this.objs[i] === UNDEFINED) {
-                  this.objs[i] = this.injector._new(p.bindings[i], p.visibilities[i]);
-                }
-                return this.objs[i];
-              }
-            }
-            return UNDEFINED;
-          },
-          getObjAtIndex: function(index) {
-            if (index < 0 || index >= this.objs.length) {
-              throw new OutOfBoundsError(index);
-            }
-            return this.objs[index];
-          },
-          getMaxNumberOfObjects: function() {
-            return this.objs.length;
-          }
-        }, {});
-      }());
-      $__export("InjectorDynamicStrategy", InjectorDynamicStrategy);
-      BindingWithVisibility = (function() {
-        function BindingWithVisibility(binding, visibility) {
-          this.binding = binding;
-          this.visibility = visibility;
-        }
-        return ($traceurRuntime.createClass)(BindingWithVisibility, {getKeyId: function() {
-            return this.binding.key.id;
-          }}, {});
-      }());
-      $__export("BindingWithVisibility", BindingWithVisibility);
-      Injector = (function() {
-        function Injector(_proto) {
-          var _parent = arguments[1] !== (void 0) ? arguments[1] : null;
-          var _depProvider = arguments[2] !== (void 0) ? arguments[2] : null;
-          var _debugContext = arguments[3] !== (void 0) ? arguments[3] : null;
-          this._proto = _proto;
-          this._parent = _parent;
-          this._depProvider = _depProvider;
-          this._debugContext = _debugContext;
-          this._isHost = false;
-          this._constructionCounter = 0;
-          this._strategy = _proto._strategy.createInjectorStrategy(this);
-        }
-        return ($traceurRuntime.createClass)(Injector, {
-          debugContext: function() {
-            return this._debugContext();
-          },
-          get: function(token) {
-            return this._getByKey(Key.get(token), null, null, false, Visibility.PublicAndPrivate);
-          },
-          getOptional: function(token) {
-            return this._getByKey(Key.get(token), null, null, true, Visibility.PublicAndPrivate);
-          },
-          getAt: function(index) {
-            return this._strategy.getObjAtIndex(index);
-          },
-          get parent() {
-            return this._parent;
-          },
-          get internalStrategy() {
-            return this._strategy;
-          },
-          resolveAndCreateChild: function(bindings) {
-            var depProvider = arguments[1] !== (void 0) ? arguments[1] : null;
-            var resovledBindings = Injector.resolve(bindings);
-            return this.createChildFromResolved(resovledBindings, depProvider);
-          },
-          createChildFromResolved: function(bindings) {
-            var depProvider = arguments[1] !== (void 0) ? arguments[1] : null;
-            var bd = bindings.map((function(b) {
-              return new BindingWithVisibility(b, Visibility.Public);
-            }));
-            var proto = new ProtoInjector(bd);
-            var inj = new Injector(proto, null, depProvider);
-            inj._parent = this;
-            return inj;
-          },
-          resolveAndInstantiate: function(binding) {
-            return this.instantiateResolved(Injector.resolve([binding])[0]);
-          },
-          instantiateResolved: function(binding) {
-            return this._instantiate(binding, Visibility.PublicAndPrivate);
-          },
-          _new: function(binding, visibility) {
-            if (this._constructionCounter++ > this._strategy.getMaxNumberOfObjects()) {
-              throw new CyclicDependencyError(this, binding.key);
-            }
-            return this._instantiate(binding, visibility);
-          },
-          _instantiate: function(binding, visibility) {
-            var factory = binding.factory;
-            var deps = binding.dependencies;
-            var length = deps.length;
-            var d0,
-                d1,
-                d2,
-                d3,
-                d4,
-                d5,
-                d6,
-                d7,
-                d8,
-                d9,
-                d10,
-                d11,
-                d12,
-                d13,
-                d14,
-                d15,
-                d16,
-                d17,
-                d18,
-                d19;
-            try {
-              d0 = length > 0 ? this._getByDependency(binding, deps[0], visibility) : null;
-              d1 = length > 1 ? this._getByDependency(binding, deps[1], visibility) : null;
-              d2 = length > 2 ? this._getByDependency(binding, deps[2], visibility) : null;
-              d3 = length > 3 ? this._getByDependency(binding, deps[3], visibility) : null;
-              d4 = length > 4 ? this._getByDependency(binding, deps[4], visibility) : null;
-              d5 = length > 5 ? this._getByDependency(binding, deps[5], visibility) : null;
-              d6 = length > 6 ? this._getByDependency(binding, deps[6], visibility) : null;
-              d7 = length > 7 ? this._getByDependency(binding, deps[7], visibility) : null;
-              d8 = length > 8 ? this._getByDependency(binding, deps[8], visibility) : null;
-              d9 = length > 9 ? this._getByDependency(binding, deps[9], visibility) : null;
-              d10 = length > 10 ? this._getByDependency(binding, deps[10], visibility) : null;
-              d11 = length > 11 ? this._getByDependency(binding, deps[11], visibility) : null;
-              d12 = length > 12 ? this._getByDependency(binding, deps[12], visibility) : null;
-              d13 = length > 13 ? this._getByDependency(binding, deps[13], visibility) : null;
-              d14 = length > 14 ? this._getByDependency(binding, deps[14], visibility) : null;
-              d15 = length > 15 ? this._getByDependency(binding, deps[15], visibility) : null;
-              d16 = length > 16 ? this._getByDependency(binding, deps[16], visibility) : null;
-              d17 = length > 17 ? this._getByDependency(binding, deps[17], visibility) : null;
-              d18 = length > 18 ? this._getByDependency(binding, deps[18], visibility) : null;
-              d19 = length > 19 ? this._getByDependency(binding, deps[19], visibility) : null;
-            } catch (e) {
-              if (e instanceof AbstractBindingError) {
-                e.addKey(this, binding.key);
-              }
-              throw e;
-            }
-            var obj;
-            try {
-              switch (length) {
-                case 0:
-                  obj = factory();
-                  break;
-                case 1:
-                  obj = factory(d0);
-                  break;
-                case 2:
-                  obj = factory(d0, d1);
-                  break;
-                case 3:
-                  obj = factory(d0, d1, d2);
-                  break;
-                case 4:
-                  obj = factory(d0, d1, d2, d3);
-                  break;
-                case 5:
-                  obj = factory(d0, d1, d2, d3, d4);
-                  break;
-                case 6:
-                  obj = factory(d0, d1, d2, d3, d4, d5);
-                  break;
-                case 7:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6);
-                  break;
-                case 8:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7);
-                  break;
-                case 9:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8);
-                  break;
-                case 10:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9);
-                  break;
-                case 11:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10);
-                  break;
-                case 12:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11);
-                  break;
-                case 13:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12);
-                  break;
-                case 14:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13);
-                  break;
-                case 15:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14);
-                  break;
-                case 16:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15);
-                  break;
-                case 17:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16);
-                  break;
-                case 18:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16, d17);
-                  break;
-                case 19:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16, d17, d18);
-                  break;
-                case 20:
-                  obj = factory(d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16, d17, d18, d19);
-                  break;
-              }
-            } catch (e) {
-              throw new InstantiationError(this, e, e.stack, binding.key);
-            }
-            return obj;
-          },
-          _getByDependency: function(binding, dep, bindingVisibility) {
-            var special = isPresent(this._depProvider) ? this._depProvider.getDependency(this, binding, dep) : UNDEFINED;
-            if (special !== UNDEFINED) {
-              return special;
-            } else {
-              return this._getByKey(dep.key, dep.lowerBoundVisibility, dep.upperBoundVisibility, dep.optional, bindingVisibility);
-            }
-          },
-          _getByKey: function(key, lowerBoundVisibility, upperBoundVisibility, optional, bindingVisibility) {
-            if (key === INJECTOR_KEY) {
-              return this;
-            }
-            if (upperBoundVisibility instanceof SelfMetadata) {
-              return this._getByKeySelf(key, optional, bindingVisibility);
-            } else if (upperBoundVisibility instanceof HostMetadata) {
-              return this._getByKeyHost(key, optional, bindingVisibility, lowerBoundVisibility);
-            } else {
-              return this._getByKeyDefault(key, optional, bindingVisibility, lowerBoundVisibility);
-            }
-          },
-          _throwOrNull: function(key, optional) {
-            if (optional) {
-              return null;
-            } else {
-              throw new NoBindingError(this, key);
-            }
-          },
-          _getByKeySelf: function(key, optional, bindingVisibility) {
-            var obj = this._strategy.getObjByKeyId(key.id, bindingVisibility);
-            return (obj !== UNDEFINED) ? obj : this._throwOrNull(key, optional);
-          },
-          _getByKeyHost: function(key, optional, bindingVisibility, lowerBoundVisibility) {
-            var inj = this;
-            if (lowerBoundVisibility instanceof SkipSelfMetadata) {
-              if (inj._isHost) {
-                return this._getPrivateDependency(key, optional, inj);
-              } else {
-                inj = inj._parent;
-              }
-            }
-            while (inj != null) {
-              var obj = inj._strategy.getObjByKeyId(key.id, bindingVisibility);
-              if (obj !== UNDEFINED)
-                return obj;
-              if (isPresent(inj._parent) && inj._isHost) {
-                return this._getPrivateDependency(key, optional, inj);
-              } else {
-                inj = inj._parent;
-              }
-            }
-            return this._throwOrNull(key, optional);
-          },
-          _getPrivateDependency: function(key, optional, inj) {
-            var obj = inj._parent._strategy.getObjByKeyId(key.id, Visibility.Private);
-            return (obj !== UNDEFINED) ? obj : this._throwOrNull(key, optional);
-          },
-          _getByKeyDefault: function(key, optional, bindingVisibility, lowerBoundVisibility) {
-            var inj = this;
-            if (lowerBoundVisibility instanceof SkipSelfMetadata) {
-              bindingVisibility = inj._isHost ? Visibility.PublicAndPrivate : Visibility.Public;
-              inj = inj._parent;
-            }
-            while (inj != null) {
-              var obj = inj._strategy.getObjByKeyId(key.id, bindingVisibility);
-              if (obj !== UNDEFINED)
-                return obj;
-              bindingVisibility = inj._isHost ? Visibility.PublicAndPrivate : Visibility.Public;
-              inj = inj._parent;
-            }
-            return this._throwOrNull(key, optional);
-          },
-          get displayName() {
-            return ("Injector(bindings: [" + _mapBindings(this, (function(b) {
-              return (" \"" + b.key.displayName + "\" ");
-            })).join(", ") + "])");
-          },
-          toString: function() {
-            return this.displayName;
-          }
-        }, {
-          resolve: function(bindings) {
-            var resolvedBindings = _resolveBindings(bindings);
-            var flatten = _flattenBindings(resolvedBindings, new Map());
-            return _createListOfBindings(flatten);
-          },
-          resolveAndCreate: function(bindings) {
-            var depProvider = arguments[1] !== (void 0) ? arguments[1] : null;
-            var resolvedBindings = Injector.resolve(bindings);
-            return Injector.fromResolvedBindings(resolvedBindings, depProvider);
-          },
-          fromResolvedBindings: function(bindings) {
-            var depProvider = arguments[1] !== (void 0) ? arguments[1] : null;
-            var bd = bindings.map((function(b) {
-              return new BindingWithVisibility(b, Visibility.Public);
-            }));
-            var proto = new ProtoInjector(bd);
-            var inj = new Injector(proto, null, depProvider);
-            return inj;
-          }
-        });
-      }());
-      $__export("Injector", Injector);
-      INJECTOR_KEY = Key.get(Injector);
-    }
-  };
+        responseObservable = httpRequest(this._backend, url);
+      } else {
+        throw exceptions_1.makeTypeError('First argument must be a url string or Request instance.');
+      }
+      return responseObservable;
+    };
+    Jsonp = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [interfaces_1.ConnectionBackend, base_request_options_1.RequestOptions])], Jsonp);
+    return Jsonp;
+  })(Http);
+  exports.Jsonp = Jsonp;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/di", ["angular2/src/core/di/metadata", "angular2/src/core/di/decorators", "angular2/src/core/di/forward_ref", "angular2/src/core/di/injector", "angular2/src/core/di/binding", "angular2/src/core/di/key", "angular2/src/core/di/exceptions", "angular2/src/core/di/opaque_token"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/di";
-  var $__exportNames = {undefined: true};
-  return {
-    setters: [function($__m) {
-      $__export("InjectMetadata", $__m.InjectMetadata);
-      $__export("OptionalMetadata", $__m.OptionalMetadata);
-      $__export("InjectableMetadata", $__m.InjectableMetadata);
-      $__export("SelfMetadata", $__m.SelfMetadata);
-      $__export("HostMetadata", $__m.HostMetadata);
-      $__export("SkipSelfMetadata", $__m.SkipSelfMetadata);
-      $__export("DependencyMetadata", $__m.DependencyMetadata);
-    }, function($__m) {
-      Object.keys($__m).forEach(function(p) {
-        if (!$__exportNames[p])
-          $__export(p, $__m[p]);
+System.register("@reactivex/rxjs/dist/cjs/observables/ArrayObservable", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/observables/ScalarObservable", "@reactivex/rxjs/dist/cjs/observables/EmptyObservable"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _ScalarObservable = require("@reactivex/rxjs/dist/cjs/observables/ScalarObservable");
+  var _ScalarObservable2 = _interopRequireDefault(_ScalarObservable);
+  var _EmptyObservable = require("@reactivex/rxjs/dist/cjs/observables/EmptyObservable");
+  var _EmptyObservable2 = _interopRequireDefault(_EmptyObservable);
+  var ArrayObservable = (function(_Observable) {
+    _inherits(ArrayObservable, _Observable);
+    function ArrayObservable(array, scheduler) {
+      _classCallCheck(this, ArrayObservable);
+      _Observable.call(this);
+      this.array = array;
+      this.scheduler = scheduler;
+      if (!scheduler && array.length === 1) {
+        this._isScalar = true;
+        this.value = array[0];
+      }
+    }
+    ArrayObservable.create = function create(array, scheduler) {
+      return new ArrayObservable(array, scheduler);
+    };
+    ArrayObservable.of = function of() {
+      for (var _len = arguments.length,
+          array = Array(_len),
+          _key = 0; _key < _len; _key++) {
+        array[_key] = arguments[_key];
+      }
+      var scheduler = array[array.length - 1];
+      if (scheduler && typeof scheduler.schedule === 'function') {
+        array.pop();
+      } else {
+        scheduler = void 0;
+      }
+      var len = array.length;
+      if (len > 1) {
+        return new ArrayObservable(array, scheduler);
+      } else if (len === 1) {
+        return new _ScalarObservable2['default'](array[0], scheduler);
+      } else {
+        return new _EmptyObservable2['default'](scheduler);
+      }
+    };
+    ArrayObservable.dispatch = function dispatch(state) {
+      var array = state.array;
+      var index = state.index;
+      var count = state.count;
+      var subscriber = state.subscriber;
+      if (index >= count) {
+        subscriber.complete();
+        return ;
+      }
+      subscriber.next(array[index]);
+      if (subscriber.isUnsubscribed) {
+        return ;
+      }
+      state.index = index + 1;
+      this.schedule(state);
+    };
+    ArrayObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var index = 0;
+      var array = this.array;
+      var count = array.length;
+      var scheduler = this.scheduler;
+      if (scheduler) {
+        subscriber.add(scheduler.schedule(ArrayObservable.dispatch, 0, {
+          array: array,
+          index: index,
+          count: count,
+          subscriber: subscriber
+        }));
+      } else {
+        for (var i = 0; i < count && !subscriber.isUnsubscribed; i++) {
+          subscriber.next(array[i]);
+        }
+        subscriber.complete();
+      }
+    };
+    return ArrayObservable;
+  })(_Observable3['default']);
+  exports['default'] = ArrayObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/concat-static", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = concat;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _Observable = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable2 = _interopRequireDefault(_Observable);
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  function concat() {
+    var scheduler = _schedulersImmediate2['default'];
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    var args = observables;
+    var len = args.length;
+    if (typeof args[observables.length - 1].schedule === 'function') {
+      scheduler = args.pop();
+      args.push(1, scheduler);
+    }
+    return _Observable2['default'].fromArray(observables).mergeAll(1);
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/schedulers/nextTick", ["@reactivex/rxjs/dist/cjs/schedulers/NextTickScheduler"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _NextTickScheduler = require("@reactivex/rxjs/dist/cjs/schedulers/NextTickScheduler");
+  var _NextTickScheduler2 = _interopRequireDefault(_NextTickScheduler);
+  exports['default'] = new _NextTickScheduler2['default']();
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/operators/combineLatest-static", ["@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/operators/combineLatest-support"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  exports['default'] = combineLatest;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _combineLatestSupport = require("@reactivex/rxjs/dist/cjs/operators/combineLatest-support");
+  function combineLatest() {
+    var project = undefined,
+        scheduler = undefined;
+    for (var _len = arguments.length,
+        observables = Array(_len),
+        _key = 0; _key < _len; _key++) {
+      observables[_key] = arguments[_key];
+    }
+    if (typeof observables[observables.length - 1].schedule === 'function') {
+      scheduler = observables.pop();
+    }
+    if (typeof observables[observables.length - 1] === 'function') {
+      project = observables.pop();
+    }
+    return new _observablesArrayObservable2['default'](observables, scheduler).lift(new _combineLatestSupport.CombineLatestOperator(project));
+  }
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/observables/IntervalObservable", ["@reactivex/rxjs/dist/cjs/util/isNumeric", "@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/schedulers/nextTick"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== 'function' && superClass !== null) {
+      throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }});
+    if (superClass)
+      Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+  var _utilIsNumeric = require("@reactivex/rxjs/dist/cjs/util/isNumeric");
+  var _utilIsNumeric2 = _interopRequireDefault(_utilIsNumeric);
+  var _Observable2 = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable3 = _interopRequireDefault(_Observable2);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  var IntervalObservable = (function(_Observable) {
+    _inherits(IntervalObservable, _Observable);
+    function IntervalObservable() {
+      var period = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+      var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersNextTick2['default'] : arguments[1];
+      _classCallCheck(this, IntervalObservable);
+      _Observable.call(this);
+      this.period = period;
+      this.scheduler = scheduler;
+      if (!_utilIsNumeric2['default'](period) || period < 0) {
+        this.period = 0;
+      }
+      if (!scheduler || typeof scheduler.schedule !== 'function') {
+        this.scheduler = _schedulersNextTick2['default'];
+      }
+    }
+    IntervalObservable.create = function create() {
+      var period = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+      var scheduler = arguments.length <= 1 || arguments[1] === undefined ? _schedulersNextTick2['default'] : arguments[1];
+      return new IntervalObservable(period, scheduler);
+    };
+    IntervalObservable.dispatch = function dispatch(state) {
+      var index = state.index;
+      var subscriber = state.subscriber;
+      var period = state.period;
+      subscriber.next(index);
+      if (subscriber.isUnsubscribed) {
+        return ;
+      }
+      state.index += 1;
+      this.schedule(state, period);
+    };
+    IntervalObservable.prototype._subscribe = function _subscribe(subscriber) {
+      var index = 0;
+      var period = this.period;
+      var scheduler = this.scheduler;
+      subscriber.add(scheduler.schedule(IntervalObservable.dispatch, period, {
+        index: index,
+        subscriber: subscriber,
+        period: period
+      }));
+    };
+    return IntervalObservable;
+  })(_Observable3['default']);
+  exports['default'] = IntervalObservable;
+  module.exports = exports['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("@reactivex/rxjs/dist/cjs/Rx", ["@reactivex/rxjs/dist/cjs/Observable", "@reactivex/rxjs/dist/cjs/operators/combineLatest-static", "@reactivex/rxjs/dist/cjs/operators/concat-static", "@reactivex/rxjs/dist/cjs/observables/DeferObservable", "@reactivex/rxjs/dist/cjs/observables/EmptyObservable", "@reactivex/rxjs/dist/cjs/observables/ForkJoinObservable", "@reactivex/rxjs/dist/cjs/observables/FromObservable", "@reactivex/rxjs/dist/cjs/observables/ArrayObservable", "@reactivex/rxjs/dist/cjs/observables/FromEventObservable", "@reactivex/rxjs/dist/cjs/observables/FromEventPatternObservable", "@reactivex/rxjs/dist/cjs/observables/PromiseObservable", "@reactivex/rxjs/dist/cjs/observables/IntervalObservable", "@reactivex/rxjs/dist/cjs/operators/merge-static", "@reactivex/rxjs/dist/cjs/observables/InfiniteObservable", "@reactivex/rxjs/dist/cjs/observables/RangeObservable", "@reactivex/rxjs/dist/cjs/observables/ErrorObservable", "@reactivex/rxjs/dist/cjs/observables/TimerObservable", "@reactivex/rxjs/dist/cjs/operators/zip-static", "@reactivex/rxjs/dist/cjs/operators/buffer", "@reactivex/rxjs/dist/cjs/operators/bufferCount", "@reactivex/rxjs/dist/cjs/operators/bufferTime", "@reactivex/rxjs/dist/cjs/operators/bufferToggle", "@reactivex/rxjs/dist/cjs/operators/bufferWhen", "@reactivex/rxjs/dist/cjs/operators/catch", "@reactivex/rxjs/dist/cjs/operators/combineAll", "@reactivex/rxjs/dist/cjs/operators/combineLatest", "@reactivex/rxjs/dist/cjs/operators/concat", "@reactivex/rxjs/dist/cjs/operators/concatAll", "@reactivex/rxjs/dist/cjs/operators/concatMap", "@reactivex/rxjs/dist/cjs/operators/concatMapTo", "@reactivex/rxjs/dist/cjs/operators/count", "@reactivex/rxjs/dist/cjs/operators/dematerialize", "@reactivex/rxjs/dist/cjs/operators/debounce", "@reactivex/rxjs/dist/cjs/operators/debounceTime", "@reactivex/rxjs/dist/cjs/operators/defaultIfEmpty", "@reactivex/rxjs/dist/cjs/operators/delay", "@reactivex/rxjs/dist/cjs/operators/distinctUntilChanged", "@reactivex/rxjs/dist/cjs/operators/do", "@reactivex/rxjs/dist/cjs/operators/expand", "@reactivex/rxjs/dist/cjs/operators/filter", "@reactivex/rxjs/dist/cjs/operators/finally", "@reactivex/rxjs/dist/cjs/operators/first", "@reactivex/rxjs/dist/cjs/operators/groupBy", "@reactivex/rxjs/dist/cjs/operators/ignoreElements", "@reactivex/rxjs/dist/cjs/operators/every", "@reactivex/rxjs/dist/cjs/operators/last", "@reactivex/rxjs/dist/cjs/operators/map", "@reactivex/rxjs/dist/cjs/operators/mapTo", "@reactivex/rxjs/dist/cjs/operators/materialize", "@reactivex/rxjs/dist/cjs/operators/merge", "@reactivex/rxjs/dist/cjs/operators/mergeAll", "@reactivex/rxjs/dist/cjs/operators/mergeMap", "@reactivex/rxjs/dist/cjs/operators/mergeMapTo", "@reactivex/rxjs/dist/cjs/operators/multicast", "@reactivex/rxjs/dist/cjs/operators/observeOn", "@reactivex/rxjs/dist/cjs/operators/partition", "@reactivex/rxjs/dist/cjs/operators/publish", "@reactivex/rxjs/dist/cjs/operators/publishBehavior", "@reactivex/rxjs/dist/cjs/operators/publishReplay", "@reactivex/rxjs/dist/cjs/operators/reduce", "@reactivex/rxjs/dist/cjs/operators/repeat", "@reactivex/rxjs/dist/cjs/operators/retry", "@reactivex/rxjs/dist/cjs/operators/retryWhen", "@reactivex/rxjs/dist/cjs/operators/sample", "@reactivex/rxjs/dist/cjs/operators/sampleTime", "@reactivex/rxjs/dist/cjs/operators/scan", "@reactivex/rxjs/dist/cjs/operators/share", "@reactivex/rxjs/dist/cjs/operators/shareReplay", "@reactivex/rxjs/dist/cjs/operators/single", "@reactivex/rxjs/dist/cjs/operators/skip", "@reactivex/rxjs/dist/cjs/operators/skipUntil", "@reactivex/rxjs/dist/cjs/operators/startWith", "@reactivex/rxjs/dist/cjs/operators/subscribeOn", "@reactivex/rxjs/dist/cjs/operators/switch", "@reactivex/rxjs/dist/cjs/operators/switchMap", "@reactivex/rxjs/dist/cjs/operators/switchMapTo", "@reactivex/rxjs/dist/cjs/operators/take", "@reactivex/rxjs/dist/cjs/operators/takeUntil", "@reactivex/rxjs/dist/cjs/operators/throttle", "@reactivex/rxjs/dist/cjs/operators/timeout", "@reactivex/rxjs/dist/cjs/operators/timeoutWith", "@reactivex/rxjs/dist/cjs/operators/toArray", "@reactivex/rxjs/dist/cjs/operators/toPromise", "@reactivex/rxjs/dist/cjs/operators/window", "@reactivex/rxjs/dist/cjs/operators/windowCount", "@reactivex/rxjs/dist/cjs/operators/windowTime", "@reactivex/rxjs/dist/cjs/operators/windowToggle", "@reactivex/rxjs/dist/cjs/operators/windowWhen", "@reactivex/rxjs/dist/cjs/operators/withLatestFrom", "@reactivex/rxjs/dist/cjs/operators/zip", "@reactivex/rxjs/dist/cjs/operators/zipAll", "@reactivex/rxjs/dist/cjs/Subject", "@reactivex/rxjs/dist/cjs/Subscription", "@reactivex/rxjs/dist/cjs/Subscriber", "@reactivex/rxjs/dist/cjs/subjects/ReplaySubject", "@reactivex/rxjs/dist/cjs/subjects/BehaviorSubject", "@reactivex/rxjs/dist/cjs/observables/ConnectableObservable", "@reactivex/rxjs/dist/cjs/Notification", "@reactivex/rxjs/dist/cjs/util/EmptyError", "@reactivex/rxjs/dist/cjs/util/ArgumentOutOfRangeError", "@reactivex/rxjs/dist/cjs/schedulers/nextTick", "@reactivex/rxjs/dist/cjs/schedulers/immediate"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  'use strict';
+  exports.__esModule = true;
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {'default': obj};
+  }
+  var _Observable = require("@reactivex/rxjs/dist/cjs/Observable");
+  var _Observable2 = _interopRequireDefault(_Observable);
+  var _operatorsCombineLatestStatic = require("@reactivex/rxjs/dist/cjs/operators/combineLatest-static");
+  var _operatorsCombineLatestStatic2 = _interopRequireDefault(_operatorsCombineLatestStatic);
+  var _operatorsConcatStatic = require("@reactivex/rxjs/dist/cjs/operators/concat-static");
+  var _operatorsConcatStatic2 = _interopRequireDefault(_operatorsConcatStatic);
+  var _observablesDeferObservable = require("@reactivex/rxjs/dist/cjs/observables/DeferObservable");
+  var _observablesDeferObservable2 = _interopRequireDefault(_observablesDeferObservable);
+  var _observablesEmptyObservable = require("@reactivex/rxjs/dist/cjs/observables/EmptyObservable");
+  var _observablesEmptyObservable2 = _interopRequireDefault(_observablesEmptyObservable);
+  var _observablesForkJoinObservable = require("@reactivex/rxjs/dist/cjs/observables/ForkJoinObservable");
+  var _observablesForkJoinObservable2 = _interopRequireDefault(_observablesForkJoinObservable);
+  var _observablesFromObservable = require("@reactivex/rxjs/dist/cjs/observables/FromObservable");
+  var _observablesFromObservable2 = _interopRequireDefault(_observablesFromObservable);
+  var _observablesArrayObservable = require("@reactivex/rxjs/dist/cjs/observables/ArrayObservable");
+  var _observablesArrayObservable2 = _interopRequireDefault(_observablesArrayObservable);
+  var _observablesFromEventObservable = require("@reactivex/rxjs/dist/cjs/observables/FromEventObservable");
+  var _observablesFromEventObservable2 = _interopRequireDefault(_observablesFromEventObservable);
+  var _observablesFromEventPatternObservable = require("@reactivex/rxjs/dist/cjs/observables/FromEventPatternObservable");
+  var _observablesFromEventPatternObservable2 = _interopRequireDefault(_observablesFromEventPatternObservable);
+  var _observablesPromiseObservable = require("@reactivex/rxjs/dist/cjs/observables/PromiseObservable");
+  var _observablesPromiseObservable2 = _interopRequireDefault(_observablesPromiseObservable);
+  var _observablesIntervalObservable = require("@reactivex/rxjs/dist/cjs/observables/IntervalObservable");
+  var _observablesIntervalObservable2 = _interopRequireDefault(_observablesIntervalObservable);
+  var _operatorsMergeStatic = require("@reactivex/rxjs/dist/cjs/operators/merge-static");
+  var _operatorsMergeStatic2 = _interopRequireDefault(_operatorsMergeStatic);
+  var _observablesInfiniteObservable = require("@reactivex/rxjs/dist/cjs/observables/InfiniteObservable");
+  var _observablesInfiniteObservable2 = _interopRequireDefault(_observablesInfiniteObservable);
+  var _observablesRangeObservable = require("@reactivex/rxjs/dist/cjs/observables/RangeObservable");
+  var _observablesRangeObservable2 = _interopRequireDefault(_observablesRangeObservable);
+  var _observablesErrorObservable = require("@reactivex/rxjs/dist/cjs/observables/ErrorObservable");
+  var _observablesErrorObservable2 = _interopRequireDefault(_observablesErrorObservable);
+  var _observablesTimerObservable = require("@reactivex/rxjs/dist/cjs/observables/TimerObservable");
+  var _observablesTimerObservable2 = _interopRequireDefault(_observablesTimerObservable);
+  var _operatorsZipStatic = require("@reactivex/rxjs/dist/cjs/operators/zip-static");
+  var _operatorsZipStatic2 = _interopRequireDefault(_operatorsZipStatic);
+  var _operatorsBuffer = require("@reactivex/rxjs/dist/cjs/operators/buffer");
+  var _operatorsBuffer2 = _interopRequireDefault(_operatorsBuffer);
+  var _operatorsBufferCount = require("@reactivex/rxjs/dist/cjs/operators/bufferCount");
+  var _operatorsBufferCount2 = _interopRequireDefault(_operatorsBufferCount);
+  var _operatorsBufferTime = require("@reactivex/rxjs/dist/cjs/operators/bufferTime");
+  var _operatorsBufferTime2 = _interopRequireDefault(_operatorsBufferTime);
+  var _operatorsBufferToggle = require("@reactivex/rxjs/dist/cjs/operators/bufferToggle");
+  var _operatorsBufferToggle2 = _interopRequireDefault(_operatorsBufferToggle);
+  var _operatorsBufferWhen = require("@reactivex/rxjs/dist/cjs/operators/bufferWhen");
+  var _operatorsBufferWhen2 = _interopRequireDefault(_operatorsBufferWhen);
+  var _operatorsCatch = require("@reactivex/rxjs/dist/cjs/operators/catch");
+  var _operatorsCatch2 = _interopRequireDefault(_operatorsCatch);
+  var _operatorsCombineAll = require("@reactivex/rxjs/dist/cjs/operators/combineAll");
+  var _operatorsCombineAll2 = _interopRequireDefault(_operatorsCombineAll);
+  var _operatorsCombineLatest = require("@reactivex/rxjs/dist/cjs/operators/combineLatest");
+  var _operatorsCombineLatest2 = _interopRequireDefault(_operatorsCombineLatest);
+  var _operatorsConcat = require("@reactivex/rxjs/dist/cjs/operators/concat");
+  var _operatorsConcat2 = _interopRequireDefault(_operatorsConcat);
+  var _operatorsConcatAll = require("@reactivex/rxjs/dist/cjs/operators/concatAll");
+  var _operatorsConcatAll2 = _interopRequireDefault(_operatorsConcatAll);
+  var _operatorsConcatMap = require("@reactivex/rxjs/dist/cjs/operators/concatMap");
+  var _operatorsConcatMap2 = _interopRequireDefault(_operatorsConcatMap);
+  var _operatorsConcatMapTo = require("@reactivex/rxjs/dist/cjs/operators/concatMapTo");
+  var _operatorsConcatMapTo2 = _interopRequireDefault(_operatorsConcatMapTo);
+  var _operatorsCount = require("@reactivex/rxjs/dist/cjs/operators/count");
+  var _operatorsCount2 = _interopRequireDefault(_operatorsCount);
+  var _operatorsDematerialize = require("@reactivex/rxjs/dist/cjs/operators/dematerialize");
+  var _operatorsDematerialize2 = _interopRequireDefault(_operatorsDematerialize);
+  var _operatorsDebounce = require("@reactivex/rxjs/dist/cjs/operators/debounce");
+  var _operatorsDebounce2 = _interopRequireDefault(_operatorsDebounce);
+  var _operatorsDebounceTime = require("@reactivex/rxjs/dist/cjs/operators/debounceTime");
+  var _operatorsDebounceTime2 = _interopRequireDefault(_operatorsDebounceTime);
+  var _operatorsDefaultIfEmpty = require("@reactivex/rxjs/dist/cjs/operators/defaultIfEmpty");
+  var _operatorsDefaultIfEmpty2 = _interopRequireDefault(_operatorsDefaultIfEmpty);
+  var _operatorsDelay = require("@reactivex/rxjs/dist/cjs/operators/delay");
+  var _operatorsDelay2 = _interopRequireDefault(_operatorsDelay);
+  var _operatorsDistinctUntilChanged = require("@reactivex/rxjs/dist/cjs/operators/distinctUntilChanged");
+  var _operatorsDistinctUntilChanged2 = _interopRequireDefault(_operatorsDistinctUntilChanged);
+  var _operatorsDo = require("@reactivex/rxjs/dist/cjs/operators/do");
+  var _operatorsDo2 = _interopRequireDefault(_operatorsDo);
+  var _operatorsExpand = require("@reactivex/rxjs/dist/cjs/operators/expand");
+  var _operatorsExpand2 = _interopRequireDefault(_operatorsExpand);
+  var _operatorsFilter = require("@reactivex/rxjs/dist/cjs/operators/filter");
+  var _operatorsFilter2 = _interopRequireDefault(_operatorsFilter);
+  var _operatorsFinally = require("@reactivex/rxjs/dist/cjs/operators/finally");
+  var _operatorsFinally2 = _interopRequireDefault(_operatorsFinally);
+  var _operatorsFirst = require("@reactivex/rxjs/dist/cjs/operators/first");
+  var _operatorsFirst2 = _interopRequireDefault(_operatorsFirst);
+  var _operatorsGroupBy = require("@reactivex/rxjs/dist/cjs/operators/groupBy");
+  var _operatorsIgnoreElements = require("@reactivex/rxjs/dist/cjs/operators/ignoreElements");
+  var _operatorsIgnoreElements2 = _interopRequireDefault(_operatorsIgnoreElements);
+  var _operatorsEvery = require("@reactivex/rxjs/dist/cjs/operators/every");
+  var _operatorsEvery2 = _interopRequireDefault(_operatorsEvery);
+  var _operatorsLast = require("@reactivex/rxjs/dist/cjs/operators/last");
+  var _operatorsLast2 = _interopRequireDefault(_operatorsLast);
+  var _operatorsMap = require("@reactivex/rxjs/dist/cjs/operators/map");
+  var _operatorsMap2 = _interopRequireDefault(_operatorsMap);
+  var _operatorsMapTo = require("@reactivex/rxjs/dist/cjs/operators/mapTo");
+  var _operatorsMapTo2 = _interopRequireDefault(_operatorsMapTo);
+  var _operatorsMaterialize = require("@reactivex/rxjs/dist/cjs/operators/materialize");
+  var _operatorsMaterialize2 = _interopRequireDefault(_operatorsMaterialize);
+  var _operatorsMerge = require("@reactivex/rxjs/dist/cjs/operators/merge");
+  var _operatorsMerge2 = _interopRequireDefault(_operatorsMerge);
+  var _operatorsMergeAll = require("@reactivex/rxjs/dist/cjs/operators/mergeAll");
+  var _operatorsMergeAll2 = _interopRequireDefault(_operatorsMergeAll);
+  var _operatorsMergeMap = require("@reactivex/rxjs/dist/cjs/operators/mergeMap");
+  var _operatorsMergeMap2 = _interopRequireDefault(_operatorsMergeMap);
+  var _operatorsMergeMapTo = require("@reactivex/rxjs/dist/cjs/operators/mergeMapTo");
+  var _operatorsMergeMapTo2 = _interopRequireDefault(_operatorsMergeMapTo);
+  var _operatorsMulticast = require("@reactivex/rxjs/dist/cjs/operators/multicast");
+  var _operatorsMulticast2 = _interopRequireDefault(_operatorsMulticast);
+  var _operatorsObserveOn = require("@reactivex/rxjs/dist/cjs/operators/observeOn");
+  var _operatorsObserveOn2 = _interopRequireDefault(_operatorsObserveOn);
+  var _operatorsPartition = require("@reactivex/rxjs/dist/cjs/operators/partition");
+  var _operatorsPartition2 = _interopRequireDefault(_operatorsPartition);
+  var _operatorsPublish = require("@reactivex/rxjs/dist/cjs/operators/publish");
+  var _operatorsPublish2 = _interopRequireDefault(_operatorsPublish);
+  var _operatorsPublishBehavior = require("@reactivex/rxjs/dist/cjs/operators/publishBehavior");
+  var _operatorsPublishBehavior2 = _interopRequireDefault(_operatorsPublishBehavior);
+  var _operatorsPublishReplay = require("@reactivex/rxjs/dist/cjs/operators/publishReplay");
+  var _operatorsPublishReplay2 = _interopRequireDefault(_operatorsPublishReplay);
+  var _operatorsReduce = require("@reactivex/rxjs/dist/cjs/operators/reduce");
+  var _operatorsReduce2 = _interopRequireDefault(_operatorsReduce);
+  var _operatorsRepeat = require("@reactivex/rxjs/dist/cjs/operators/repeat");
+  var _operatorsRepeat2 = _interopRequireDefault(_operatorsRepeat);
+  var _operatorsRetry = require("@reactivex/rxjs/dist/cjs/operators/retry");
+  var _operatorsRetry2 = _interopRequireDefault(_operatorsRetry);
+  var _operatorsRetryWhen = require("@reactivex/rxjs/dist/cjs/operators/retryWhen");
+  var _operatorsRetryWhen2 = _interopRequireDefault(_operatorsRetryWhen);
+  var _operatorsSample = require("@reactivex/rxjs/dist/cjs/operators/sample");
+  var _operatorsSample2 = _interopRequireDefault(_operatorsSample);
+  var _operatorsSampleTime = require("@reactivex/rxjs/dist/cjs/operators/sampleTime");
+  var _operatorsSampleTime2 = _interopRequireDefault(_operatorsSampleTime);
+  var _operatorsScan = require("@reactivex/rxjs/dist/cjs/operators/scan");
+  var _operatorsScan2 = _interopRequireDefault(_operatorsScan);
+  var _operatorsShare = require("@reactivex/rxjs/dist/cjs/operators/share");
+  var _operatorsShare2 = _interopRequireDefault(_operatorsShare);
+  var _operatorsShareReplay = require("@reactivex/rxjs/dist/cjs/operators/shareReplay");
+  var _operatorsShareReplay2 = _interopRequireDefault(_operatorsShareReplay);
+  var _operatorsSingle = require("@reactivex/rxjs/dist/cjs/operators/single");
+  var _operatorsSingle2 = _interopRequireDefault(_operatorsSingle);
+  var _operatorsSkip = require("@reactivex/rxjs/dist/cjs/operators/skip");
+  var _operatorsSkip2 = _interopRequireDefault(_operatorsSkip);
+  var _operatorsSkipUntil = require("@reactivex/rxjs/dist/cjs/operators/skipUntil");
+  var _operatorsSkipUntil2 = _interopRequireDefault(_operatorsSkipUntil);
+  var _operatorsStartWith = require("@reactivex/rxjs/dist/cjs/operators/startWith");
+  var _operatorsStartWith2 = _interopRequireDefault(_operatorsStartWith);
+  var _operatorsSubscribeOn = require("@reactivex/rxjs/dist/cjs/operators/subscribeOn");
+  var _operatorsSubscribeOn2 = _interopRequireDefault(_operatorsSubscribeOn);
+  var _operatorsSwitch = require("@reactivex/rxjs/dist/cjs/operators/switch");
+  var _operatorsSwitch2 = _interopRequireDefault(_operatorsSwitch);
+  var _operatorsSwitchMap = require("@reactivex/rxjs/dist/cjs/operators/switchMap");
+  var _operatorsSwitchMap2 = _interopRequireDefault(_operatorsSwitchMap);
+  var _operatorsSwitchMapTo = require("@reactivex/rxjs/dist/cjs/operators/switchMapTo");
+  var _operatorsSwitchMapTo2 = _interopRequireDefault(_operatorsSwitchMapTo);
+  var _operatorsTake = require("@reactivex/rxjs/dist/cjs/operators/take");
+  var _operatorsTake2 = _interopRequireDefault(_operatorsTake);
+  var _operatorsTakeUntil = require("@reactivex/rxjs/dist/cjs/operators/takeUntil");
+  var _operatorsTakeUntil2 = _interopRequireDefault(_operatorsTakeUntil);
+  var _operatorsThrottle = require("@reactivex/rxjs/dist/cjs/operators/throttle");
+  var _operatorsThrottle2 = _interopRequireDefault(_operatorsThrottle);
+  var _operatorsTimeout = require("@reactivex/rxjs/dist/cjs/operators/timeout");
+  var _operatorsTimeout2 = _interopRequireDefault(_operatorsTimeout);
+  var _operatorsTimeoutWith = require("@reactivex/rxjs/dist/cjs/operators/timeoutWith");
+  var _operatorsTimeoutWith2 = _interopRequireDefault(_operatorsTimeoutWith);
+  var _operatorsToArray = require("@reactivex/rxjs/dist/cjs/operators/toArray");
+  var _operatorsToArray2 = _interopRequireDefault(_operatorsToArray);
+  var _operatorsToPromise = require("@reactivex/rxjs/dist/cjs/operators/toPromise");
+  var _operatorsToPromise2 = _interopRequireDefault(_operatorsToPromise);
+  var _operatorsWindow = require("@reactivex/rxjs/dist/cjs/operators/window");
+  var _operatorsWindow2 = _interopRequireDefault(_operatorsWindow);
+  var _operatorsWindowCount = require("@reactivex/rxjs/dist/cjs/operators/windowCount");
+  var _operatorsWindowCount2 = _interopRequireDefault(_operatorsWindowCount);
+  var _operatorsWindowTime = require("@reactivex/rxjs/dist/cjs/operators/windowTime");
+  var _operatorsWindowTime2 = _interopRequireDefault(_operatorsWindowTime);
+  var _operatorsWindowToggle = require("@reactivex/rxjs/dist/cjs/operators/windowToggle");
+  var _operatorsWindowToggle2 = _interopRequireDefault(_operatorsWindowToggle);
+  var _operatorsWindowWhen = require("@reactivex/rxjs/dist/cjs/operators/windowWhen");
+  var _operatorsWindowWhen2 = _interopRequireDefault(_operatorsWindowWhen);
+  var _operatorsWithLatestFrom = require("@reactivex/rxjs/dist/cjs/operators/withLatestFrom");
+  var _operatorsWithLatestFrom2 = _interopRequireDefault(_operatorsWithLatestFrom);
+  var _operatorsZip = require("@reactivex/rxjs/dist/cjs/operators/zip");
+  var _operatorsZip2 = _interopRequireDefault(_operatorsZip);
+  var _operatorsZipAll = require("@reactivex/rxjs/dist/cjs/operators/zipAll");
+  var _operatorsZipAll2 = _interopRequireDefault(_operatorsZipAll);
+  var _Subject = require("@reactivex/rxjs/dist/cjs/Subject");
+  var _Subject2 = _interopRequireDefault(_Subject);
+  var _Subscription = require("@reactivex/rxjs/dist/cjs/Subscription");
+  var _Subscription2 = _interopRequireDefault(_Subscription);
+  var _Subscriber = require("@reactivex/rxjs/dist/cjs/Subscriber");
+  var _Subscriber2 = _interopRequireDefault(_Subscriber);
+  var _subjectsReplaySubject = require("@reactivex/rxjs/dist/cjs/subjects/ReplaySubject");
+  var _subjectsReplaySubject2 = _interopRequireDefault(_subjectsReplaySubject);
+  var _subjectsBehaviorSubject = require("@reactivex/rxjs/dist/cjs/subjects/BehaviorSubject");
+  var _subjectsBehaviorSubject2 = _interopRequireDefault(_subjectsBehaviorSubject);
+  var _observablesConnectableObservable = require("@reactivex/rxjs/dist/cjs/observables/ConnectableObservable");
+  var _observablesConnectableObservable2 = _interopRequireDefault(_observablesConnectableObservable);
+  var _Notification = require("@reactivex/rxjs/dist/cjs/Notification");
+  var _Notification2 = _interopRequireDefault(_Notification);
+  var _utilEmptyError = require("@reactivex/rxjs/dist/cjs/util/EmptyError");
+  var _utilEmptyError2 = _interopRequireDefault(_utilEmptyError);
+  var _utilArgumentOutOfRangeError = require("@reactivex/rxjs/dist/cjs/util/ArgumentOutOfRangeError");
+  var _utilArgumentOutOfRangeError2 = _interopRequireDefault(_utilArgumentOutOfRangeError);
+  var _schedulersNextTick = require("@reactivex/rxjs/dist/cjs/schedulers/nextTick");
+  var _schedulersNextTick2 = _interopRequireDefault(_schedulersNextTick);
+  var _schedulersImmediate = require("@reactivex/rxjs/dist/cjs/schedulers/immediate");
+  var _schedulersImmediate2 = _interopRequireDefault(_schedulersImmediate);
+  _Observable2['default'].combineLatest = _operatorsCombineLatestStatic2['default'];
+  _Observable2['default'].concat = _operatorsConcatStatic2['default'];
+  _Observable2['default'].defer = _observablesDeferObservable2['default'].create;
+  _Observable2['default'].empty = _observablesEmptyObservable2['default'].create;
+  _Observable2['default'].forkJoin = _observablesForkJoinObservable2['default'].create;
+  _Observable2['default'].from = _observablesFromObservable2['default'].create;
+  _Observable2['default'].fromArray = _observablesArrayObservable2['default'].create;
+  _Observable2['default'].fromEvent = _observablesFromEventObservable2['default'].create;
+  _Observable2['default'].fromEventPattern = _observablesFromEventPatternObservable2['default'].create;
+  _Observable2['default'].fromPromise = _observablesPromiseObservable2['default'].create;
+  _Observable2['default'].interval = _observablesIntervalObservable2['default'].create;
+  _Observable2['default'].merge = _operatorsMergeStatic2['default'];
+  _Observable2['default'].never = _observablesInfiniteObservable2['default'].create;
+  _Observable2['default'].of = _observablesArrayObservable2['default'].of;
+  _Observable2['default'].range = _observablesRangeObservable2['default'].create;
+  _Observable2['default']['throw'] = _observablesErrorObservable2['default'].create;
+  _Observable2['default'].timer = _observablesTimerObservable2['default'].create;
+  _Observable2['default'].zip = _operatorsZipStatic2['default'];
+  var observableProto = _Observable2['default'].prototype;
+  observableProto.buffer = _operatorsBuffer2['default'];
+  observableProto.bufferCount = _operatorsBufferCount2['default'];
+  observableProto.bufferTime = _operatorsBufferTime2['default'];
+  observableProto.bufferToggle = _operatorsBufferToggle2['default'];
+  observableProto.bufferWhen = _operatorsBufferWhen2['default'];
+  observableProto['catch'] = _operatorsCatch2['default'];
+  observableProto.combineAll = _operatorsCombineAll2['default'];
+  observableProto.combineLatest = _operatorsCombineLatest2['default'];
+  observableProto.concat = _operatorsConcat2['default'];
+  observableProto.concatAll = _operatorsConcatAll2['default'];
+  observableProto.concatMap = _operatorsConcatMap2['default'];
+  observableProto.concatMapTo = _operatorsConcatMapTo2['default'];
+  observableProto.count = _operatorsCount2['default'];
+  observableProto.dematerialize = _operatorsDematerialize2['default'];
+  observableProto.debounce = _operatorsDebounce2['default'];
+  observableProto.debounceTime = _operatorsDebounceTime2['default'];
+  observableProto.defaultIfEmpty = _operatorsDefaultIfEmpty2['default'];
+  observableProto.delay = _operatorsDelay2['default'];
+  observableProto.distinctUntilChanged = _operatorsDistinctUntilChanged2['default'];
+  observableProto['do'] = _operatorsDo2['default'];
+  observableProto.expand = _operatorsExpand2['default'];
+  observableProto.filter = _operatorsFilter2['default'];
+  observableProto['finally'] = _operatorsFinally2['default'];
+  observableProto.first = _operatorsFirst2['default'];
+  observableProto.groupBy = _operatorsGroupBy.groupBy;
+  observableProto.ignoreElements = _operatorsIgnoreElements2['default'];
+  observableProto.every = _operatorsEvery2['default'];
+  observableProto.last = _operatorsLast2['default'];
+  observableProto.map = _operatorsMap2['default'];
+  observableProto.mapTo = _operatorsMapTo2['default'];
+  observableProto.materialize = _operatorsMaterialize2['default'];
+  observableProto.merge = _operatorsMerge2['default'];
+  observableProto.mergeAll = _operatorsMergeAll2['default'];
+  observableProto.mergeMap = _operatorsMergeMap2['default'];
+  observableProto.flatMap = _operatorsMergeMap2['default'];
+  observableProto.mergeMapTo = _operatorsMergeMapTo2['default'];
+  observableProto.flatMapTo = _operatorsMergeMapTo2['default'];
+  observableProto.multicast = _operatorsMulticast2['default'];
+  observableProto.observeOn = _operatorsObserveOn2['default'];
+  observableProto.partition = _operatorsPartition2['default'];
+  observableProto.publish = _operatorsPublish2['default'];
+  observableProto.publishBehavior = _operatorsPublishBehavior2['default'];
+  observableProto.publishReplay = _operatorsPublishReplay2['default'];
+  observableProto.reduce = _operatorsReduce2['default'];
+  observableProto.repeat = _operatorsRepeat2['default'];
+  observableProto.retry = _operatorsRetry2['default'];
+  observableProto.retryWhen = _operatorsRetryWhen2['default'];
+  observableProto.sample = _operatorsSample2['default'];
+  observableProto.sampleTime = _operatorsSampleTime2['default'];
+  observableProto.scan = _operatorsScan2['default'];
+  observableProto.share = _operatorsShare2['default'];
+  observableProto.shareReplay = _operatorsShareReplay2['default'];
+  observableProto.single = _operatorsSingle2['default'];
+  observableProto.skip = _operatorsSkip2['default'];
+  observableProto.skipUntil = _operatorsSkipUntil2['default'];
+  observableProto.startWith = _operatorsStartWith2['default'];
+  observableProto.subscribeOn = _operatorsSubscribeOn2['default'];
+  observableProto['switch'] = _operatorsSwitch2['default'];
+  observableProto.switchMap = _operatorsSwitchMap2['default'];
+  observableProto.switchMapTo = _operatorsSwitchMapTo2['default'];
+  observableProto.take = _operatorsTake2['default'];
+  observableProto.takeUntil = _operatorsTakeUntil2['default'];
+  observableProto.throttle = _operatorsThrottle2['default'];
+  observableProto.timeout = _operatorsTimeout2['default'];
+  observableProto.timeoutWith = _operatorsTimeoutWith2['default'];
+  observableProto.toArray = _operatorsToArray2['default'];
+  observableProto.toPromise = _operatorsToPromise2['default'];
+  observableProto.window = _operatorsWindow2['default'];
+  observableProto.windowCount = _operatorsWindowCount2['default'];
+  observableProto.windowTime = _operatorsWindowTime2['default'];
+  observableProto.windowToggle = _operatorsWindowToggle2['default'];
+  observableProto.windowWhen = _operatorsWindowWhen2['default'];
+  observableProto.withLatestFrom = _operatorsWithLatestFrom2['default'];
+  observableProto.zip = _operatorsZip2['default'];
+  observableProto.zipAll = _operatorsZipAll2['default'];
+  var Scheduler = {
+    nextTick: _schedulersNextTick2['default'],
+    immediate: _schedulersImmediate2['default']
+  };
+  exports.Subject = _Subject2['default'];
+  exports.Scheduler = Scheduler;
+  exports.Observable = _Observable2['default'];
+  exports.Subscriber = _Subscriber2['default'];
+  exports.Subscription = _Subscription2['default'];
+  exports.ReplaySubject = _subjectsReplaySubject2['default'];
+  exports.BehaviorSubject = _subjectsBehaviorSubject2['default'];
+  exports.ConnectableObservable = _observablesConnectableObservable2['default'];
+  exports.Notification = _Notification2['default'];
+  exports.EmptyError = _utilEmptyError2['default'];
+  exports.ArgumentOutOfRangeError = _utilArgumentOutOfRangeError2['default'];
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("angular2/src/http/backends/xhr_backend", ["angular2/src/http/enums", "angular2/src/http/static_response", "angular2/src/http/base_response_options", "angular2/angular2", "angular2/src/http/backends/browser_xhr", "angular2/src/core/facade/lang", "@reactivex/rxjs/dist/cjs/Rx"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var __decorate = (this && this.__decorate) || function(decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+      case 2:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(o)) || o;
+        }, target);
+      case 3:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key)), void 0;
+        }, void 0);
+      case 4:
+        return decorators.reduceRight(function(o, d) {
+          return (d && d(target, key, o)) || o;
+        }, desc);
+    }
+  };
+  var __metadata = (this && this.__metadata) || function(k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+      return Reflect.metadata(k, v);
+  };
+  var enums_1 = require("angular2/src/http/enums");
+  var static_response_1 = require("angular2/src/http/static_response");
+  var base_response_options_1 = require("angular2/src/http/base_response_options");
+  var angular2_1 = require("angular2/angular2");
+  var browser_xhr_1 = require("angular2/src/http/backends/browser_xhr");
+  var lang_1 = require("angular2/src/core/facade/lang");
+  var Rx = require("@reactivex/rxjs/dist/cjs/Rx");
+  var Observable = Rx.Observable;
+  var XHRConnection = (function() {
+    function XHRConnection(req, browserXHR, baseResponseOptions) {
+      var _this = this;
+      this.request = req;
+      this.response = new Observable(function(responseObserver) {
+        var _xhr = browserXHR.build();
+        _xhr.open(enums_1.RequestMethods[req.method].toUpperCase(), req.url);
+        var onLoad = function() {
+          var response = lang_1.isPresent(_xhr.response) ? _xhr.response : _xhr.responseText;
+          var status = _xhr.status === 1223 ? 204 : _xhr.status;
+          if (status === 0) {
+            status = response ? 200 : 0;
+          }
+          var responseOptions = new base_response_options_1.ResponseOptions({
+            body: response,
+            status: status
+          });
+          if (lang_1.isPresent(baseResponseOptions)) {
+            responseOptions = baseResponseOptions.merge(responseOptions);
+          }
+          responseObserver.next(new static_response_1.Response(responseOptions));
+          responseObserver.complete();
+        };
+        var onError = function(err) {
+          var responseOptions = new base_response_options_1.ResponseOptions({
+            body: err,
+            type: enums_1.ResponseTypes.Error
+          });
+          if (lang_1.isPresent(baseResponseOptions)) {
+            responseOptions = baseResponseOptions.merge(responseOptions);
+          }
+          responseObserver.error(new static_response_1.Response(responseOptions));
+        };
+        if (lang_1.isPresent(req.headers)) {
+          req.headers.forEach(function(values, name) {
+            return _xhr.setRequestHeader(name, values.join(','));
+          });
+        }
+        _xhr.addEventListener('load', onLoad);
+        _xhr.addEventListener('error', onError);
+        _xhr.send(_this.request.text());
+        return function() {
+          _xhr.removeEventListener('load', onLoad);
+          _xhr.removeEventListener('error', onError);
+          _xhr.abort();
+        };
       });
-    }, function($__m) {
-      $__export("forwardRef", $__m.forwardRef);
-      $__export("resolveForwardRef", $__m.resolveForwardRef);
-    }, function($__m) {
-      $__export("Injector", $__m.Injector);
-      $__export("ProtoInjector", $__m.ProtoInjector);
-      $__export("BindingWithVisibility", $__m.BindingWithVisibility);
-      $__export("Visibility", $__m.Visibility);
-      $__export("UNDEFINED", $__m.UNDEFINED);
-    }, function($__m) {
-      $__export("Binding", $__m.Binding);
-      $__export("BindingBuilder", $__m.BindingBuilder);
-      $__export("ResolvedBinding", $__m.ResolvedBinding);
-      $__export("Dependency", $__m.Dependency);
-      $__export("bind", $__m.bind);
-    }, function($__m) {
-      $__export("Key", $__m.Key);
-      $__export("KeyRegistry", $__m.KeyRegistry);
-      $__export("TypeLiteral", $__m.TypeLiteral);
-    }, function($__m) {
-      $__export("NoBindingError", $__m.NoBindingError);
-      $__export("AbstractBindingError", $__m.AbstractBindingError);
-      $__export("CyclicDependencyError", $__m.CyclicDependencyError);
-      $__export("InstantiationError", $__m.InstantiationError);
-      $__export("InvalidBindingError", $__m.InvalidBindingError);
-      $__export("NoAnnotationError", $__m.NoAnnotationError);
-      $__export("OutOfBoundsError", $__m.OutOfBoundsError);
-    }, function($__m) {
-      $__export("OpaqueToken", $__m.OpaqueToken);
-    }],
-    execute: function() {}
-  };
+    }
+    return XHRConnection;
+  })();
+  exports.XHRConnection = XHRConnection;
+  var XHRBackend = (function() {
+    function XHRBackend(_browserXHR, _baseResponseOptions) {
+      this._browserXHR = _browserXHR;
+      this._baseResponseOptions = _baseResponseOptions;
+    }
+    XHRBackend.prototype.createConnection = function(request) {
+      return new XHRConnection(request, this._browserXHR, this._baseResponseOptions);
+    };
+    XHRBackend = __decorate([angular2_1.Injectable(), __metadata('design:paramtypes', [browser_xhr_1.BrowserXhr, base_response_options_1.ResponseOptions])], XHRBackend);
+    return XHRBackend;
+  })();
+  exports.XHRBackend = XHRBackend;
+  global.define = __define;
+  return module.exports;
 });
 
-System.register("angular2/http", ["angular2/di", "angular2/src/http/http", "angular2/src/http/backends/xhr_backend", "angular2/src/http/backends/jsonp_backend", "angular2/src/http/backends/browser_xhr", "angular2/src/http/backends/browser_jsonp", "angular2/src/http/base_request_options", "angular2/src/http/base_response_options", "angular2/src/http/backends/mock_backend", "angular2/src/http/static_request", "angular2/src/http/static_response", "angular2/src/http/interfaces", "angular2/src/http/headers", "angular2/src/http/enums", "angular2/src/http/url_search_params"], function($__export) {
-  "use strict";
-  var __moduleName = "angular2/http";
-  var bind,
-      Http,
-      Jsonp,
-      XHRBackend,
-      JSONPBackend,
-      BrowserXhr,
-      BrowserJsonp,
-      BaseRequestOptions,
-      RequestOptions,
-      BaseResponseOptions,
-      ResponseOptions,
-      HTTP_BINDINGS,
-      JSONP_BINDINGS;
-  return {
-    setters: [function($__m) {
-      bind = $__m.bind;
-    }, function($__m) {
-      Http = $__m.Http;
-      Jsonp = $__m.Jsonp;
-      $__export("Http", $__m.Http);
-      $__export("Jsonp", $__m.Jsonp);
-    }, function($__m) {
-      XHRBackend = $__m.XHRBackend;
-      $__export("XHRBackend", $__m.XHRBackend);
-      $__export("XHRConnection", $__m.XHRConnection);
-    }, function($__m) {
-      JSONPBackend = $__m.JSONPBackend;
-      $__export("JSONPBackend", $__m.JSONPBackend);
-      $__export("JSONPConnection", $__m.JSONPConnection);
-    }, function($__m) {
-      BrowserXhr = $__m.BrowserXhr;
-      $__export("BrowserXhr", $__m.BrowserXhr);
-    }, function($__m) {
-      BrowserJsonp = $__m.BrowserJsonp;
-    }, function($__m) {
-      BaseRequestOptions = $__m.BaseRequestOptions;
-      RequestOptions = $__m.RequestOptions;
-      $__export("BaseRequestOptions", $__m.BaseRequestOptions);
-      $__export("RequestOptions", $__m.RequestOptions);
-    }, function($__m) {
-      BaseResponseOptions = $__m.BaseResponseOptions;
-      ResponseOptions = $__m.ResponseOptions;
-      $__export("BaseResponseOptions", $__m.BaseResponseOptions);
-      $__export("ResponseOptions", $__m.ResponseOptions);
-    }, function($__m) {
-      $__export("MockConnection", $__m.MockConnection);
-      $__export("MockBackend", $__m.MockBackend);
-    }, function($__m) {
-      $__export("Request", $__m.Request);
-    }, function($__m) {
-      $__export("Response", $__m.Response);
-    }, function($__m) {
-      $__export("Connection", $__m.Connection);
-      $__export("ConnectionBackend", $__m.ConnectionBackend);
-    }, function($__m) {
-      $__export("Headers", $__m.Headers);
-    }, function($__m) {
-      $__export("ResponseTypes", $__m.ResponseTypes);
-      $__export("ReadyStates", $__m.ReadyStates);
-      $__export("RequestMethods", $__m.RequestMethods);
-      $__export("RequestCredentialsOpts", $__m.RequestCredentialsOpts);
-      $__export("RequestCacheOpts", $__m.RequestCacheOpts);
-      $__export("RequestModesOpts", $__m.RequestModesOpts);
-    }, function($__m) {
-      $__export("URLSearchParams", $__m.URLSearchParams);
-    }],
-    execute: function() {
-      HTTP_BINDINGS = [bind(Http).toFactory((function(xhrBackend, requestOptions) {
-        return new Http(xhrBackend, requestOptions);
-      }), [XHRBackend, RequestOptions]), BrowserXhr, bind(RequestOptions).toClass(BaseRequestOptions), bind(ResponseOptions).toClass(BaseResponseOptions), XHRBackend];
-      $__export("HTTP_BINDINGS", HTTP_BINDINGS);
-      JSONP_BINDINGS = [bind(Jsonp).toFactory((function(jsonpBackend, requestOptions) {
-        return new Jsonp(jsonpBackend, requestOptions);
-      }), [JSONPBackend, RequestOptions]), BrowserJsonp, bind(RequestOptions).toClass(BaseRequestOptions), bind(ResponseOptions).toClass(BaseResponseOptions), JSONPBackend];
-      $__export("JSONP_BINDINGS", JSONP_BINDINGS);
-    }
-  };
+System.register("angular2/http", ["angular2/angular2", "angular2/src/http/http", "angular2/src/http/backends/xhr_backend", "angular2/src/http/backends/jsonp_backend", "angular2/src/http/backends/browser_xhr", "angular2/src/http/backends/browser_jsonp", "angular2/src/http/base_request_options", "angular2/src/http/base_response_options", "angular2/src/http/backends/mock_backend", "angular2/src/http/static_request", "angular2/src/http/static_response", "angular2/src/http/interfaces", "angular2/src/http/backends/browser_xhr", "angular2/src/http/base_request_options", "angular2/src/http/base_response_options", "angular2/src/http/backends/xhr_backend", "angular2/src/http/backends/jsonp_backend", "angular2/src/http/http", "angular2/src/http/headers", "angular2/src/http/enums", "angular2/src/http/url_search_params"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  var angular2_1 = require("angular2/angular2");
+  var http_1 = require("angular2/src/http/http");
+  var xhr_backend_1 = require("angular2/src/http/backends/xhr_backend");
+  var jsonp_backend_1 = require("angular2/src/http/backends/jsonp_backend");
+  var browser_xhr_1 = require("angular2/src/http/backends/browser_xhr");
+  var browser_jsonp_1 = require("angular2/src/http/backends/browser_jsonp");
+  var base_request_options_1 = require("angular2/src/http/base_request_options");
+  var base_response_options_1 = require("angular2/src/http/base_response_options");
+  var mock_backend_1 = require("angular2/src/http/backends/mock_backend");
+  exports.MockConnection = mock_backend_1.MockConnection;
+  exports.MockBackend = mock_backend_1.MockBackend;
+  var static_request_1 = require("angular2/src/http/static_request");
+  exports.Request = static_request_1.Request;
+  var static_response_1 = require("angular2/src/http/static_response");
+  exports.Response = static_response_1.Response;
+  var interfaces_1 = require("angular2/src/http/interfaces");
+  exports.Connection = interfaces_1.Connection;
+  exports.ConnectionBackend = interfaces_1.ConnectionBackend;
+  var browser_xhr_2 = require("angular2/src/http/backends/browser_xhr");
+  exports.BrowserXhr = browser_xhr_2.BrowserXhr;
+  var base_request_options_2 = require("angular2/src/http/base_request_options");
+  exports.BaseRequestOptions = base_request_options_2.BaseRequestOptions;
+  exports.RequestOptions = base_request_options_2.RequestOptions;
+  var base_response_options_2 = require("angular2/src/http/base_response_options");
+  exports.BaseResponseOptions = base_response_options_2.BaseResponseOptions;
+  exports.ResponseOptions = base_response_options_2.ResponseOptions;
+  var xhr_backend_2 = require("angular2/src/http/backends/xhr_backend");
+  exports.XHRBackend = xhr_backend_2.XHRBackend;
+  exports.XHRConnection = xhr_backend_2.XHRConnection;
+  var jsonp_backend_2 = require("angular2/src/http/backends/jsonp_backend");
+  exports.JSONPBackend = jsonp_backend_2.JSONPBackend;
+  exports.JSONPConnection = jsonp_backend_2.JSONPConnection;
+  var http_2 = require("angular2/src/http/http");
+  exports.Http = http_2.Http;
+  exports.Jsonp = http_2.Jsonp;
+  var headers_1 = require("angular2/src/http/headers");
+  exports.Headers = headers_1.Headers;
+  var enums_1 = require("angular2/src/http/enums");
+  exports.ResponseTypes = enums_1.ResponseTypes;
+  exports.ReadyStates = enums_1.ReadyStates;
+  exports.RequestMethods = enums_1.RequestMethods;
+  var url_search_params_1 = require("angular2/src/http/url_search_params");
+  exports.URLSearchParams = url_search_params_1.URLSearchParams;
+  exports.HTTP_PROVIDERS = [angular2_1.provide(http_1.Http, {
+    useFactory: function(xhrBackend, requestOptions) {
+      return new http_1.Http(xhrBackend, requestOptions);
+    },
+    deps: [xhr_backend_1.XHRBackend, base_request_options_1.RequestOptions]
+  }), browser_xhr_1.BrowserXhr, angular2_1.provide(base_request_options_1.RequestOptions, {useClass: base_request_options_1.BaseRequestOptions}), angular2_1.provide(base_response_options_1.ResponseOptions, {useClass: base_response_options_1.BaseResponseOptions}), xhr_backend_1.XHRBackend];
+  exports.HTTP_BINDINGS = exports.HTTP_PROVIDERS;
+  exports.JSONP_PROVIDERS = [angular2_1.provide(http_1.Jsonp, {
+    useFactory: function(jsonpBackend, requestOptions) {
+      return new http_1.Jsonp(jsonpBackend, requestOptions);
+    },
+    deps: [jsonp_backend_1.JSONPBackend, base_request_options_1.RequestOptions]
+  }), browser_jsonp_1.BrowserJsonp, angular2_1.provide(base_request_options_1.RequestOptions, {useClass: base_request_options_1.BaseRequestOptions}), angular2_1.provide(base_response_options_1.ResponseOptions, {useClass: base_response_options_1.BaseResponseOptions}), angular2_1.provide(jsonp_backend_1.JSONPBackend, {useClass: jsonp_backend_1.JSONPBackend_})];
+  exports.JSON_BINDINGS = exports.JSONP_PROVIDERS;
+  global.define = __define;
+  return module.exports;
 });
 
 //# sourceMappingURLDisabled=http.dev.js.map

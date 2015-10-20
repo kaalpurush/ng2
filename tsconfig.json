@@ -8,6 +8,6 @@
     },
     "filesGlob": [
         "./app/*.ts"  ,
-		"typings/tsd.d.ts"
+		"./typings/tsd.d.ts"
 	]
 }

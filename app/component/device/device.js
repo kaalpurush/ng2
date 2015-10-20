@@ -20,9 +20,9 @@ var Device = (function () {
         var _this = this;
         this.searchComponents = searchComponents;
         this.devices = [];
-        http.get('./devices.json').toRx().map(function (res) { return res.json(); }).subscribe(function (res) { return _this.devices = res; });
+        http.get('./devices.json').map(function (res) { return res.json(); }).subscribe(function (res) { return _this.devices = res; });
     }
-    Device.prototype.onInit = function () {
+    Device.prototype.afterViewInit = function () {
         this.searchbox1 = this.searchComponents.first;
     };
     Device = __decorate([
@@ -31,7 +31,7 @@ var Device = (function () {
         }),
         angular2_1.View({
             templateUrl: './app/component/device/device.html',
-            directives: [angular2_1.NgFor, search_1.Search]
+            directives: [angular2_1.NgIf, angular2_1.NgFor, search_1.Search]
         }),
         __param(1, angular2_1.ViewQuery(search_1.Search)), 
         __metadata('design:paramtypes', [http_1.Http, angular2_1.QueryList])

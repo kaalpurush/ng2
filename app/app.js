@@ -17,8 +17,6 @@ var device_1 = require('./component/device/device');
 var about_1 = require('./component/about/about');
 var menu_1 = require('./component/menu/menu');
 var user_1 = require('./component/user/user');
-var game_center_1 = require('./component/game/game-center');
-var game_info_1 = require('./component/game/game-info');
 var user_model_1 = require('./model/user-model');
 var App = (function () {
     function App(router, location) {
@@ -33,17 +31,16 @@ var App = (function () {
     App = __decorate([
         angular2_1.Component({
             selector: 'app',
-            bindings: [user_model_1.UserModel, game_info_1.GameInfo]
+            bindings: [user_model_1.UserModel]
         }),
         angular2_1.View({
             templateUrl: './app/app.html',
             directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout]
         }),
         router_2.RouteConfig([
-            { path: '/', component: user_1.LoginForm, as: 'home' },
-            { path: '/devices', component: device_1.Device, as: 'devices' },
-            { path: '/about/:id', component: about_1.About, as: 'about' },
-            { path: '/game', component: game_center_1.GameCenter, as: 'game' }
+            { path: '/', component: user_1.LoginForm, as: 'Home' },
+            { path: '/devices', component: device_1.Device, as: 'Devices' },
+            { path: '/about/:id', component: about_1.About, as: 'About' },
         ]), 
         __metadata('design:paramtypes', [router_2.Router, router_2.Location])
     ], App);
