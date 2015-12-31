@@ -1,4 +1,4 @@
-import {Component, View, bootstrap, bind, NgFor} from 'angular2/angular2';
+import {Component, View, bind} from 'angular2/core';
 
 @Component({
 	selector: 'menu'
@@ -7,9 +7,7 @@ import {Component, View, bootstrap, bind, NgFor} from 'angular2/angular2';
 @View({
     template: `
 	<ul>
-		<li *ng-for="#m of menu">
-			<a href="#">{{m}}</a>
-		</li
+
 	</ul>	
 	`,	
 	styles: [`
@@ -20,7 +18,7 @@ import {Component, View, bootstrap, bind, NgFor} from 'angular2/angular2';
 	  border:1px dashed;
     }
   `],
-    directives: [NgFor]
+    directives: []
 })
 
 export class Menu {

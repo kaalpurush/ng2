@@ -6,12 +6,12 @@
 		<div class="row">
 			<div class="col-sm-5">
 
-				<div *ng-for="#device of devices">
+				<div *ngFor="#device of devices">
 					{{device.name}}
 				</div>
 
 				<search></search>
-				<p *ng-if="searchbox1">
+				<p *ngIf="searchbox1">
 					Query term from the "Search" component (using ViewQuery): {{searchbox1.q}}
 				</p>
 			</div>

@@ -1,5 +1,6 @@
-import {Component, View, bootstrap, bind} from 'angular2/angular2';
-import {ROUTER_BINDINGS, LocationStrategy, HashLocationStrategy} from 'angular2/router';
+import {Component, View, provide} from 'angular2/core';
+import {bootstrap} from 'angular2/platform/browser';
+import {ROUTER_PROVIDERS, LocationStrategy, HashLocationStrategy} from 'angular2/router';
 import {RouterLink, RouteConfig, Router, RouterOutlet, Location, RouteParams} from 'angular2/router';
 import {HTTP_BINDINGS, Http} from 'angular2/http'
 import {Device} from './component/device/device';
@@ -10,6 +11,7 @@ import {UserModel} from './model/user-model'
 
 @Component({
 	selector: 'app',
+    //template: '<h1>My First Angular 2 App</h1>',
 	bindings: [UserModel]
 })
 
@@ -19,9 +21,7 @@ import {UserModel} from './model/user-model'
 })
 
 @RouteConfig([
-    { path: '/', component: LoginForm, as: 'Home' },
-    { path: '/devices', component: Device, as: 'Devices' },
-    { path: '/about/:id', component: About, as: 'About' },
+    { path: '/', component: About, as: 'About' },
 ])
 
 export class App {
@@ -30,11 +30,6 @@ export class App {
         this.router = router;
         this.location = location;
     }
-
-	onUserChange(event) {
-		this.userName = event.name
-	}
-
 }
 
-bootstrap(App, [ROUTER_BINDINGS, bind(LocationStrategy).toClass(HashLocationStrategy), HTTP_BINDINGS]);
+bootstrap(App, [ROUTER_PROVIDERS, provide(LocationStrategy, { useClass: HashLocationStrategy })]);

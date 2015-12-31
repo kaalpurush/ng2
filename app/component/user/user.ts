@@ -1,6 +1,6 @@
-import {Component, View, bootstrap, bind, NgFor, EventEmitter} from 'angular2/angular2';
+import {Component, View, bind, EventEmitter} from 'angular2/core';
 import {UserModel} from '../../model/user-model'
-import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/angular2";
+import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/common";
 import {TypeValidators} from '../../helper/custom_validators';
 
 @Component({
@@ -12,7 +12,7 @@ import {TypeValidators} from '../../helper/custom_validators';
 	{{user.name}}
 	<button class="btn-sm btn-primary" [hidden]="user.isLogged()" (click)="user.login()">Login</button>
 	`,
-    directives: [NgFor]
+    directives: []
 })
 
 export class UserLogin {
@@ -31,7 +31,7 @@ export class UserLogin {
 	{{user.name}}
 	<button class="btn-sm btn-primary" [hidden]="!user.isLogged()" (click)="user.logout()">Logout</button>
 	`,
-    directives: [NgFor]
+    directives: []
 })
 
 export class UserLogout {
@@ -48,7 +48,7 @@ export class UserLogout {
 
 @View({
     templateUrl: './app/component/user/login.html',
-    directives: [NgFor, FORM_DIRECTIVES]
+    directives: [FORM_DIRECTIVES]
 })
 
 export class LoginForm {
