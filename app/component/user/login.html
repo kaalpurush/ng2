@@ -10,6 +10,16 @@
 			<div class="form-group" [class.has-error]="!loginForm.controls.password.valid && loginForm.controls.password.touched">
 				<input class="form-control" ngControl="password" type="password" placeholder="Your password">
 			</div>
+			<div class="radio">
+				<label>
+					<input name="role" ngControl="role" type="radio" value="admin" /> Admin</label>
+				<label>
+					<input name="role" ngControl="role" type="radio" value="superadmin" /> Super Admin</label>
+			</div>
+			<div class="form-group">
+				<label>
+					<input ngControl="remember" type="checkbox" /> Remember Me</label>
+			</div>
 			<button class="btn btn-primary" type="submit" [disabled]="!loginForm.valid">Log in</button>
 		</form>
 		<div [hidden]="!user.isLogged()">You are logged in!</div>

@@ -2,6 +2,7 @@ import {Component, View, bind, EventEmitter} from 'angular2/core';
 import {UserModel} from '../../model/user-model'
 import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/common";
 import {default as CustomValidators} from '../../helper/custom_validators';
+import {RadioControlValueAccessor} from '../../helper/radio_control_value_accessor';
 
 @Component({
 	selector: 'user-login'
@@ -48,7 +49,7 @@ export class UserLogout {
 
 @View({
     templateUrl: './app/component/user/login.html',
-    directives: [FORM_DIRECTIVES]
+    directives: [FORM_DIRECTIVES, RadioControlValueAccessor]
 })
 
 export class LoginForm {
@@ -58,8 +59,10 @@ export class LoginForm {
     constructor(fb: FormBuilder, user: UserModel) {
 		this.user = user;
         this.loginForm = fb.group({
-            email: ['', Validators.compose([Validators.required,CustomValidators.email])],
-            password: ['', Validators.required]
+            email: ['', Validators.compose([Validators.required, CustomValidators.email])],
+            password: ['', Validators.required],
+            remember: ['', Validators.required],
+            role: ['', Validators.required]
         });
     }
 
