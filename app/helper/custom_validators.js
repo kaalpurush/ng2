@@ -21,6 +21,7 @@ System.register([], function(exports_1) {
                 })();
                 CustomValidators.TypeValidators = TypeValidators;
             })(CustomValidators || (CustomValidators = {}));
+            exports_1("default",CustomValidators.TypeValidators);
         }
     }
 });

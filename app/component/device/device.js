@@ -30,11 +30,9 @@ System.register(['angular2/core', 'angular2/http', '../search/search'], function
                     var _this = this;
                     this.searchComponents = searchComponents;
                     this.devices = [];
-                    http.get('./devices.json').map(function (res) { return res.json(); }).subscribe(function (res) { return _this.devices = res; });
+                    http.get('./devices.json').subscribe(function (res) { return _this.devices = res.json(); });
+                    searchComponents.changes.subscribe(function (_) { return _this.searchbox1 = searchComponents.first; });
                 }
-                Device.prototype.ngAfterViewInit = function () {
-                    this.searchbox1 = this.searchComponents.first;
-                };
                 Device = __decorate([
                     core_1.Component({
                         selector: 'devices'

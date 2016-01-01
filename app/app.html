@@ -2,10 +2,11 @@
 	<nav class="navbar navbar-default">
 		<div class="container">
 			<ul class="nav navbar-nav">
-				<li><a [routerLink]="['/About']" class="link">About</a></li>
+				<li><a [routerLink]="['/Device']" class="link">Device</a></li>
+				<li><a [routerLink]="['/About',{'id':'Welcome'}]" class="link">About</a></li>
 			</ul>
 			<div class="navbar-right">
-				
+				<user-logout></user-logout>
 			</div>
 		</div>
 	</nav>

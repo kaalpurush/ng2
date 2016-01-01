@@ -8,7 +8,7 @@ import {FORM_DIRECTIVES} from 'angular2/common';
 @View({
     template: `
 	<div class="input-group">
-		<input type="text" class="form-control" placeholder="Search for..." [(ng-model)]="q">
+		<input type="text" class="form-control" placeholder="Search for..." [(ngModel)]="q">
 		<span class="input-group-btn">
 			<button class="btn btn-default" type="button" (click)="do_search($event);">Go!</button>
 		</span>

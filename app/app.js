@@ -1,4 +1,4 @@
-System.register(['angular2/core', 'angular2/platform/browser', 'angular2/router', './component/about/about', './component/menu/menu', './component/user/user', './model/user-model'], function(exports_1) {
+System.register(['angular2/core', 'angular2/platform/browser', 'angular2/router', 'angular2/http', './component/device/device', './component/about/about', './component/menu/menu', './component/user/user', './model/user-model'], function(exports_1) {
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
         var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
         if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -8,7 +8,7 @@ System.register(['angular2/core', 'angular2/platform/browser', 'angular2/router'
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, browser_1, router_1, router_2, about_1, menu_1, user_1, user_model_1;
+    var core_1, browser_1, router_1, router_2, http_1, device_1, about_1, menu_1, user_1, user_model_1;
     var App;
     return {
         setters:[
@@ -21,6 +21,12 @@ System.register(['angular2/core', 'angular2/platform/browser', 'angular2/router'
             function (router_1_1) {
                 router_1 = router_1_1;
                 router_2 = router_1_1;
+            },
+            function (http_1_1) {
+                http_1 = http_1_1;
+            },
+            function (device_1_1) {
+                device_1 = device_1_1;
             },
             function (about_1_1) {
                 about_1 = about_1_1;
@@ -45,22 +51,23 @@ System.register(['angular2/core', 'angular2/platform/browser', 'angular2/router'
                 App = __decorate([
                     core_1.Component({
                         selector: 'app',
-                        //template: '<h1>My First Angular 2 App</h1>',
-                        bindings: [user_model_1.UserModel]
+                        providers: [user_model_1.UserModel]
                     }),
                     core_1.View({
                         templateUrl: './app/app.html',
                         directives: [router_2.RouterLink, router_2.RouterOutlet, menu_1.Menu, user_1.UserLogout]
                     }),
                     router_2.RouteConfig([
-                        { path: '/', component: about_1.About, as: 'About' },
+                        { path: '/', component: user_1.LoginForm, as: 'Home' },
+                        { path: '/device', component: device_1.Device, as: 'Device' },
+                        { path: '/about/:id', component: about_1.About, as: 'About' },
                     ]), 
                     __metadata('design:paramtypes', [router_2.Router, router_2.Location])
                 ], App);
                 return App;
             })();
             exports_1("App", App);
-            browser_1.bootstrap(App, [router_1.ROUTER_PROVIDERS, core_1.provide(router_1.LocationStrategy, { useClass: router_1.HashLocationStrategy })]);
+            browser_1.bootstrap(App, [router_1.ROUTER_PROVIDERS, http_1.HTTP_PROVIDERS, core_1.provide(router_1.LocationStrategy, { useClass: router_1.HashLocationStrategy })]);
         }
     }
 });

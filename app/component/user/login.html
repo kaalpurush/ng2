@@ -2,13 +2,13 @@
 <h4>(login state & username is shared between components)</h4>
 <div class="row">
 	<div class="col-sm-6">
-		<form [hidden]="user.isLogged()" class="form" (submit)="doLogin($event)" [ng-form-model]="loginForm">
+		<form [hidden]="user.isLogged()" class="form" (submit)="doLogin($event)" [ngFormModel]="loginForm">
 			<div [hidden]="loginForm.valid" class="bg-warning">Form is invalid</div>
 			<div class="form-group" [class.has-error]="!loginForm.controls.email.valid && loginForm.controls.email.touched">
-				<input class="form-control" ng-control="email" type="email" placeholder="Your email">
+				<input class="form-control" ngControl="email" type="email" placeholder="Your email">
 			</div>
 			<div class="form-group" [class.has-error]="!loginForm.controls.password.valid && loginForm.controls.password.touched">
-				<input class="form-control" ng-control="password" type="password" placeholder="Your password">
+				<input class="form-control" ngControl="password" type="password" placeholder="Your password">
 			</div>
 			<button class="btn btn-primary" type="submit" [disabled]="!loginForm.valid">Log in</button>
 		</form>

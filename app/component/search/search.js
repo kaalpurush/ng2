@@ -30,7 +30,7 @@ System.register(['angular2/core', 'angular2/common'], function(exports_1) {
                         selector: 'search'
                     }),
                     core_1.View({
-                        template: "\n\t<div class=\"input-group\">\n\t\t<input type=\"text\" class=\"form-control\" placeholder=\"Search for...\" [(ng-model)]=\"q\">\n\t\t<span class=\"input-group-btn\">\n\t\t\t<button class=\"btn btn-default\" type=\"button\" (click)=\"do_search($event);\">Go!</button>\n\t\t</span>\n\t</div>\t\n\t",
+                        template: "\n\t<div class=\"input-group\">\n\t\t<input type=\"text\" class=\"form-control\" placeholder=\"Search for...\" [(ngModel)]=\"q\">\n\t\t<span class=\"input-group-btn\">\n\t\t\t<button class=\"btn btn-default\" type=\"button\" (click)=\"do_search($event);\">Go!</button>\n\t\t</span>\n\t</div>\t\n\t",
                         styles: ["\n    .input-group {\n      padding: 5px;\n\t  border:1px solid;\n    }\n  "],
                         directives: [common_1.FORM_DIRECTIVES]
                     }), 

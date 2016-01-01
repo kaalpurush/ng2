@@ -1,4 +1,4 @@
-import {Component, View, bind, ViewQuery, QueryList, AfterViewInit} from 'angular2/core';
+import {Component, View, bind, ViewQuery, QueryList} from 'angular2/core';
 import {Http} from 'angular2/http'
 import {Search} from '../search/search'
 
@@ -11,15 +11,12 @@ import {Search} from '../search/search'
     directives: [Search]
 })
 
-export class Device implements AfterViewInit {
+export class Device {
     devices: Array<any>;
 	searchbox1: Search;
     constructor(http: Http, @ViewQuery(Search) private searchComponents: QueryList<Search>) {
         this.devices = [];
-        http.get('./devices.json').map(res=> res.json()).subscribe(res => this.devices = res);
+        http.get('./devices.json').subscribe(res => this.devices = res.json());
+		searchComponents.changes.subscribe(_ => this.searchbox1=searchComponents.first);
     }
-
-	ngAfterViewInit() {
-		this.searchbox1 = this.searchComponents.first;
-	}
 }

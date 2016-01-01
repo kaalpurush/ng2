@@ -2,7 +2,7 @@ import {Component, View, provide} from 'angular2/core';
 import {bootstrap} from 'angular2/platform/browser';
 import {ROUTER_PROVIDERS, LocationStrategy, HashLocationStrategy} from 'angular2/router';
 import {RouterLink, RouteConfig, Router, RouterOutlet, Location, RouteParams} from 'angular2/router';
-import {HTTP_BINDINGS, Http} from 'angular2/http'
+import {HTTP_PROVIDERS, Http} from 'angular2/http'
 import {Device} from './component/device/device';
 import {About} from './component/about/about';
 import {Menu} from './component/menu/menu';
@@ -11,8 +11,7 @@ import {UserModel} from './model/user-model'
 
 @Component({
 	selector: 'app',
-    //template: '<h1>My First Angular 2 App</h1>',
-	bindings: [UserModel]
+	providers: [UserModel]
 })
 
 @View({
@@ -21,7 +20,9 @@ import {UserModel} from './model/user-model'
 })
 
 @RouteConfig([
-    { path: '/', component: About, as: 'About' },
+    { path: '/', component: LoginForm, as: 'Home' },
+    { path: '/device', component: Device, as: 'Device' },
+	{ path: '/about/:id', component: About, as: 'About' },
 ])
 
 export class App {
@@ -32,4 +33,4 @@ export class App {
     }
 }
 
-bootstrap(App, [ROUTER_PROVIDERS, provide(LocationStrategy, { useClass: HashLocationStrategy })]);
+bootstrap(App, [ROUTER_PROVIDERS, HTTP_PROVIDERS, provide(LocationStrategy, { useClass: HashLocationStrategy })]);

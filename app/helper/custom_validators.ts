@@ -17,4 +17,4 @@ module CustomValidators {
 
 }
 
-export = CustomValidators.TypeValidators
+export default CustomValidators.TypeValidators

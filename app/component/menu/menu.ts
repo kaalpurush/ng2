@@ -7,7 +7,9 @@ import {Component, View, bind} from 'angular2/core';
 @View({
     template: `
 	<ul>
-
+		<li *ngFor="#m of menu">
+			<a href="#">{{m}}</a>
+		</li>
 	</ul>	
 	`,	
 	styles: [`

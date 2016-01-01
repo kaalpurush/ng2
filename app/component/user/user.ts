@@ -1,7 +1,7 @@
 import {Component, View, bind, EventEmitter} from 'angular2/core';
 import {UserModel} from '../../model/user-model'
 import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/common";
-import {TypeValidators} from '../../helper/custom_validators';
+import {default as CustomValidators} from '../../helper/custom_validators';
 
 @Component({
 	selector: 'user-login'
@@ -58,7 +58,7 @@ export class LoginForm {
     constructor(fb: FormBuilder, user: UserModel) {
 		this.user = user;
         this.loginForm = fb.group({
-            email: ['', Validators.compose([Validators.required, TypeValidators.email])],
+            email: ['', Validators.compose([Validators.required,CustomValidators.email])],
             password: ['', Validators.required]
         });
     }

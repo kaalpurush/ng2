@@ -64,7 +64,7 @@ System.register(['angular2/core', '../../model/user-model', "angular2/common", '
                     this.type = 1;
                     this.user = user;
                     this.loginForm = fb.group({
-                        email: ['', common_1.Validators.compose([common_1.Validators.required, custom_validators_1.TypeValidators.email])],
+                        email: ['', common_1.Validators.compose([common_1.Validators.required, custom_validators_1.default.email])],
                         password: ['', common_1.Validators.required]
                     });
                 }

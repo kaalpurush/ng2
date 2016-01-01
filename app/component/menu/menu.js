@@ -25,7 +25,7 @@ System.register(['angular2/core'], function(exports_1) {
                         selector: 'menu'
                     }),
                     core_1.View({
-                        template: "\n\t<ul>\n\n\t</ul>\t\n\t",
+                        template: "\n\t<ul>\n\t\t<li *ngFor=\"#m of menu\">\n\t\t\t<a href=\"#\">{{m}}</a>\n\t\t</li>\n\t</ul>\t\n\t",
                         styles: ["\n    li {\n      padding: 5px;\n\t  float:left;\n\t  list-style:none;\n\t  border:1px dashed;\n    }\n  "],
                         directives: []
                     }), 
