@@ -55,7 +55,7 @@ export class UserLogout {
 export class LoginForm {
 	loginForm: ControlGroup;
 	user: UserModel;
-	type: number = 1;
+	role: String;
     constructor(fb: FormBuilder, user: UserModel) {
 		this.user = user;
         this.loginForm = fb.group({

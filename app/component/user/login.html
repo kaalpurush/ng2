@@ -10,11 +10,12 @@
 			<div class="form-group" [class.has-error]="!loginForm.controls.password.valid && loginForm.controls.password.touched">
 				<input class="form-control" ngControl="password" type="password" placeholder="Your password">
 			</div>
+			Login as: {{role}}
 			<div class="radio">
 				<label>
-					<input name="role" ngControl="role" type="radio" value="admin" /> Admin</label>
+					<input [(ngModel)]="role" name="role" ngControl="role" type="radio" value="admin" /> Admin</label>
 				<label>
-					<input name="role" ngControl="role" type="radio" value="superadmin" /> Super Admin</label>
+					<input [(ngModel)]="role" name="role" ngControl="role" type="radio" value="superadmin" /> Super Admin</label>
 			</div>
 			<div class="form-group">
 				<label>
