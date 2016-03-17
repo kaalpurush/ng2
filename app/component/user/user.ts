@@ -59,10 +59,10 @@ export class LoginForm {
     constructor(fb: FormBuilder, user: UserModel) {
 		this.user = user;
         this.loginForm = fb.group({
-            email: ['', Validators.compose([Validators.required, CustomValidators.email])],
-            password: ['', Validators.required],
-            remember: ['', Validators.required],
-            role: ['', Validators.required]
+            // email: ['', Validators.required],//Validators.compose([Validators.required, CustomValidators.email])],
+            // password: ['', Validators.required],
+            // remember: ['', Validators.required],
+            // role: ['', Validators.required]
         });
     }
 

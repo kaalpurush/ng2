@@ -1,4 +1,6 @@
-System.register(['angular2/core', '../../model/user-model', "angular2/common", '../../helper/custom_validators', '../../helper/radio_control_value_accessor'], function(exports_1) {
+System.register(['angular2/core', '../../model/user-model', "angular2/common", '../../helper/radio_control_value_accessor'], function(exports_1, context_1) {
+    "use strict";
+    var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
         var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
         if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -8,7 +10,7 @@ System.register(['angular2/core', '../../model/user-model', "angular2/common", '
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, user_model_1, common_1, custom_validators_1, radio_control_value_accessor_1;
+    var core_1, user_model_1, common_1, radio_control_value_accessor_1;
     var UserLogin, UserLogout, LoginForm;
     return {
         setters:[
@@ -20,9 +22,6 @@ System.register(['angular2/core', '../../model/user-model', "angular2/common", '
             },
             function (common_1_1) {
                 common_1 = common_1_1;
-            },
-            function (custom_validators_1_1) {
-                custom_validators_1 = custom_validators_1_1;
             },
             function (radio_control_value_accessor_1_1) {
                 radio_control_value_accessor_1 = radio_control_value_accessor_1_1;
@@ -43,7 +42,7 @@ System.register(['angular2/core', '../../model/user-model', "angular2/common", '
                     __metadata('design:paramtypes', [user_model_1.UserModel])
                 ], UserLogin);
                 return UserLogin;
-            })();
+            }());
             exports_1("UserLogin", UserLogin);
             UserLogout = (function () {
                 function UserLogout(user) {
@@ -60,17 +59,12 @@ System.register(['angular2/core', '../../model/user-model', "angular2/common", '
                     __metadata('design:paramtypes', [user_model_1.UserModel])
                 ], UserLogout);
                 return UserLogout;
-            })();
+            }());
             exports_1("UserLogout", UserLogout);
             LoginForm = (function () {
                 function LoginForm(fb, user) {
                     this.user = user;
-                    this.loginForm = fb.group({
-                        email: ['', common_1.Validators.compose([common_1.Validators.required, custom_validators_1.default.email])],
-                        password: ['', common_1.Validators.required],
-                        remember: ['', common_1.Validators.required],
-                        role: ['', common_1.Validators.required]
-                    });
+                    this.loginForm = fb.group({});
                 }
                 LoginForm.prototype.doLogin = function (event) {
                     console.log(this.loginForm.value);
@@ -89,7 +83,7 @@ System.register(['angular2/core', '../../model/user-model', "angular2/common", '
                     __metadata('design:paramtypes', [common_1.FormBuilder, user_model_1.UserModel])
                 ], LoginForm);
                 return LoginForm;
-            })();
+            }());
             exports_1("LoginForm", LoginForm);
         }
     }

@@ -4,13 +4,15 @@
 	<div class="col-sm-6">
 		<form [hidden]="user.isLogged()" class="form" (submit)="doLogin($event)" [ngFormModel]="loginForm">
 			<div [hidden]="loginForm.valid" class="bg-warning">Form is invalid</div>
-			<div class="form-group" [class.has-error]="!loginForm.controls.email.valid && loginForm.controls.email.touched">
-				<input class="form-control" ngControl="email" type="email" placeholder="Your email">
+			<!--<div class="form-group" [class.has-error]="!loginForm.controls.email.valid && loginForm.controls.email.touched">-->
+			<div class="form-group">
+				<input class="form-control" type="email" placeholder="Your email">
 			</div>
-			<div class="form-group" [class.has-error]="!loginForm.controls.password.valid && loginForm.controls.password.touched">
-				<input class="form-control" ngControl="password" type="password" placeholder="Your password">
+			<!--<div class="form-group" [class.has-error]="!loginForm.controls.password.valid && loginForm.controls.password.touched">-->
+			<div class="form-group">
+				<input class="form-control" type="password" placeholder="Your password">
 			</div>
-			Login as: {{role}}
+			<!--Login as: {{role}}
 			<div class="radio">
 				<label>
 					<input [(ngModel)]="role" name="role" ngControl="role" type="radio" value="admin" /> Admin</label>
@@ -20,7 +22,7 @@
 			<div class="form-group">
 				<label>
 					<input ngControl="remember" type="checkbox" /> Remember Me</label>
-			</div>
+			</div>-->
 			<button class="btn btn-primary" type="submit" [disabled]="!loginForm.valid">Log in</button>
 		</form>
 		<div [hidden]="!user.isLogged()">You are logged in!</div>
