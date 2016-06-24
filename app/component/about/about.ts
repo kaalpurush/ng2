@@ -1,14 +1,10 @@
-import {Component, View, EventEmitter} from 'angular2/core';
-import {RouteParams} from 'angular2/router';
+import {Component, EventEmitter} from '@angular/core';
 import {UserModel} from "../../model/user-model"
 import {UserLogin, UserLogout, LoginForm} from "../user/user";
+import { Router, ActivatedRoute }       from '@angular/router';
 
 @Component({
     selector: 'about',
-    viewBindings: []
-})
-
-@View({
     templateUrl: './app/component/about/about.html',
     directives: [
         UserLogin, UserLogout, LoginForm
@@ -17,9 +13,9 @@ import {UserLogin, UserLogout, LoginForm} from "../user/user";
 
 export class About {
     id: string;
-	user: UserModel;
-    constructor(params: RouteParams, user: UserModel) {
-		this.user = user;
-        this.id = params.get('id');
+    user: UserModel;
+    constructor(private route: ActivatedRoute, private router: Router, user: UserModel) {
+        this.user = user;
+        this.id = route.params['id']
     }
 }

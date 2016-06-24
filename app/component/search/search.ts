@@ -1,12 +1,9 @@
-import {Component, View} from 'angular2/core';
-import {FORM_DIRECTIVES} from 'angular2/common';
+import {Component} from '@angular/core';
+import {FORM_DIRECTIVES} from '@angular/common';
 
 @Component({
-	selector: 'search'
-})
-
-@View({
-    template: `
+	selector: 'search',
+	template: `
 	<div class="input-group">
 		<input type="text" class="form-control" placeholder="Search for..." [(ngModel)]="q">
 		<span class="input-group-btn">
@@ -23,6 +20,7 @@ import {FORM_DIRECTIVES} from 'angular2/common';
     directives: [FORM_DIRECTIVES]
 })
 
+
 export class Search {
 	q: string;
 
@@ -30,6 +28,6 @@ export class Search {
     }
 
 	do_search() {
-		alert('Search component is supposed to search: '+this.q);
+		alert('Search component is supposed to search: ' + this.q);
 	}
 }

@@ -1,22 +1,22 @@
-import {Component, View, bind, ViewQuery, QueryList} from 'angular2/core';
-import {Http} from 'angular2/http'
+import {Component, bind, ViewQuery, QueryList, OnInit} from '@angular/core';
 import {Search} from '../search/search'
+import { Http, Response } from '@angular/http';
 
 @Component({
-	selector: 'devices'
-})
-
-@View({
+    selector: 'devices',
     templateUrl: './app/component/device/device.html',
     directives: [Search]
 })
 
-export class Device {
+export class Device implements OnInit {
     devices: Array<any>;
-	searchbox1: Search;
-    constructor(http: Http, @ViewQuery(Search) private searchComponents: QueryList<Search>) {
+    searchbox1: Search;
+    constructor(private http: Http, @ViewQuery(Search) private searchComponents: QueryList<Search>) {
         this.devices = [];
-        http.get('./devices.json').subscribe(res => this.devices = res.json());
-		searchComponents.changes.subscribe(_ => this.searchbox1=searchComponents.first);
+        searchComponents.changes.subscribe(_ => this.searchbox1 = searchComponents.first);
+    }
+
+    ngOnInit(){
+        this.http.get('./devices.json').subscribe(res => {this.devices = res.json()});
     }
 }

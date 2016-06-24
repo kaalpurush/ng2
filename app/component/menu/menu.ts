@@ -1,17 +1,14 @@
-import {Component, View, bind} from 'angular2/core';
+import {Component, bind} from '@angular/core';
 
 @Component({
-	selector: 'menu'
-})
-
-@View({
-    template: `
+	selector: 'menu',
+	template: `
 	<ul>
 		<li *ngFor="#m of menu">
 			<a href="#">{{m}}</a>
 		</li>
 	</ul>	
-	`,	
+	`,
 	styles: [`
     li {
       padding: 5px;
@@ -22,6 +19,8 @@ import {Component, View, bind} from 'angular2/core';
   `],
     directives: []
 })
+
+
 
 export class Menu {
 	menu: Array<any>;

@@ -1,4 +1,4 @@
-import {Injectable, EventEmitter, Component} from 'angular2/core'
+import {Injectable, EventEmitter, Component} from '@angular/core'
 
 @Injectable()
 export class UserModel {

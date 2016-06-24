@@ -1,14 +1,10 @@
-import {Component, View, bind, EventEmitter} from 'angular2/core';
+import {Component, bind, EventEmitter} from '@angular/core';
 import {UserModel} from '../../model/user-model'
-import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "angular2/common";
+import {FormBuilder, Validators, ControlGroup, FORM_DIRECTIVES} from "@angular/common";
 import {default as CustomValidators} from '../../helper/custom_validators';
-import {RadioControlValueAccessor} from '../../helper/radio_control_value_accessor';
 
 @Component({
-	selector: 'user-login'
-})
-
-@View({
+    selector: 'user-login',
     template: `
 	{{user.name}}
 	<button class="btn-sm btn-primary" [hidden]="user.isLogged()" (click)="user.login()">Login</button>
@@ -17,17 +13,14 @@ import {RadioControlValueAccessor} from '../../helper/radio_control_value_access
 })
 
 export class UserLogin {
-	user: UserModel;
+    user: UserModel;
     constructor(user: UserModel) {
-		this.user = user;
+        this.user = user;
     }
 }
 
 @Component({
-	selector: 'user-logout'
-})
-
-@View({
+    selector: 'user-logout',
     template: `
 	{{user.name}}
 	<button class="btn-sm btn-primary" [hidden]="!user.isLogged()" (click)="user.logout()">Logout</button>
@@ -36,28 +29,25 @@ export class UserLogin {
 })
 
 export class UserLogout {
-	user: UserModel;
+    user: UserModel;
     constructor(user: UserModel) {
-		this.user = user;
+        this.user = user;
     }
 }
 
 @Component({
-	selector: 'login-form',
-	viewBindings: [FormBuilder]
-})
-
-@View({
-    templateUrl: './app/component/user/login.html',
-    directives: [FORM_DIRECTIVES, RadioControlValueAccessor]
+    selector: 'login-form',
+        templateUrl: './app/component/user/login.html',
+    directives: [FORM_DIRECTIVES],
+    viewProviders: [FormBuilder]
 })
 
 export class LoginForm {
-	loginForm: ControlGroup;
-	user: UserModel;
-	role: String;
+    loginForm: ControlGroup;
+    user: UserModel;
+    role: String;
     constructor(fb: FormBuilder, user: UserModel) {
-		this.user = user;
+        this.user = user;
         this.loginForm = fb.group({
             // email: ['', Validators.required],//Validators.compose([Validators.required, CustomValidators.email])],
             // password: ['', Validators.required],
@@ -69,6 +59,6 @@ export class LoginForm {
     doLogin(event) {
         console.log(this.loginForm.value);
         event.preventDefault();
-		this.user.login();
+        this.user.login();
     }
 }
