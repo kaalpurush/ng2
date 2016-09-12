@@ -16,9 +16,8 @@ var Menu = (function () {
     Menu = __decorate([
         core_1.Component({
             selector: 'menu',
-            template: "\n\t<ul>\n\t\t<li *ngFor=\"#m of menu\">\n\t\t\t<a href=\"#\">{{m}}</a>\n\t\t</li>\n\t</ul>\t\n\t",
-            styles: ["\n    li {\n      padding: 5px;\n\t  float:left;\n\t  list-style:none;\n\t  border:1px dashed;\n    }\n  "],
-            directives: []
+            template: "\n\t<ul>\n\t\t<li *ngFor=\"let m of menu\">\n\t\t\t<a href=\"#\">{{m}}</a>\n\t\t</li>\n\t</ul>\t\n\t",
+            styles: ["\n    li {\n      padding: 5px;\n\t  float:left;\n\t  list-style:none;\n\t  border:1px dashed;\n    }\n  "]
         }), 
         __metadata('design:paramtypes', [])
     ], Menu);

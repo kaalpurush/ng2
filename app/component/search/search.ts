@@ -1,5 +1,4 @@
 import {Component} from '@angular/core';
-import {FORM_DIRECTIVES} from '@angular/common';
 
 @Component({
 	selector: 'search',
@@ -16,8 +15,7 @@ import {FORM_DIRECTIVES} from '@angular/common';
       padding: 5px;
 	  border:1px solid;
     }
-  `],
-    directives: [FORM_DIRECTIVES]
+  `]
 })
 
 

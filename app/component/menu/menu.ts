@@ -1,10 +1,10 @@
-import {Component, bind} from '@angular/core';
+import {Component} from '@angular/core';
 
 @Component({
 	selector: 'menu',
 	template: `
 	<ul>
-		<li *ngFor="#m of menu">
+		<li *ngFor="let m of menu">
 			<a href="#">{{m}}</a>
 		</li>
 	</ul>	
@@ -16,8 +16,7 @@ import {Component, bind} from '@angular/core';
 	  list-style:none;
 	  border:1px dashed;
     }
-  `],
-    directives: []
+  `]
 })
 
 

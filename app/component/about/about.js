@@ -10,7 +10,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var user_model_1 = require("../../model/user-model");
-var user_1 = require("../user/user");
 var router_1 = require('@angular/router');
 var About = (function () {
     function About(route, router, user) {
@@ -22,10 +21,7 @@ var About = (function () {
     About = __decorate([
         core_1.Component({
             selector: 'about',
-            templateUrl: './app/component/about/about.html',
-            directives: [
-                user_1.UserLogin, user_1.UserLogout, user_1.LoginForm
-            ]
+            templateUrl: './app/component/about/about.html'
         }), 
         __metadata('design:paramtypes', [router_1.ActivatedRoute, router_1.Router, user_model_1.UserModel])
     ], About);

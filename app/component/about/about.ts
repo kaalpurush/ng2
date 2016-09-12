@@ -5,10 +5,7 @@ import { Router, ActivatedRoute }       from '@angular/router';
 
 @Component({
     selector: 'about',
-    templateUrl: './app/component/about/about.html',
-    directives: [
-        UserLogin, UserLogout, LoginForm
-    ]
+    templateUrl: './app/component/about/about.html'
 })
 
 export class About {

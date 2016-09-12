@@ -10,7 +10,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var user_model_1 = require('../../model/user-model');
-var common_1 = require("@angular/common");
 var UserLogin = (function () {
     function UserLogin(user) {
         this.user = user;
@@ -19,7 +18,6 @@ var UserLogin = (function () {
         core_1.Component({
             selector: 'user-login',
             template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"user.isLogged()\" (click)=\"user.login()\">Login</button>\n\t",
-            directives: []
         }), 
         __metadata('design:paramtypes', [user_model_1.UserModel])
     ], UserLogin);
@@ -33,8 +31,7 @@ var UserLogout = (function () {
     UserLogout = __decorate([
         core_1.Component({
             selector: 'user-logout',
-            template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"!user.isLogged()\" (click)=\"user.logout()\">Logout</button>\n\t",
-            directives: []
+            template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"!user.isLogged()\" (click)=\"user.logout()\">Logout</button>\n\t"
         }), 
         __metadata('design:paramtypes', [user_model_1.UserModel])
     ], UserLogout);
@@ -42,23 +39,20 @@ var UserLogout = (function () {
 }());
 exports.UserLogout = UserLogout;
 var LoginForm = (function () {
-    function LoginForm(fb, user) {
+    function LoginForm(user) {
         this.user = user;
-        this.loginForm = fb.group({});
     }
     LoginForm.prototype.doLogin = function (event) {
-        console.log(this.loginForm.value);
+        //console.log(this.loginForm.value);
         event.preventDefault();
         this.user.login();
     };
     LoginForm = __decorate([
         core_1.Component({
             selector: 'login-form',
-            templateUrl: './app/component/user/login.html',
-            directives: [common_1.FORM_DIRECTIVES],
-            viewProviders: [common_1.FormBuilder]
+            templateUrl: './app/component/user/login.html'
         }), 
-        __metadata('design:paramtypes', [common_1.FormBuilder, user_model_1.UserModel])
+        __metadata('design:paramtypes', [user_model_1.UserModel])
     ], LoginForm);
     return LoginForm;
 }());

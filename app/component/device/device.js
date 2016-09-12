@@ -16,23 +16,25 @@ var search_1 = require('../search/search');
 var http_1 = require('@angular/http');
 var Device = (function () {
     function Device(http, searchComponents) {
-        var _this = this;
         this.http = http;
         this.searchComponents = searchComponents;
-        this.devices = [];
-        searchComponents.changes.subscribe(function (_) { return _this.searchbox1 = searchComponents.first; });
+        this.searchbox1 = null;
     }
     Device.prototype.ngOnInit = function () {
         var _this = this;
         this.http.get('./devices.json').subscribe(function (res) { _this.devices = res.json(); });
     };
+    Device.prototype.ngAfterContentInit = function () {
+        var _this = this;
+        this.searchComponents.changes.subscribe(function () { return _this.searchbox1 = _this.searchComponents.first; });
+    };
     Device = __decorate([
         core_1.Component({
             selector: 'devices',
             templateUrl: './app/component/device/device.html',
-            directives: [search_1.Search]
+            providers: [core_1.QueryList]
         }),
-        __param(1, core_1.ViewQuery(search_1.Search)), 
+        __param(1, core_1.ViewChildren(search_1.Search)), 
         __metadata('design:paramtypes', [http_1.Http, core_1.QueryList])
     ], Device);
     return Device;
