@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component,Output,EventEmitter} from '@angular/core';
 
 @Component({
 	selector: 'search',
@@ -6,7 +6,7 @@ import {Component} from '@angular/core';
 	<div class="input-group">
 		<input type="text" class="form-control" placeholder="Search for..." [(ngModel)]="q">
 		<span class="input-group-btn">
-			<button class="btn btn-default" type="button" (click)="do_search($event);">Go!</button>
+			<button class="btn btn-default" type="button" (click)="do_search();">Go!</button>
 		</span>
 	</div>	
 	`,
@@ -20,12 +20,13 @@ import {Component} from '@angular/core';
 
 
 export class Search {
+	@Output() onsearch: EventEmitter<any> = new EventEmitter();
 	q: string;
 
     constructor() {
     }
 
 	do_search() {
-		alert('Search component is supposed to search: ' + this.q);
+		this.onsearch.emit(this.q);
 	}
 }

@@ -7,8 +7,8 @@ import {LoginForm, UserLogout} from './component/user/user';
 import {UserModel} from './model/user-model';
 
 export const appRoutes: Routes = [
-  { path: '', redirectTo: '/device',pathMatch:'full' },
-  //{ path: 'login', component: LoginForm, },
+  { path: '', redirectTo: '/login',pathMatch:'full' },
+  { path: 'login', component: LoginForm, },
   { path: 'device', component: Device },
   { path: 'about/:id', component: About },
 ];

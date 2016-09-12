@@ -8,34 +8,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 var core_1 = require('@angular/core');
 var search_1 = require('../search/search');
 var http_1 = require('@angular/http');
 var Device = (function () {
-    function Device(http, searchComponents) {
+    function Device(http) {
+        var _this = this;
         this.http = http;
-        this.searchComponents = searchComponents;
         this.searchbox1 = null;
-    }
-    Device.prototype.ngOnInit = function () {
-        var _this = this;
         this.http.get('./devices.json').subscribe(function (res) { _this.devices = res.json(); });
+    }
+    Device.prototype.ngAfterViewInit = function () {
+        this.searchbox1 = this.searchComponents.first;
     };
-    Device.prototype.ngAfterContentInit = function () {
-        var _this = this;
-        this.searchComponents.changes.subscribe(function () { return _this.searchbox1 = _this.searchComponents.first; });
+    Device.prototype.doSearch = function (query) {
+        alert("Search component is requesting a search on: " + query);
     };
+    __decorate([
+        core_1.ViewChildren(search_1.Search), 
+        __metadata('design:type', core_1.QueryList)
+    ], Device.prototype, "searchComponents", void 0);
     Device = __decorate([
         core_1.Component({
             selector: 'devices',
             templateUrl: './app/component/device/device.html',
             providers: [core_1.QueryList]
-        }),
-        __param(1, core_1.ViewChildren(search_1.Search)), 
-        __metadata('design:paramtypes', [http_1.Http, core_1.QueryList])
+        }), 
+        __metadata('design:paramtypes', [http_1.Http])
     ], Device);
     return Device;
 }());

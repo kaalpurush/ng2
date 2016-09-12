@@ -1,5 +1,6 @@
-import {Component, EventEmitter} from '@angular/core';
+import {Component, EventEmitter, ViewChild, AfterViewChecked} from '@angular/core';
 import {UserModel} from '../../model/user-model';
+import { NgForm } from '@angular/forms';
 
 @Component({
     selector: 'user-login',
@@ -33,19 +34,28 @@ export class UserLogout {
 
 @Component({
     selector: 'login-form',
-        templateUrl: './app/component/user/login.html'
+    templateUrl: './app/component/user/login.html'
 })
 
-export class LoginForm {
+export class LoginForm implements AfterViewChecked {
+    loginForm: NgForm;
     user: UserModel;
     role: String;
+    cred: any = {};
+    @ViewChild('loginForm') currentForm: NgForm;
     constructor(user: UserModel) {
         this.user = user;
+        this.cred.email = '';
+        this.cred.password = '';
     }
 
     doLogin(event) {
-        //console.log(this.loginForm.value);
-        event.preventDefault();
+        console.log(this.loginForm);
         this.user.login();
+    }
+
+    ngAfterViewChecked() {
+        if (this.currentForm === this.loginForm) { return; }
+        this.loginForm = this.currentForm;
     }
 }

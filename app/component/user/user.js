@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var user_model_1 = require('../../model/user-model');
+var forms_1 = require('@angular/forms');
 var UserLogin = (function () {
     function UserLogin(user) {
         this.user = user;
@@ -40,13 +41,25 @@ var UserLogout = (function () {
 exports.UserLogout = UserLogout;
 var LoginForm = (function () {
     function LoginForm(user) {
+        this.cred = {};
         this.user = user;
+        this.cred.email = '';
+        this.cred.password = '';
     }
     LoginForm.prototype.doLogin = function (event) {
-        //console.log(this.loginForm.value);
-        event.preventDefault();
+        console.log(this.loginForm);
         this.user.login();
     };
+    LoginForm.prototype.ngAfterViewChecked = function () {
+        if (this.currentForm === this.loginForm) {
+            return;
+        }
+        this.loginForm = this.currentForm;
+    };
+    __decorate([
+        core_1.ViewChild('loginForm'), 
+        __metadata('design:type', forms_1.NgForm)
+    ], LoginForm.prototype, "currentForm", void 0);
     LoginForm = __decorate([
         core_1.Component({
             selector: 'login-form',

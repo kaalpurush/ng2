@@ -1,6 +1,6 @@
 <section class="wrapper">
 	<div class="container">
-		<h3>Demonstrating http and ViewQuery</h3>
+		<h3>Demonstrating Http request, Event binding, ViewChildren, QueryList</h3>
 		<h4>My Devices:</h4>
 
 		<div class="row">
@@ -10,9 +10,9 @@
 					{{device.name}}
 				</div>
 
-				<search></search>
+				<search (onsearch)="doSearch($event)"></search>
 				<p *ngIf="searchbox1">
-					Query term from the "Search" component (using ViewQuery): {{searchbox1.q}}
+					Query term from the "Search" component (using ViewChildren): {{searchbox1.q}}
 				</p>
 			</div>
 		</div>
