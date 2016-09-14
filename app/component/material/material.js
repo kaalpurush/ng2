@@ -9,24 +9,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require("@angular/core");
-var UserModel = (function () {
-    function UserModel() {
-        this.name = "Visitor";
+var Material = (function () {
+    function Material() {
     }
-    UserModel.prototype.login = function () {
-        this.name = "Admin";
-    };
-    UserModel.prototype.logout = function () {
-        this.name = "Visitor";
-    };
-    UserModel.prototype.isLogged = function () {
-        return this.name == "Admin";
-    };
-    return UserModel;
+    return Material;
 }());
-UserModel = __decorate([
-    core_1.Injectable(),
+Material = __decorate([
+    core_1.Component({
+        moduleId: module.id,
+        selector: 'material',
+        templateUrl: 'material.html'
+    }),
     __metadata("design:paramtypes", [])
-], UserModel);
-exports.UserModel = UserModel;
-//# sourceMappingURL=user-model.js.map
+], Material);
+exports.Material = Material;
+//# sourceMappingURL=material.js.map

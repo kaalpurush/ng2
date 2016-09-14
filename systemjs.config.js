@@ -24,8 +24,11 @@
       '@angular/forms': 'npm:@angular/forms/bundles/forms.umd.js',
 
       // other libraries
-      'rxjs':                       'npm:rxjs',
+      'rxjs': 'npm:rxjs',
       'angular2-in-memory-web-api': 'npm:angular2-in-memory-web-api',
+
+      '@angular2-material': 'npm:@angular2-material',
+
     },
     // packages tells the System loader how to load when no filename and/or no extension
     packages: {
@@ -39,7 +42,23 @@
       'angular2-in-memory-web-api': {
         main: './index.js',
         defaultExtension: 'js'
-      }
+      },
+      '@angular2-material/core': {
+        main: './core.js',
+        defaultExtension: 'js'
+      },
+      '@angular2-material/button': {
+        main: './button.js',
+        defaultExtension: 'js'
+      },
+      '@angular2-material/icon': {
+        main: './icon.js',
+        defaultExtension: 'js'
+      },
+      '@angular2-material/radio': {
+        main: './radio.js',
+        defaultExtension: 'js'
+      },
     }
   });
 })(this);

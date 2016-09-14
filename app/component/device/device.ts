@@ -1,23 +1,23 @@
-import {Component, ViewChildren, QueryList, OnInit, AfterViewInit, Inject} from '@angular/core';
+import {Component, ViewChild, OnInit, AfterViewInit, Inject} from '@angular/core';
 import {Search} from '../search/search';
 import { Http, Response } from '@angular/http';
 
 @Component({
+    moduleId: module.id,
     selector: 'devices',
-    templateUrl: './app/component/device/device.html',
-    providers: [QueryList]
+    templateUrl: 'device.html'
 })
 
 export class Device implements AfterViewInit {
     devices: Array<any>;
-    @ViewChildren(Search) private searchComponents: QueryList<Search>;
-    searchbox1: Search = null;
+    @ViewChild(Search) private searchComponent: Search;
+    searchbox: Search = null;
     constructor(private http: Http) {
         this.http.get('./devices.json').subscribe(res => { this.devices = res.json() });
     }
 
     ngAfterViewInit() {
-        this.searchbox1 = this.searchComponents.first;
+        this.searchbox = this.searchComponent;
     }
 
     doSearch(query: String) {

@@ -8,9 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var core_1 = require('@angular/core');
+var core_1 = require("@angular/core");
 var user_model_1 = require("../../model/user-model");
-var router_1 = require('@angular/router');
+var router_1 = require("@angular/router");
 var About = (function () {
     function About(route, router, user) {
         var _this = this;
@@ -21,14 +21,15 @@ var About = (function () {
         });
         this.user = user;
     }
-    About = __decorate([
-        core_1.Component({
-            selector: 'about',
-            templateUrl: './app/component/about/about.html'
-        }), 
-        __metadata('design:paramtypes', [router_1.ActivatedRoute, router_1.Router, user_model_1.UserModel])
-    ], About);
     return About;
 }());
+About = __decorate([
+    core_1.Component({
+        moduleId: module.id,
+        selector: 'about',
+        templateUrl: 'about.html'
+    }),
+    __metadata("design:paramtypes", [router_1.ActivatedRoute, router_1.Router, user_model_1.UserModel])
+], About);
 exports.About = About;
 //# sourceMappingURL=about.js.map

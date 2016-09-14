@@ -6,11 +6,11 @@
 			<div [hidden]="loginForm.form.valid" class="bg-warning">Form is invalid</div>
 			<!--[class.has-error]="!loginForm.form.controls.email.valid && loginForm.form.controls.email.touched"-->
 			<div class="form-group">
-				<input [(ngModel)]="cred.email" name="email" id="email" class="form-control" type="email" placeholder="Your email" required>
+				<input (ngModel)="cred.email" name="email" id="email" class="form-control" type="email" placeholder="Your email" required>
 			</div>
 			<!--<div class="form-group" [class.has-error]="!loginForm.controls.password.valid && loginForm.controls.password.touched">-->
 			<div class="form-group">
-				<input [(ngModel)]="cred.password" name="password" id="password" class="form-control" type="password" placeholder="Your password" required>
+				<input (ngModel)="cred.password" name="password" id="password" class="form-control" type="password" placeholder="Your password" required>
 			</div>
 			<button class="btn btn-primary" type="submit" [disabled]="!loginForm.form.valid">Log in</button>
 		</form>

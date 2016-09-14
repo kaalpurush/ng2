@@ -8,43 +8,41 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var core_1 = require('@angular/core');
-var user_model_1 = require('../../model/user-model');
-var forms_1 = require('@angular/forms');
+var core_1 = require("@angular/core");
+var user_model_1 = require("../../model/user-model");
+var forms_1 = require("@angular/forms");
 var UserLogin = (function () {
     function UserLogin(user) {
         this.user = user;
     }
-    UserLogin = __decorate([
-        core_1.Component({
-            selector: 'user-login',
-            template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"user.isLogged()\" (click)=\"user.login()\">Login</button>\n\t",
-        }), 
-        __metadata('design:paramtypes', [user_model_1.UserModel])
-    ], UserLogin);
     return UserLogin;
 }());
+UserLogin = __decorate([
+    core_1.Component({
+        selector: 'user-login',
+        template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"user.isLogged()\" (click)=\"user.login()\">Login</button>\n\t",
+    }),
+    __metadata("design:paramtypes", [user_model_1.UserModel])
+], UserLogin);
 exports.UserLogin = UserLogin;
 var UserLogout = (function () {
     function UserLogout(user) {
         this.user = user;
     }
-    UserLogout = __decorate([
-        core_1.Component({
-            selector: 'user-logout',
-            template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"!user.isLogged()\" (click)=\"user.logout()\">Logout</button>\n\t"
-        }), 
-        __metadata('design:paramtypes', [user_model_1.UserModel])
-    ], UserLogout);
     return UserLogout;
 }());
+UserLogout = __decorate([
+    core_1.Component({
+        selector: 'user-logout',
+        template: "\n\t{{user.name}}\n\t<button class=\"btn-sm btn-primary\" [hidden]=\"!user.isLogged()\" (click)=\"user.logout()\">Logout</button>\n\t"
+    }),
+    __metadata("design:paramtypes", [user_model_1.UserModel])
+], UserLogout);
 exports.UserLogout = UserLogout;
 var LoginForm = (function () {
     function LoginForm(user) {
         this.cred = {};
         this.user = user;
-        this.cred.email = '';
-        this.cred.password = '';
     }
     LoginForm.prototype.doLogin = function (event) {
         console.log(this.loginForm);
@@ -56,18 +54,19 @@ var LoginForm = (function () {
         }
         this.loginForm = this.currentForm;
     };
-    __decorate([
-        core_1.ViewChild('loginForm'), 
-        __metadata('design:type', forms_1.NgForm)
-    ], LoginForm.prototype, "currentForm", void 0);
-    LoginForm = __decorate([
-        core_1.Component({
-            selector: 'login-form',
-            templateUrl: './app/component/user/login.html'
-        }), 
-        __metadata('design:paramtypes', [user_model_1.UserModel])
-    ], LoginForm);
     return LoginForm;
 }());
+__decorate([
+    core_1.ViewChild('loginForm'),
+    __metadata("design:type", forms_1.NgForm)
+], LoginForm.prototype, "currentForm", void 0);
+LoginForm = __decorate([
+    core_1.Component({
+        moduleId: module.id,
+        selector: 'login-form',
+        templateUrl: 'login.html'
+    }),
+    __metadata("design:paramtypes", [user_model_1.UserModel])
+], LoginForm);
 exports.LoginForm = LoginForm;
 //# sourceMappingURL=user.js.map

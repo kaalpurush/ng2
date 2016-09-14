@@ -33,8 +33,9 @@ export class UserLogout {
 }
 
 @Component({
+    moduleId: module.id,
     selector: 'login-form',
-    templateUrl: './app/component/user/login.html'
+    templateUrl: 'login.html'
 })
 
 export class LoginForm implements AfterViewChecked {
@@ -45,8 +46,6 @@ export class LoginForm implements AfterViewChecked {
     @ViewChild('loginForm') currentForm: NgForm;
     constructor(user: UserModel) {
         this.user = user;
-        this.cred.email = '';
-        this.cred.password = '';
     }
 
     doLogin(event) {

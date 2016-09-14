@@ -5,8 +5,9 @@ import {UserLogin, UserLogout, LoginForm} from "../user/user";
 import { Router, ActivatedRoute }       from '@angular/router';
 
 @Component({
+    moduleId: module.id,
     selector: 'about',
-    templateUrl: './app/component/about/about.html'
+    templateUrl: 'about.html'
 })
 
 export class About {

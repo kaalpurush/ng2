@@ -1,4 +1,4 @@
-# Angular 2 demo Application (Http, Router, FormBuilder, service/model, ViewQuery)
+# Angular 2 demo Application (Http, Router, FormBuilder, Service/Model, ViewChild)
 
 Live Demo: http://kaalpurush.github.io/ng2
 
