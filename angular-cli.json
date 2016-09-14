@@ -1,0 +1,22 @@
+{
+  "project": {
+    "version": "1.0.0-beta.10",
+    "name": "ng2-demo"
+  },
+  "apps": [
+    {
+      "main": "app/main.ts",
+      "tsconfig": "tsconfig.json",
+      "mobile": false
+    }
+  ],
+  "addons": [],
+  "packages": [],
+  "defaults": {
+    "prefix": "app",
+    "sourceDir": ".",
+    "styleExt": "css",
+    "prefixInterfaces": false,
+    "lazyRoutePrefix": "+"
+  }
+}
