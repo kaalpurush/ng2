@@ -2,7 +2,7 @@
 
 Live Demo: http://kaalpurush.github.io/ng2
 
-Uses angular 2.0.0-rc.6
+Uses angular 2.0.0 FINAL RELEASE!
 
 ### Installation
 1. Install Dependencies: npm install	

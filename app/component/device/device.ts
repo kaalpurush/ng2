@@ -1,4 +1,4 @@
-import {Component, ViewChild, OnInit, AfterViewInit, Inject} from '@angular/core';
+import {Component, ViewChild, OnInit, AfterViewInit} from '@angular/core';
 import {Search} from '../search/search';
 import { Http, Response } from '@angular/http';
 
